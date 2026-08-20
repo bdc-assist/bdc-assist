@@ -1,0 +1,26 @@
+[project]
+name = "bdc-assist"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "deepagents>=0.7.5",
+    "fastapi>=0.141.1",
+    "httpx>=0.28.1",
+    "langchain-mcp-adapters>=0.3.2",
+    "langchain-ollama>=1.1.0",
+    "langchain-openai>=1.4.2",
+    "langgraph>=1.2.10",
+    "python-dotenv>=1.2.2",
+    "pyyaml>=6.0.3",
+    "uvicorn>=0.52.1",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+    "pytest>=9.1.1",
+]
+
+# not installed — run from the repo root (same convention as bdc_doc_mcp)
+[tool.pytest.ini_options]
+pythonpath = ["."]
