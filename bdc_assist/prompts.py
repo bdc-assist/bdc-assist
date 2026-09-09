@@ -18,6 +18,7 @@ INPUT_GUARDRAIL_SYSTEM = _P["input_guardrail_system"]
 INPUT_GUARDRAIL_HUMAN = _P["input_guardrail_human"]
 CONTEXTUALIZE_SYSTEM = _P["contextualize_system"]
 OUTPUT_GUARDRAIL_HUMAN = _P["output_guardrail_human"]
+SUGGEST_FOLLOWUPS_HUMAN = _P["suggest_followups_human"]
 REFUSAL = _P["refusal"]
 REJECT = _P["reject"]
 

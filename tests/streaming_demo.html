@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BDC Assist — streaming demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#f5f6f8; --accent:#1a5dab; }
+  body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg);
+         display:flex; flex-direction:column; height:100vh; }
+  header { padding:.7rem 1rem; background:#fff; border-bottom:1px solid #ddd; font-weight:600; }
+  #log { flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:.6rem; }
+  .msg { max-width:75%; padding:.55rem .8rem; border-radius:.8rem; white-space:pre-wrap; }
+  .user { align-self:flex-end; background:var(--accent); color:#fff; }
+  .bot { align-self:flex-start; background:#fff; border:1px solid #ddd; }
+  .status { font-size:12px; font-style:italic; color:#888; }
+  .status:empty { display:none; }
+  .bot.busy .text::after { content:"▍"; animation:blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  #followups { display:flex; gap:.4rem; flex-wrap:wrap; padding:0 1rem .5rem; }
+  #followups button { border:1px solid var(--accent); color:var(--accent); background:#fff;
+                      border-radius:1rem; padding:.25rem .7rem; cursor:pointer; font:inherit; font-size:13px; }
+  form { display:flex; gap:.5rem; padding:1rem; background:#fff; border-top:1px solid #ddd; }
+  input { flex:1; padding:.55rem .8rem; border:1px solid #ccc; border-radius:.5rem; font:inherit; }
+  form button { padding:.55rem 1.1rem; border:0; border-radius:.5rem; background:var(--accent);
+                color:#fff; font:inherit; cursor:pointer; }
+  form button:disabled { opacity:.5; }
+</style>
+</head>
+<body>
+<header>BDC Assist — streaming demo</header>
+<div id="log"></div>
+<div id="followups"></div>
+<form id="form">
+  <input id="input" placeholder="Ask about BioData Catalyst…" autocomplete="off" autofocus>
+  <button id="send">Send</button>
+</form>
+<script>
+const API = new URLSearchParams(location.search).get("api") || "http://localhost:8010";
+const history = [];  // [{role, content}] — the server is stateless, the page keeps history
+const NODE_LABELS = {
+  input_guardrail: "screening the question…",
+  contextualize: "reading the conversation…",
+  classify: "checking known topics…",
+  agent: "thinking…",
+  output_guardrail: "reviewing the answer…",
+  output_reject: "answer rejected…",
+  append_disclaimer: "adding disclaimers…",
+  suggest_followups: "suggesting follow-ups…",
+};
+const log = document.getElementById("log"), followups = document.getElementById("followups"),
+      form = document.getElementById("form"), input = document.getElementById("input"),
+      send = document.getElementById("send");
+
+function bubble(cls, text) {
+  const d = document.createElement("div");
+  d.className = "msg " + cls;
+  d.textContent = text;
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+  return d;
+}
+
+function botBubble() {
+  const d = document.createElement("div");
+  d.className = "msg bot busy";
+  const status = document.createElement("div");
+  status.className = "status";
+  const text = document.createElement("span");
+  text.className = "text";
+  d.append(status, text);
+  log.appendChild(d);
+  return { d, status, text };
+}
+
+form.onsubmit = async (e) => {
+  e.preventDefault();
+  const q = input.value.trim();
+  if (!q || send.disabled) return;
+  input.value = ""; send.disabled = true; followups.replaceChildren();
+  bubble("user", q);
+  const bot = botBubble();
+  try {
+    const resp = await fetch(API + "/chat/stream", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ input: q, chat_history: history }),
+    });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const reader = resp.body.getReader(), decoder = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const parts = buf.split("\n\n"); buf = parts.pop();
+      for (const part of parts) {
+        if (!part.startsWith("data: ")) continue;
+        const ev = JSON.parse(part.slice(6));
+        if (ev.type === "node") {
+          bot.status.textContent = NODE_LABELS[ev.node] || ev.node;
+        } else if (ev.type === "status") {
+          bot.status.textContent = ev.text;
+        } else if (ev.type === "reset") {
+          bot.text.textContent = "";  // new model turn: only the last response counts
+        } else if (ev.type === "token") {
+          bot.status.textContent = "";  // flowing tokens ARE the status
+          bot.text.textContent += ev.text;
+        } else if (ev.type === "done") {
+          bot.status.textContent = "";
+          bot.text.textContent = ev.answer;  // authoritative: rejects, disclaimers, canned replies
+          history.push({ role: "user", content: q }, { role: "assistant", content: ev.answer });
+          for (const f of ev.followups) {
+            const b = document.createElement("button");
+            b.textContent = f;
+            b.onclick = () => { input.value = f; form.requestSubmit(); };
+            followups.appendChild(b);
+          }
+        }
+      }
+      log.scrollTop = log.scrollHeight;
+    }
+  } catch (err) {
+    bot.text.textContent = "Error: " + err.message + " — is bdc-assist running at " + API + "?";
+  } finally {
+    bot.d.classList.remove("busy");
+    bot.status.textContent = "";
+    send.disabled = false; input.focus();
+  }
+};
+</script>
+</body>
+</html>

@@ -5,13 +5,15 @@
             contextualize → classify ──"r" topic matched───→ END (canned answer)
                                 │ regular
                               agent → output_guardrail ──rejected──→ output_reject ─→ END (REJECT)
-                                            │ disclaimers queued └──done─────→ END
-                                      append_disclaimer ───→ END
+                                            │ disclaimers queued └──done──────┐
+                                      append_disclaimer ─────→ suggest_followups ─→ END
 """
 
 from typing import TypedDict
 
+from langchain_core.messages import AIMessageChunk
 from langchain_core.output_parsers import MarkdownListOutputParser
+from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, StateGraph
 
 from . import prompts
@@ -25,6 +27,7 @@ class BotState(TypedDict, total=False):
     topics: list[str]       # predefined topics matched by classify
     disclaimers: list[str]  # "a"-topic texts to append after the agent answer
     answer: str             # final response (canned, agent, REFUSAL, or REJECT)
+    followups: list[str]    # suggested follow-up questions (empty when none needed)
     blocked: bool           # input_guardrail verdict
     rejected: bool          # output_guardrail rejected the agent answer
 
@@ -33,7 +36,8 @@ def build_graph(llm, agent, predefined: dict):
     """Compile the workflow.
 
     llm: any chat model — runs the guardrail/contextualize/classify prompts.
-    agent: has ainvoke({'messages': [...]}) — produces the real answer.
+    agent: has astream({'messages': [...]}, stream_mode=["messages", "values"]) —
+        produces the real answer, token-streamable.
     predefined: lowercased topic → {response, flag}, from data/prompts.yaml.
         flag "r" = replace: the canned response IS the answer, agent is skipped.
         flag "a" = append: the response is a disclaimer added after the agent answer.
@@ -97,11 +101,36 @@ def build_graph(llm, agent, predefined: dict):
 
     async def run_agent(state: BotState):
         """
-        Answer the question with the agent.
+        Answer the question with the agent, re-emitting its progress on the
+        custom stream: {"type": "status"} when a tool call starts, {"type":
+        "token"} per answer token, and {"type": "reset"} when a new model turn
+        begins — so only the agent's *last* response survives as the streamed
+        provisional answer, which later nodes (guardrail, disclaimers) may
+        still replace via the final state. The agent is a nested graph, so the
+        outer messages-mode handler never reaches its model — the node must
+        stream it itself.
         """
-        result = await agent.ainvoke(
-            {"messages": [{"role": "user", "content": state["question"]}]}
-        )
+        writer = get_stream_writer()
+        result = None
+        last_id = None
+        async for mode, chunk in agent.astream(
+            {"messages": [{"role": "user", "content": state["question"]}]},
+            stream_mode=["messages", "values"],
+        ):
+            if mode == "values":
+                result = chunk
+                continue
+            msg, _meta = chunk
+            if not isinstance(msg, AIMessageChunk):
+                continue
+            for tc in msg.tool_call_chunks or []:
+                if tc.get("name"):
+                    writer({"type": "status", "text": f"calling {tc['name']}"})
+            if isinstance(msg.content, str) and msg.content:
+                if last_id is not None and msg.id != last_id:
+                    writer({"type": "reset"})
+                last_id = msg.id
+                writer({"type": "token", "text": msg.content})
         return {"answer": result["messages"][-1].content}
 
     async def output_guardrail(state: BotState):
@@ -129,15 +158,38 @@ def build_graph(llm, agent, predefined: dict):
         """
         return {"answer": "\n\n".join([state["answer"], *state["disclaimers"]])}
 
+    async def suggest_followups(state: BotState):
+        """
+        Decide if follow-up questions would help; if so, suggest 3
+        (LLM returns a markdown list, or "- none" when nothing is needed).
+        """
+        try:
+            resp = await llm.ainvoke([
+                ("human", prompts.SUGGEST_FOLLOWUPS_HUMAN.format(
+                    input=state["question"], answer=state["answer"])),
+            ])
+            parsed = [q.strip() for q in MarkdownListOutputParser().parse(resp.content)]
+        except Exception:
+            # followups are decorative — never lose a good answer over them
+            parsed = []
+        return {"followups": [q for q in parsed if q.lower() != "none"][:3]}
+
+    def announce(name, fn):
+        # emit {"type": "node"} on the custom stream when the node starts, so a
+        # streaming client can show progress; no-op writer under plain ainvoke
+        async def wrapped(state: BotState):
+            get_stream_writer()({"type": "node", "node": name})
+            return await fn(state)
+        return wrapped
+
     # Build the graph.
     g = StateGraph(BotState)
-    g.add_node("input_guardrail", input_guardrail)
-    g.add_node("contextualize", contextualize)
-    g.add_node("classify", classify)
-    g.add_node("agent", run_agent)
-    g.add_node("output_guardrail", output_guardrail)
-    g.add_node("output_reject", output_reject)
-    g.add_node("append_disclaimer", append_disclaimer)
+    for name, fn in [("input_guardrail", input_guardrail), ("contextualize", contextualize),
+                     ("classify", classify), ("agent", run_agent),
+                     ("output_guardrail", output_guardrail), ("output_reject", output_reject),
+                     ("append_disclaimer", append_disclaimer),
+                     ("suggest_followups", suggest_followups)]:
+        g.add_node(name, announce(name, fn))
 
     g.add_edge(START, "input_guardrail")
     # explicit path_maps: runtime doesn't need them, but get_graph()/draw can't see
@@ -154,7 +206,9 @@ def build_graph(llm, agent, predefined: dict):
     g.add_conditional_edges("output_guardrail",
                             lambda s: "rejected" if s.get("rejected")
                             else "disclaimer" if s.get("disclaimers") else "done",
-                            {"rejected": "output_reject", "disclaimer": "append_disclaimer", "done": END})
+                            {"rejected": "output_reject", "disclaimer": "append_disclaimer",
+                             "done": "suggest_followups"})
     g.add_edge("output_reject", END)
-    g.add_edge("append_disclaimer", END)
+    g.add_edge("append_disclaimer", "suggest_followups")
+    g.add_edge("suggest_followups", END)
     return g.compile()
