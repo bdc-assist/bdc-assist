@@ -1,0 +1,13 @@
+# MCP servers the agent can call. Every tool each server exposes is handed to the agent.
+# Add a server = add a block here; no code change needed.
+#
+# Shapes (see langchain-mcp-adapters MultiServerMCPClient):
+#   remote:  transport: streamable_http   url: http://host:port/mcp
+#   remote:  transport: sse               url: http://host:port/sse
+#   local:   transport: stdio             command: uv   args: [run, python, -m, some.server]
+#
+# demo_services.sh/.ps1 health-check the bdc_doc_mcp url below, so keep the key name.
+
+bdc_doc_mcp:
+  transport: streamable_http
+  url: http://127.0.0.1:8001/mcp

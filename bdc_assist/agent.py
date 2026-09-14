@@ -1,9 +1,13 @@
 import asyncio
+from pathlib import Path
 
+import yaml
 from deepagents import create_deep_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
-from . import config, prompts
+from . import prompts
+
+_SERVERS = Path(__file__).resolve().parent.parent / "data" / "mcp_servers.yaml"
 
 
 def _with_retry(tool):
@@ -22,9 +26,12 @@ def _with_retry(tool):
     return tool
 
 
+def load_mcp_servers() -> dict:
+    with open(_SERVERS, encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
 async def build_agent(llm):
-    client = MultiServerMCPClient({
-        "bdc_doc_mcp": {"transport": "streamable_http", "url": config.DOC_RAG_MCP_URL},
-    })
+    client = MultiServerMCPClient(load_mcp_servers())
     tools = [_with_retry(t) for t in await client.get_tools()]
     return create_deep_agent(llm, tools, system_prompt=prompts.agent_system())

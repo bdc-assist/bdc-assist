@@ -58,6 +58,14 @@ def test_mcp_tool_retry():
     assert calls["n"] == 2
 
 
+def test_mcp_servers_yaml():
+    from bdc_assist.agent import load_mcp_servers
+
+    servers = load_mcp_servers()
+    assert servers["bdc_doc_mcp"]["url"].startswith("http")
+    assert all("transport" in v for v in servers.values())
+
+
 def test_normalize_bdc_names():
     assert normalize_bdc_names("NHLBI BioData Catalyst (BDC) is great") == "BDC is great"
     assert normalize_bdc_names("Use BioData Catalyst today") == "Use BDC today"

@@ -3,7 +3,7 @@
 #   1. Ollama embeddings at EMBEDDING_URL (../bdc-doc-mcp/.env) — reused if already running;
 #      tunneled from Sterling when local (needs RENCI VPN); skipped when unset (cloud provider)
 #   2. bdc-doc-mcp MCP server (HTTP) on MCP_PORT (../bdc-doc-mcp/.env, default 8001),
-#      health-checked at DOC_RAG_MCP_URL (./.env) — the URL bdc-assist actually connects to
+#      health-checked at the bdc_doc_mcp url in ./data/mcp_servers.yaml — the URL bdc-assist actually connects to
 #   3. bdc-assist API on :8010 (hardcoded — demo.ipynb hardcodes it too)
 # Services already running are left alone; Ctrl-C stops only what this script started.
 # Logs: /tmp/bdc_*.log
@@ -25,7 +25,15 @@ env_get() {  # env_get <file> <key> <default> — shell env wins, then the .env,
 
 EMBEDDING_URL=$(env_get ../bdc-doc-mcp/.env EMBEDDING_URL "")
 MCP_PORT=$(env_get ../bdc-doc-mcp/.env MCP_PORT 8001)
-DOC_RAG_MCP_URL=$(env_get ./.env DOC_RAG_MCP_URL "http://127.0.0.1:8001/mcp")  # config.py default
+mcp_url() {  # mcp_url <yaml> <server> <default> — shell DOC_RAG_MCP_URL wins (test hook), then the yaml block's url:, then default
+  local v="${DOC_RAG_MCP_URL:-}"
+  if [ -z "$v" ] && [ -f "$1" ]; then
+    v=$(sed -n "/^$2:/,/^[^[:space:]#]/s/^[[:space:]]*url:[[:space:]]*//p" "$1" | head -1 | sed 's/\r$//;s/[[:space:]]*#.*//;s/^["'\'']//;s/["'\'']$//')
+  fi
+  echo "${v:-$3}"
+}
+
+DOC_RAG_MCP_URL=$(mcp_url ./data/mcp_servers.yaml bdc_doc_mcp "http://127.0.0.1:8001/mcp")
 
 up() { curl -s -o /dev/null --max-time 2 "$1"; }  # any HTTP response counts, even 4xx
 
@@ -77,7 +85,7 @@ else
   uv run --directory ../bdc-doc-mcp python -m bdc_doc_mcp.mcp_server --http >/tmp/bdc_doc_mcp.log 2>&1 &
   pids+=($!)
   wait_for bdc-doc-mcp "$DOC_RAG_MCP_URL" 30 \
-    "server binds MCP_PORT=$MCP_PORT; if that mismatches DOC_RAG_MCP_URL, fix the .env (see /tmp/bdc_doc_mcp.log)"
+    "server binds MCP_PORT=$MCP_PORT; if that mismatches the url in data/mcp_servers.yaml, fix it (see /tmp/bdc_doc_mcp.log)"
 fi
 
 # 3. bdc-assist API

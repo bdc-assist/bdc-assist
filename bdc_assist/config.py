@@ -7,10 +7,6 @@ from dotenv import load_dotenv
 
 load_dotenv()  # real env vars win over .env
 
-# the doc MCP server is a separate service (bdc-doc-mcp repo) — bdc-assist only connects
-DOC_RAG_MCP_URL = os.getenv("DOC_RAG_MCP_URL", "http://127.0.0.1:8001/mcp")
-
-
 def _self_hosted_key():
     # self-hosted vLLM ignores the key, but the openai client refuses to start without one
     return os.getenv("OPENAI_API_KEY") or "EMPTY"

@@ -26,6 +26,7 @@ bdc_assist/agent.py    deep agent + MCP client (connects to the doc_rag MCP serv
 bdc_assist/api.py      FastAPI: POST /chat, GET /health
 data/prompts.yaml                all prompt texts (editable without touching code)
 data/predefined_responses.yaml   topic → {response, flag: r|a}
+data/mcp_servers.yaml            MCP servers the agent may call (add one = no code change)
 ```
 
 ## Setup

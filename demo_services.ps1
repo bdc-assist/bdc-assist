@@ -3,7 +3,7 @@
 #   1. Ollama embeddings at EMBEDDING_URL (..\bdc-doc-mcp\.env) - reused if already running;
 #      tunneled from Sterling when local (needs RENCI VPN); skipped when unset (cloud provider)
 #   2. bdc-doc-mcp MCP server (HTTP) on MCP_PORT (..\bdc-doc-mcp\.env, default 8001),
-#      health-checked at DOC_RAG_MCP_URL (.\.env) - the URL bdc-assist actually connects to
+#      health-checked at the bdc_doc_mcp url in .\data\mcp_servers.yaml - the URL bdc-assist actually connects to
 #   3. bdc-assist API on :8010 (hardcoded - demo.ipynb hardcodes it too)
 # Services already running are left alone; Ctrl-C stops only what this script started.
 # Logs: %TEMP%\bdc_*.log
@@ -24,7 +24,21 @@ function Get-DotEnv([string]$file, [string]$key, [string]$default) {
 
 $EMBEDDING_URL   = Get-DotEnv '..\bdc-doc-mcp\.env' 'EMBEDDING_URL' ''
 $MCP_PORT        = Get-DotEnv '..\bdc-doc-mcp\.env' 'MCP_PORT' '8001'
-$DOC_RAG_MCP_URL = Get-DotEnv '.\.env' 'DOC_RAG_MCP_URL' 'http://127.0.0.1:8001/mcp'  # config.py default
+
+function Get-McpUrl([string]$file, [string]$server, [string]$default) {
+  # shell DOC_RAG_MCP_URL wins (test hook), then the yaml block's url:, then default - twin of mcp_url in the .sh
+  $v = [Environment]::GetEnvironmentVariable('DOC_RAG_MCP_URL')
+  if (-not $v -and (Test-Path $file)) {
+    $in = $false
+    foreach ($line in Get-Content $file) {
+      if ($line -match ('^' + $server + ':')) { $in = $true; continue }
+      if ($in -and $line -match '^[^\s#]') { break }
+      if ($in -and $line -match '^\s*url:\s*(.*)$') { $v = ($Matches[1] -replace '\s*#.*$', '').Trim().Trim('"').Trim("'"); break }
+    }
+  }
+  if ($v) { $v } else { $default }
+}
+$DOC_RAG_MCP_URL = Get-McpUrl '.\data\mcp_servers.yaml' 'bdc_doc_mcp' 'http://127.0.0.1:8001/mcp'
 
 function Test-Http([string]$url) {  # any HTTP response counts, even 4xx
   try {
@@ -86,7 +100,7 @@ try {
   } else {
     Start-Bg 'uv run --directory ..\bdc-doc-mcp python -m bdc_doc_mcp.mcp_server --http' "$env:TEMP\bdc_doc_mcp.log"
     Wait-Http 'bdc-doc-mcp' $DOC_RAG_MCP_URL 30 `
-      "server binds MCP_PORT=$MCP_PORT; if that mismatches DOC_RAG_MCP_URL, fix the .env (see $env:TEMP\bdc_doc_mcp.log)"
+      "server binds MCP_PORT=$MCP_PORT; if that mismatches the url in data\mcp_servers.yaml, fix it (see $env:TEMP\bdc_doc_mcp.log)"
   }
 
   # 3. bdc-assist API

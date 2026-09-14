@@ -19,7 +19,13 @@ printf 'MCP_PORT=9001   # comment\r\nEMBEDDING_URL="http://localhost:11434"\r\nE
 MCP_PORT=7777
 [ "$(env_get "$TMP/fake.env" MCP_PORT 8001)" = "7777" ] || { echo "FAIL: shell env should win"; exit 1; }
 unset MCP_PORT
-echo "PASS 1/6: env_get parses .env values (comments, CRLF, quotes, precedence)"
+sed -n '/^mcp_url()/,/^}/p' "$SCRIPT" > "$TMP/mcp_url.sh"
+. "$TMP/mcp_url.sh"
+printf 'other:\n  transport: sse\n  url: http://other/sse\nbdc_doc_mcp:\n  transport: streamable_http\n  url: "http://127.0.0.1:9001/mcp"  # note\r\n' > "$TMP/fake.yaml"
+[ "$(mcp_url "$TMP/fake.yaml" bdc_doc_mcp x)" = "http://127.0.0.1:9001/mcp" ] || { echo "FAIL: yaml url (block scoping/quote/comment/CRLF)"; exit 1; }
+[ "$(mcp_url "$TMP/nope.yaml" bdc_doc_mcp default)" = "default" ] || { echo "FAIL: yaml default"; exit 1; }
+[ "$(mcp_url "$(dirname "$SCRIPT")/data/mcp_servers.yaml" bdc_doc_mcp x)" != x ] || { echo "FAIL: real mcp_servers.yaml has no bdc_doc_mcp url"; exit 1; }
+echo "PASS 1/6: env_get/mcp_url parse .env and mcp_servers.yaml values (comments, CRLF, quotes, precedence)"
 
 # --- orchestration branches, against the real script with stubbed commands ---
 mkdir -p "$TMP/repo" "$TMP/bin"
