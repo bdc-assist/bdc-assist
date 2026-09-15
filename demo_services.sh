@@ -10,11 +10,6 @@
 set -u
 cd "$(dirname "$0")"
 
-case "$(uname -r)" in *[Mm]icrosoft*)
-  echo "this is WSL bash — run me from Git Bash instead (kubectl, uv, and the token cache live on the Windows side)" >&2
-  exit 1;;
-esac
-
 env_get() {  # env_get <file> <key> <default> — shell env wins, then the .env, then default
   local v="${!2:-}"
   if [ -z "$v" ] && [ -f "$1" ]; then
