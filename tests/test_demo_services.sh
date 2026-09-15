@@ -30,7 +30,7 @@ echo "PASS 1/6: env_get/mcp_url parse .env and mcp_servers.yaml values (comments
 # --- orchestration branches, against the real script with stubbed commands ---
 mkdir -p "$TMP/repo" "$TMP/bin"
 cp "$SCRIPT" "$TMP/repo/"   # ../bdc-doc-mcp/.env doesn't exist here => defaults + shell env only
-for c in kubectl uv; do
+for c in kubectl uv ollama; do
   printf '#!/bin/sh\necho "%s $*" >> "%s/spawned.log"\n' "$c" "$TMP" > "$TMP/bin/$c"
 done
 printf '#!/bin/sh\nexit 0\n' > "$TMP/bin/sleep"      # no-op: wait_for loops finish instantly
@@ -53,14 +53,19 @@ run 0 EMBEDDING_URL=http://localhost:11434 || { echo "FAIL: all-up should exit 0
 echo "PASS 2/6: services already up -> all reused, nothing spawned"
 
 # nothing answering + local EMBEDDING_URL => OIDC pre-flight, tunnel with the port
-# parsed from the URL, then fail loud
-run 1 EMBEDDING_URL=http://localhost:12345 && { echo "FAIL: dead ollama should exit non-zero"; exit 1; }
+# parsed from the URL; tunnel dead => local `ollama serve`; still dead => warn, carry on
+# to the other services (whose wait then fails, hence the non-zero exit)
+run 1 EMBEDDING_URL=http://localhost:12345 && { echo "FAIL: nothing answering should exit non-zero"; exit 1; }
 grep -q 'kubectl -n ner get svc ollama' "$TMP/spawned.log" \
   || { echo "FAIL: missing foreground OIDC pre-flight"; cat "$TMP/spawned.log"; exit 1; }
 grep -q 'kubectl -n ner port-forward svc/ollama 12345:11434' "$TMP/spawned.log" \
   || { echo "FAIL: tunnel port not parsed from EMBEDDING_URL"; cat "$TMP/spawned.log"; exit 1; }
 grep -q 'bdc_ollama.log' "$TMP/out" || { echo "FAIL: missing tunnel-log hint"; cat "$TMP/out"; exit 1; }
-echo "PASS 3/6: local ollama down -> pre-flight + tunnel with right port, exits with log hint (as intended)"
+grep -q '^ollama serve' "$TMP/spawned.log" || { echo "FAIL: no local ollama fallback"; cat "$TMP/spawned.log"; exit 1; }
+grep -q 'start Ollama there yourself' "$TMP/out" || { echo "FAIL: missing start-it-yourself warning"; cat "$TMP/out"; exit 1; }
+grep -q 'uv run --directory ../bdc-doc-mcp' "$TMP/spawned.log" \
+  || { echo "FAIL: did not carry on to the doc server"; cat "$TMP/spawned.log"; exit 1; }
+echo "PASS 3/6: local ollama down -> tunnel with right port, then local ollama serve, then warn and carry on"
 
 # unset EMBEDDING_URL => cloud provider: skip step 1, still start the other two
 run 1 EMBEDDING_URL= DOC_RAG_MCP_URL=http://127.0.0.1:8001/mcp && { echo "FAIL: expected mcp wait to fail"; exit 1; }
@@ -70,11 +75,14 @@ grep -q 'uv run --directory ../bdc-doc-mcp' "$TMP/spawned.log" \
 grep -qv kubectl "$TMP/spawned.log" || { echo "FAIL: tunneled without EMBEDDING_URL"; exit 1; }
 echo "PASS 4/6: EMBEDDING_URL unset -> tunnel skipped (cloud provider), other services still start"
 
-# dead remote EMBEDDING_URL => refuse instead of tunneling somebody else's host
-run 1 EMBEDDING_URL=http://sterling:11434 && { echo "FAIL: dead remote should exit non-zero"; exit 1; }
-grep -q "can't spawn it from here" "$TMP/out" || { echo "FAIL: missing remote-URL message"; cat "$TMP/out"; exit 1; }
-[ ! -s "$TMP/spawned.log" ] || { echo "FAIL: spawned for a remote URL"; cat "$TMP/spawned.log"; exit 1; }
-echo "PASS 5/6: remote embedding URL down -> declines to spawn, clear error (as intended)"
+# dead remote EMBEDDING_URL => no tunnel, no local ollama (it wouldn't be at that URL):
+# warn, carry on to the other services
+run 1 EMBEDDING_URL=http://sterling:11434 && { echo "FAIL: expected mcp wait to fail"; exit 1; }
+grep -q 'start Ollama there yourself' "$TMP/out" || { echo "FAIL: missing remote-URL warning"; cat "$TMP/out"; exit 1; }
+grep -qE 'kubectl|ollama' "$TMP/spawned.log" && { echo "FAIL: tunneled/started ollama for a remote URL"; cat "$TMP/spawned.log"; exit 1; }
+grep -q 'uv run --directory ../bdc-doc-mcp' "$TMP/spawned.log" \
+  || { echo "FAIL: did not carry on to the doc server"; cat "$TMP/spawned.log"; exit 1; }
+echo "PASS 5/6: remote embedding URL down -> warns, no tunnel/local ollama, other services still start"
 
 # --- native .ps1: run under a clean-PowerShell PATH (no Git dirs), with throwaway
 # HTTP listeners standing in for the three services => all reused, nothing spawned,

@@ -43,7 +43,9 @@ kubectl -n ner port-forward svc/ollama 11434:11434
 
 ## Run
 
-Everything at once (Ollama tunnel + doc MCP server + bdc-assist; Ctrl-C stops what it started):
+Everything at once (Ollama tunnel + doc MCP server + bdc-assist; Ctrl-C stops what it started).
+If the VPN is off the tunnel fails and the script falls back to a local `ollama serve` when
+Ollama is installed; otherwise it asks you to start Ollama and carries on without it:
 
 ```bash
 ./demo_services.sh       # Linux / Git Bash

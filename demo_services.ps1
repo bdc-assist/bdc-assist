@@ -1,7 +1,8 @@
 # Native Windows twin of demo_services.sh - same behavior, keep the two in sync.
 # Spawns everything demo.ipynb needs:
 #   1. Ollama embeddings at EMBEDDING_URL (..\bdc-doc-mcp\.env) - reused if already running;
-#      tunneled from Sterling when local (needs RENCI VPN); skipped when unset (cloud provider)
+#      else tunneled from Sterling when local (needs RENCI VPN), else `ollama serve` locally
+#      if installed, else a warning and we carry on; skipped when unset (cloud provider)
 #   2. bdc-doc-mcp MCP server (HTTP) on MCP_PORT (..\bdc-doc-mcp\.env, default 8001),
 #      health-checked at the bdc_doc_mcp url in .\data\mcp_servers.yaml - the URL bdc-assist actually connects to
 #   3. bdc-assist API on :8010 (hardcoded - demo.ipynb hardcodes it too)
@@ -23,6 +24,7 @@ function Get-DotEnv([string]$file, [string]$key, [string]$default) {
 }
 
 $EMBEDDING_URL   = Get-DotEnv '..\bdc-doc-mcp\.env' 'EMBEDDING_URL' ''
+$EMBEDDING_MODEL = Get-DotEnv '..\bdc-doc-mcp\.env' 'EMBEDDING_MODEL' 'bge-m3'
 $MCP_PORT        = Get-DotEnv '..\bdc-doc-mcp\.env' 'MCP_PORT' '8001'
 
 function Get-McpUrl([string]$file, [string]$server, [string]$default) {
@@ -51,11 +53,16 @@ function Test-Http([string]$url) {  # any HTTP response counts, even 4xx
   } catch { $false }
 }
 
-function Wait-Http([string]$name, [string]$url, [int]$tries, [string]$hint) {
+function Wait-Up([string]$url, [int]$tries) {
   for ($i = 0; $i -lt $tries; $i++) {
-    if (Test-Http $url) { Write-Host "${name}: up ($url)"; return }
+    if (Test-Http $url) { return $true }
     Start-Sleep -Seconds 1
   }
+  $false
+}
+
+function Wait-Http([string]$name, [string]$url, [int]$tries, [string]$hint) {  # like Wait-Up, but fatal
+  if (Wait-Up $url $tries) { Write-Host "${name}: up ($url)"; return }
   Write-Host "${name}: not answering at $url - $hint"
   exit 1  # finally below still runs and reaps whatever was started
 }
@@ -68,30 +75,41 @@ function Start-Bg([string]$cmdline, [string]$log) {
 }
 
 try {
-  # 1. embeddings
+  # 1. embeddings - reuse; else (localhost URL) tunnel from Sterling, else local `ollama serve`
+  #    if installed; else warn and carry on: the other services still start, searches just
+  #    fail until Ollama answers at EMBEDDING_URL
   if (-not $EMBEDDING_URL) {
     Write-Host 'embeddings: EMBEDDING_URL unset - cloud provider, nothing to spawn'
   } elseif (Test-Http $EMBEDDING_URL) {
     Write-Host "ollama: already running ($EMBEDDING_URL)"
-  } elseif ($EMBEDDING_URL -match '://(localhost|127\.0\.0\.1)') {
-    if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
-      Write-Host 'kubectl not found - install it, or start a local Ollama at EMBEDDING_URL'
-      exit 1
-    }
-    # foreground pre-flight: cluster auth is OIDC (kubelogin) - with a stale token this
-    # pops a browser login, which would hang forever inside the backgrounded port-forward
-    Write-Host 'checking cluster access - if a browser login tab opens (maybe unfocused), complete it; waiting...'
-    & kubectl -n ner get svc ollama | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-      Write-Host 'kubectl cannot reach the cluster - RENCI VPN connected? OIDC login completed?'
-      exit 1
-    }
-    $tunnelPort = if ($EMBEDDING_URL -match ':(\d+)') { $Matches[1] } else { '11434' }
-    Start-Bg "kubectl -n ner port-forward svc/ollama ${tunnelPort}:11434" "$env:TEMP\bdc_ollama.log"
-    Wait-Http 'ollama' $EMBEDDING_URL 15 "see $env:TEMP\bdc_ollama.log"
   } else {
-    Write-Host "embeddings at $EMBEDDING_URL not answering - remote URL, can't spawn it from here"
-    exit 1
+    if ($EMBEDDING_URL -match '://(localhost|127\.0\.0\.1)') {
+      $port = if ($EMBEDDING_URL -match ':(\d+)') { $Matches[1] } else { '11434' }
+      if (Get-Command kubectl -ErrorAction SilentlyContinue) {
+        # foreground pre-flight: cluster auth is OIDC (kubelogin) - with a stale token this
+        # pops a browser login, which would hang forever inside the backgrounded port-forward
+        Write-Host 'checking cluster access - if a browser login tab opens (maybe unfocused), complete it; waiting...'
+        & kubectl -n ner get svc ollama | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+          Start-Bg "kubectl -n ner port-forward svc/ollama ${port}:11434" "$env:TEMP\bdc_ollama.log"
+          if (Wait-Up $EMBEDDING_URL 15) { Write-Host "ollama: up via Sterling tunnel ($EMBEDDING_URL)" }
+          else {
+            Write-Host "tunnel didn't come up (see $env:TEMP\bdc_ollama.log)"
+            taskkill /T /F /PID $procs[-1].Id 2>$null | Out-Null
+          }
+        } else { Write-Host 'kubectl cannot reach the cluster - RENCI VPN off? OIDC login?' }
+      } else { Write-Host 'kubectl not found - skipping the Sterling tunnel' }
+      if (-not (Test-Http $EMBEDDING_URL) -and (Get-Command ollama -ErrorAction SilentlyContinue)) {
+        Write-Host "ollama: starting locally on :$port (needs 'ollama pull $EMBEDDING_MODEL' once)"
+        $env:OLLAMA_HOST = "127.0.0.1:$port"
+        Start-Bg 'ollama serve' "$env:TEMP\bdc_ollama_local.log"
+        if (Wait-Up $EMBEDDING_URL 15) { Write-Host "ollama: up locally ($EMBEDDING_URL)" }
+        else { Write-Host "local ollama didn't come up (see $env:TEMP\bdc_ollama_local.log)" }
+      }
+    }
+    if (-not (Test-Http $EMBEDDING_URL)) {
+      Write-Host "embeddings at $EMBEDDING_URL not answering - start Ollama there yourself (ollama serve; ollama pull $EMBEDDING_MODEL); continuing, searches will fail until it's up"
+    }
   }
 
   # 2. doc MCP server
