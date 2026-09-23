@@ -1,6 +1,7 @@
 """FastAPI wrapper: POST /chat runs the graph. Stateless — history comes from the client."""
 
 import json
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -29,6 +30,7 @@ class ChatResponse(BaseModel):
     blocked: bool = False
     topics: list[str] = []
     followups: list[str] = []
+    tool_results: list[dict] = []  # {tool, args, result}: doc chunks + metadata, graph rows, ...
 
 
 graph = None
@@ -41,6 +43,9 @@ async def lifespan(app: FastAPI):
     graph = build_graph(llm, await build_agent(llm), load_predefined_responses())
     yield
 
+
+# app loggers (e.g. MCP tool failures in agent.py) print alongside uvicorn's own lines
+logging.basicConfig(level=logging.WARNING, format="%(levelname)s:     %(name)s: %(message)s")
 
 app = FastAPI(title="BDC Assist", version="0.2.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -57,7 +62,7 @@ async def stream_chat(graph, input: str, chat_history: list):
       {"type": "status", "text"}  what the agent is doing (tool calls)
       {"type": "token", "text"}   one token of the agent's provisional answer
       {"type": "reset"}           new model turn — discard tokens so far
-      {"type": "done", answer, blocked, topics, followups}  final state — the
+      {"type": "done", answer, blocked, topics, followups, tool_results}  final state — the
         done answer is authoritative (rejects, disclaimers, canned replies).
     Custom-stream events come only from graph.py nodes, so guardrail/classifier
     LLM chatter never leaks."""
@@ -72,7 +77,8 @@ async def stream_chat(graph, input: str, chat_history: list):
             yield f"data: {json.dumps(chunk)}\n\n"
     done = {"type": "done", "answer": state.get("answer", ""),
             "blocked": state.get("blocked", False),
-            "topics": state.get("topics", []), "followups": state.get("followups", [])}
+            "topics": state.get("topics", []), "followups": state.get("followups", []),
+            "tool_results": state.get("tool_results", [])}
     yield f"data: {json.dumps(done)}\n\n"
 
 
@@ -90,4 +96,5 @@ async def chat(req: ChatRequest) -> ChatResponse:
         "chat_history": [(m.role, m.content) for m in req.chat_history],
     })
     return ChatResponse(answer=state["answer"], blocked=state.get("blocked", False),
-                        topics=state.get("topics", []), followups=state.get("followups", []))
+                        topics=state.get("topics", []), followups=state.get("followups", []),
+                        tool_results=state.get("tool_results", []))

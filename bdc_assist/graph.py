@@ -9,9 +9,10 @@
                                       append_disclaimer ─────→ suggest_followups ─→ END
 """
 
+import json
 from typing import TypedDict
 
-from langchain_core.messages import AIMessageChunk
+from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 from langchain_core.output_parsers import MarkdownListOutputParser
 from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, StateGraph
@@ -28,8 +29,33 @@ class BotState(TypedDict, total=False):
     disclaimers: list[str]  # "a"-topic texts to append after the agent answer
     answer: str             # final response (canned, agent, REFUSAL, or REJECT)
     followups: list[str]    # suggested follow-up questions (empty when none needed)
+    tool_results: list      # every tool call the agent made: {tool, args, result} — doc chunks
+                            # with their metadata, knowledge-graph rows, etc., for the client to show
     blocked: bool           # input_guardrail verdict
     rejected: bool          # output_guardrail rejected the agent answer
+
+
+def _parse_tool_content(content):
+    """A ToolMessage holds JSON text, or a list of text blocks each holding JSON
+    (the doc server returns one block per chunk). Decode what decodes."""
+    blocks = content if isinstance(content, list) else [content]
+    parsed = []
+    for b in blocks:
+        text = b.get("text", "") if isinstance(b, dict) else b
+        try:
+            parsed.append(json.loads(text))
+        except (TypeError, ValueError):
+            parsed.append(text)
+    return parsed[0] if len(parsed) == 1 else parsed
+
+
+def _tool_results(messages) -> list[dict]:
+    """Pair each ToolMessage with the AI tool call that produced it."""
+    calls = {tc["id"]: tc for m in messages if isinstance(m, AIMessage) for tc in (m.tool_calls or [])}
+    return [{"tool": calls.get(m.tool_call_id, {}).get("name", m.name),
+             "args": calls.get(m.tool_call_id, {}).get("args", {}),
+             "result": _parse_tool_content(m.content)}
+            for m in messages if isinstance(m, ToolMessage)]
 
 
 def build_graph(llm, agent, predefined: dict):
@@ -131,7 +157,8 @@ def build_graph(llm, agent, predefined: dict):
                     writer({"type": "reset"})
                 last_id = msg.id
                 writer({"type": "token", "text": msg.content})
-        return {"answer": result["messages"][-1].content}
+        return {"answer": result["messages"][-1].content,
+                "tool_results": _tool_results(result["messages"])}
 
     async def output_guardrail(state: BotState):
         """

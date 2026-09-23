@@ -69,7 +69,10 @@ uv run uvicorn bdc_assist.api:app --port 8010
 ```
 
 `POST /chat` with `{"input": "...", "chat_history": [{"role": "user|assistant", "content": "..."}]}`
-returns `{"answer", "blocked", "topics"}`. The server is stateless — the client keeps history.
+returns `{"answer", "blocked", "topics", "followups", "tool_results"}`. The server is stateless — the
+client keeps history. `tool_results` is every tool call the agent made, as `{tool, args, result}` with
+the tool's decoded JSON: doc chunks with their metadata (`page_url`, `doc_type`, ...) from `search_docs`,
+knowledge-graph rows from the Dug tools. Render sources/graphs from it; the answer text is separate.
 
 `POST /chat/stream` takes the same body and answers as SSE, one JSON object per event:
 
@@ -77,7 +80,7 @@ returns `{"answer", "blocked", "topics"}`. The server is stateless — the clien
 - `{"type": "status", "text"}` — what the agent is doing (tool calls)
 - `{"type": "token", "text"}` — one token of the agent's provisional answer
 - `{"type": "reset"}` — new model turn: discard the tokens streamed so far
-- `{"type": "done", answer, blocked, topics, followups}` — final state; the done answer is
+- `{"type": "done", answer, blocked, topics, followups, tool_results}` — final state; the done answer is
   authoritative (rejects, disclaimers, canned replies may replace the streamed text)
 
 Minimal browser UI for it: open `tests/streaming_demo.html` (point it at another server

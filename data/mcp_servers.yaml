@@ -11,3 +11,8 @@
 bdc_doc_mcp:
   transport: streamable_http
   url: http://127.0.0.1:8001/mcp
+
+# Dug knowledge-graph tools (github.com/bdc-assist/dug-mcp, bdc-assist-dev namespace on Sterling)
+dug_mcp:
+  transport: sse
+  url: https://dug-mcp.apps.renci.org/sse

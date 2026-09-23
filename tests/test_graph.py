@@ -1,7 +1,7 @@
 import asyncio
 
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
-from langchain_core.messages import AIMessage, AIMessageChunk
+from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 
 from bdc_assist.graph import REJECT, REFUSAL, build_graph
 from bdc_assist.prompts import normalize_bdc_names
@@ -10,6 +10,9 @@ PREDEFINED = {
     "fisma": {"response": "FISMA canned answer.", "flag": "r"},
     "covid": {"response": "Covid disclaimer.", "flag": "a"},
 }
+# what the fake agent's one search_docs call yields, decoded — one doc chunk with metadata
+TOOL_RESULT = {"tool": "search_docs", "args": {"query": "q"},
+               "result": {"content": "chunk", "metadata": {"page_url": "https://x"}}}
 
 
 class FakeAgent:
@@ -28,7 +31,12 @@ class FakeAgent:
         half = len(self.reply) // 2
         for part in (self.reply[:half], self.reply[half:]):
             yield "messages", (AIMessageChunk(content=part, id="m2"), {})
-        yield "values", {"messages": [AIMessage(content=self.reply)]}
+        yield "values", {"messages": [
+            AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": "q"}, "id": "t1"}]),
+            # like langchain-mcp-adapters: a list of text blocks, each holding the tool's JSON
+            ToolMessage(content=[{"type": "text", "text": '{"content": "chunk", "metadata": {"page_url": "https://x"}}'}],
+                        tool_call_id="t1"),
+            AIMessage(content=self.reply)]}
 
 
 def run(llm_responses, **state):
@@ -56,6 +64,36 @@ def test_mcp_tool_retry():
     _with_retry(tool)
     assert asyncio.run(tool.coroutine(query="x")) == "ok"
     assert calls["n"] == 2
+
+
+def test_mcp_tool_errors_are_logged(caplog):
+    from langchain_core.tools import StructuredTool
+
+    from bdc_assist.agent import _with_retry
+
+    async def raises(query: str) -> str:
+        raise ConnectionError("boom")
+
+    async def error_payload(query: str) -> tuple:  # dug-mcp style failure, in the adapter's (content, artifact) shape
+        return [{"type": "text", "text": '{\n  "error": "Error executing tool: NoneType has no query"\n}'}], None
+
+    async def warnings_payload(query: str) -> tuple:  # empty data + warnings, dug-mcp's other failure shape
+        return [{"type": "text", "text": '{"total_variables_found": 0, "variables": [], "warnings": ["PIC-SURE returned HTTP 404 for \'phv1\'"]}'}], None
+
+    with caplog.at_level("WARNING", logger="bdc_assist.agent"):
+        tool = _with_retry(StructuredTool.from_function(coroutine=error_payload, name="search_concepts", description="d"))
+        asyncio.run(tool.coroutine(query="heart attack"))
+        tool = _with_retry(StructuredTool.from_function(coroutine=warnings_payload, name="find_cohort_variables", description="d"))
+        asyncio.run(tool.coroutine(query="x"))
+        tool = _with_retry(StructuredTool.from_function(coroutine=raises, name="picsure_search", description="d"))
+        try:
+            asyncio.run(tool.coroutine(query="x"))
+        except ConnectionError:
+            pass
+    msgs = [r.getMessage() for r in caplog.records]
+    assert any("search_concepts{'query': 'heart attack'} returned an error: Error executing tool: NoneType has no query" == m for m in msgs)
+    assert any("find_cohort_variables{'query': 'x'} returned an error: PIC-SURE returned HTTP 404 for 'phv1'" == m for m in msgs)
+    assert sum("picsure_search{'query': 'x'} raised ConnectionError: boom" in m for m in msgs) == 2
 
 
 def test_mcp_servers_yaml():
@@ -106,6 +144,7 @@ def test_regular_question_appends_disclaimer():
     assert agent.called
     assert state["answer"] == "Agent answer about BDC.\n\nCovid disclaimer."
     assert state["followups"] == ["What is BDC?", "How do I get access?", "Where are the docs?"]
+    assert state["tool_results"] == [TOOL_RESULT]
 
 
 def test_followups_none_means_empty():
@@ -140,7 +179,8 @@ def test_stream_chat_emits_progress_tokens_and_done():
     tokens = [e["text"] for e in events[last_reset:] if e["type"] == "token"]
     assert "".join(tokens) == "Agent answer about BDC."  # no guardrail/classifier chatter mixed in
     assert events[-1] == {"type": "done", "answer": "Agent answer about BDC.\n\nCovid disclaimer.",
-                          "blocked": False, "topics": ["covid"], "followups": []}
+                          "blocked": False, "topics": ["covid"], "followups": [],
+                          "tool_results": [TOOL_RESULT]}
 
 
 def test_rejected_answer_gets_reject_reply_without_disclaimer():
