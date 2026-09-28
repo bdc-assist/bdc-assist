@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <title>BDC Assist — streaming demo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   :root { --bg:#f5f6f8; --accent:#1a5dab; }
   body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg);
@@ -15,7 +16,13 @@
   .bot { align-self:flex-start; background:#fff; border:1px solid #ddd; }
   .status { font-size:12px; font-style:italic; color:#888; }
   .status:empty { display:none; }
-  .bot.busy .text::after { content:"▍"; animation:blink 1s steps(1) infinite; }
+  .sources { margin-top:.5rem; padding-top:.4rem; border-top:1px solid #eee; font-size:13px; color:#555; }
+  .sources:empty { display:none; }
+  .md { white-space:normal; }  /* rendered markdown: block layout instead of pre-wrap */
+  .md > :first-child { margin-top:0; }
+  .md > :last-child { margin-bottom:0; }
+  .md a { color:var(--accent); }
+  .bot.busy .text:not(.md)::after { content:"▍"; animation:blink 1s steps(1) infinite; }  /* streaming only */
   @keyframes blink { 50% { opacity:0; } }
   #followups { display:flex; gap:.4rem; flex-wrap:wrap; padding:0 1rem .5rem; }
   #followups button { border:1px solid var(--accent); color:var(--accent); background:#fff;
@@ -66,11 +73,20 @@ function botBubble() {
   d.className = "msg bot busy";
   const status = document.createElement("div");
   status.className = "status";
-  const text = document.createElement("span");
+  const text = document.createElement("div");
   text.className = "text";
-  d.append(status, text);
+  const sources = document.createElement("div");
+  sources.className = "sources";
+  d.append(status, text, sources);
   log.appendChild(d);
-  return { d, status, text };
+  return { d, status, text, sources };
+}
+
+function renderMd(el, md) {  // final text only — tokens stream as plain text until "done"
+  if (typeof marked === "undefined") { el.textContent = md; return; }  // CDN unreachable: plain text
+  el.innerHTML = marked.parse(md.replace(/</g, "&lt;"));  // neutralise raw HTML in model output
+  el.classList.add("md");
+  el.querySelectorAll("a").forEach(a => { a.target = "_blank"; a.rel = "noopener"; });
 }
 
 form.onsubmit = async (e) => {
@@ -97,9 +113,16 @@ form.onsubmit = async (e) => {
         if (!part.startsWith("data: ")) continue;
         const ev = JSON.parse(part.slice(6));
         if (ev.type === "node") {
+          if (ev.node !== "agent" && bot.text.textContent && !bot.text.classList.contains("md")) {
+            // agent finished streaming: render its text now, while the guardrail and
+            // follow-up nodes still run; "done" re-renders with the authoritative answer
+            renderMd(bot.text, bot.text.textContent);
+          }
           bot.status.textContent = NODE_LABELS[ev.node] || ev.node;
         } else if (ev.type === "status") {
           bot.status.textContent = ev.text;
+        } else if (ev.type === "sources") {
+          renderMd(bot.sources, ev.sources_md || "");  // agent finished: sources are final
         } else if (ev.type === "reset") {
           bot.text.textContent = "";  // new model turn: only the last response counts
         } else if (ev.type === "token") {
@@ -107,7 +130,8 @@ form.onsubmit = async (e) => {
           bot.text.textContent += ev.text;
         } else if (ev.type === "done") {
           bot.status.textContent = "";
-          bot.text.textContent = ev.answer;  // authoritative: rejects, disclaimers, canned replies
+          renderMd(bot.text, ev.answer);  // authoritative: rejects, disclaimers, canned replies
+          renderMd(bot.sources, ev.sources_md || "");  // doc sources, under the answer
           history.push({ role: "user", content: q }, { role: "assistant", content: ev.answer });
           for (const f of ev.followups) {
             const b = document.createElement("button");

@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
@@ -10,9 +11,18 @@ PREDEFINED = {
     "fisma": {"response": "FISMA canned answer.", "flag": "r"},
     "covid": {"response": "Covid disclaimer.", "flag": "a"},
 }
-# what the fake agent's one search_docs call yields, decoded — one doc chunk with metadata
-TOOL_RESULT = {"tool": "search_docs", "args": {"query": "q"},
-               "result": {"content": "chunk", "metadata": {"page_url": "https://x"}}}
+# what the fake agent's one search_docs call yields, decoded — two chunks of the same faq
+# article (dedupe) and one gitbook doc without a title (breadcrumb fallback)
+CHUNKS = [
+    {"content": "chunk 1", "metadata": {"page_url": "https://x/faq", "title": "FAQ title", "doc_type": "faq"}},
+    {"content": "chunk 2", "metadata": {"page_url": "https://x/faq", "title": "FAQ title", "doc_type": "faq"}},
+    {"content": "chunk 3", "metadata": {"page_url": "https://x/doc", "hierarchy": ["Data Access", "Check access"],
+                                        "doc_type": "docs"}},
+]
+TOOL_RESULT = {"tool": "search_docs", "args": {"query": "q"}, "result": CHUNKS}
+SOURCES = {"bdc-doc": [{"title": "FAQ title", "link": "https://x/faq", "type": "faq"},
+                       {"title": "Check access", "link": "https://x/doc", "type": "docs"}]}
+SOURCES_MD = "**Sources**\n- [FAQ title](https://x/faq) (faq)\n- [Check access](https://x/doc) (docs)"
 
 
 class FakeAgent:
@@ -33,9 +43,8 @@ class FakeAgent:
             yield "messages", (AIMessageChunk(content=part, id="m2"), {})
         yield "values", {"messages": [
             AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": "q"}, "id": "t1"}]),
-            # like langchain-mcp-adapters: a list of text blocks, each holding the tool's JSON
-            ToolMessage(content=[{"type": "text", "text": '{"content": "chunk", "metadata": {"page_url": "https://x"}}'}],
-                        tool_call_id="t1"),
+            # like langchain-mcp-adapters: a list of text blocks, one per chunk, each holding JSON
+            ToolMessage(content=[{"type": "text", "text": json.dumps(c)} for c in CHUNKS], tool_call_id="t1"),
             AIMessage(content=self.reply)]}
 
 
@@ -145,6 +154,8 @@ def test_regular_question_appends_disclaimer():
     assert state["answer"] == "Agent answer about BDC.\n\nCovid disclaimer."
     assert state["followups"] == ["What is BDC?", "How do I get access?", "Where are the docs?"]
     assert state["tool_results"] == [TOOL_RESULT]
+    assert state["sources"] == SOURCES
+    assert state["sources_md"] == SOURCES_MD
 
 
 def test_followups_none_means_empty():
@@ -173,6 +184,10 @@ def test_stream_chat_emits_progress_tokens_and_done():
         "output_guardrail", "append_disclaimer", "suggest_followups"]
     # the agent's tool call surfaces as a status event
     assert {"type": "status", "text": "calling search_docs"} in events
+    # sources go out as soon as the agent node ends, before output_guardrail starts
+    i_sources = events.index({"type": "sources", "sources": SOURCES, "sources_md": SOURCES_MD})
+    i_guard = events.index({"type": "node", "node": "output_guardrail"})
+    assert i_sources < i_guard
     # tokens after the last reset are exactly the agent's final response —
     # earlier turns (tool-call preamble) get discarded by the reset
     last_reset = max(i for i, e in enumerate(events) if e["type"] == "reset")
@@ -180,7 +195,7 @@ def test_stream_chat_emits_progress_tokens_and_done():
     assert "".join(tokens) == "Agent answer about BDC."  # no guardrail/classifier chatter mixed in
     assert events[-1] == {"type": "done", "answer": "Agent answer about BDC.\n\nCovid disclaimer.",
                           "blocked": False, "topics": ["covid"], "followups": [],
-                          "tool_results": [TOOL_RESULT]}
+                          "tool_results": [TOOL_RESULT], "sources": SOURCES, "sources_md": SOURCES_MD}
 
 
 def test_rejected_answer_gets_reject_reply_without_disclaimer():

@@ -31,6 +31,8 @@ class BotState(TypedDict, total=False):
     followups: list[str]    # suggested follow-up questions (empty when none needed)
     tool_results: list      # every tool call the agent made: {tool, args, result} — doc chunks
                             # with their metadata, knowledge-graph rows, etc., for the client to show
+    sources: dict           # {"bdc-doc": [{title, link, type}]} — distinct documents behind search_docs
+    sources_md: str         # the same as a markdown list, ready to append to the answer
     blocked: bool           # input_guardrail verdict
     rejected: bool          # output_guardrail rejected the agent answer
 
@@ -56,6 +58,45 @@ def _tool_results(messages) -> list[dict]:
              "args": calls.get(m.tool_call_id, {}).get("args", {}),
              "result": _parse_tool_content(m.content)}
             for m in messages if isinstance(m, ToolMessage)]
+
+
+def _doc_title(m: dict, link: str) -> str:
+    """title (faq, video, news, fellows) → last breadcrumb (gitbook docs) → first
+    heading (website pages) → last URL segment."""
+    if m.get("title"):
+        return str(m["title"])
+    h = m.get("hierarchy")
+    if isinstance(h, list) and h:
+        return str(h[-1])
+    if isinstance(h, str) and h:
+        return h.split(">")[-1].strip()
+    if m.get("headings"):
+        return str(m["headings"]).split(",")[0].strip()
+    return link.rstrip("/").rsplit("/", 1)[-1] or link
+
+
+def _doc_sources(tool_results: list) -> list[dict]:
+    """Distinct documents behind the search_docs chunks, deduplicated on page_url,
+    in first-seen order (each call's chunks arrive ranked by relevance)."""
+    out, seen = [], set()
+    for tr in tool_results:
+        if tr["tool"] != "search_docs":
+            continue
+        chunks = tr["result"] if isinstance(tr["result"], list) else [tr["result"]]
+        for c in chunks:
+            m = c.get("metadata", {}) if isinstance(c, dict) else {}
+            link = m.get("page_url")
+            if not link or link in seen:
+                continue
+            seen.add(link)
+            out.append({"title": _doc_title(m, link), "link": link, "type": m.get("doc_type", "")})
+    return out
+
+
+def _sources_md(sources: list[dict]) -> str:
+    if not sources:
+        return ""
+    return "**Sources**\n" + "\n".join(f"- [{s['title']}]({s['link']}) ({s['type']})" for s in sources)
 
 
 def build_graph(llm, agent, predefined: dict):
@@ -157,8 +198,14 @@ def build_graph(llm, agent, predefined: dict):
                     writer({"type": "reset"})
                 last_id = msg.id
                 writer({"type": "token", "text": msg.content})
-        return {"answer": result["messages"][-1].content,
-                "tool_results": _tool_results(result["messages"])}
+        tool_results = _tool_results(result["messages"])
+        docs = _doc_sources(tool_results)
+        sources, sources_md = ({"bdc-doc": docs} if docs else {}), _sources_md(docs)
+        # sources are final once the agent is done: send them now rather than with
+        # "done", which waits for the guardrail and follow-up nodes
+        writer({"type": "sources", "sources": sources, "sources_md": sources_md})
+        return {"answer": result["messages"][-1].content, "tool_results": tool_results,
+                "sources": sources, "sources_md": sources_md}
 
     async def output_guardrail(state: BotState):
         """

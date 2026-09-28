@@ -3,12 +3,13 @@ serves the real api app on :8011 with a fake slow agent. Run: uv run python test
 then open streaming_demo.html?api=http://127.0.0.1:8011"""
 
 import asyncio
+import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))  # runnable from anywhere
 
-from langchain_core.messages import AIMessage, AIMessageChunk
+from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 
 import bdc_assist.api as api
 from bdc_assist import prompts
@@ -21,11 +22,25 @@ class SlowAgent:
             content="Let me look that up. ", id="m1",
             tool_call_chunks=[{"name": "search_docs", "args": "", "id": "t1", "index": 0}]), {})
         await asyncio.sleep(1.5)
-        words = "BDC (BioData Catalyst) is NHLBI's cloud platform for heart, lung, blood, and sleep research data.".split()
+        words = ("**BDC** (BioData Catalyst) is NHLBI's cloud platform for heart, lung, blood, and sleep "
+                 "research data. See the [overview](https://biodatacatalyst.nhlbi.nih.gov/about/overview).").split()
         for w in words:
             await asyncio.sleep(0.12)
             yield "messages", (AIMessageChunk(content=w + " ", id="m2"), {})
-        yield "values", {"messages": [AIMessage(content=" ".join(words))]}
+        # final state like the real agent: the tool call, its doc chunks, the answer
+        chunks = [
+            {"content": "BDC is ...", "score": 0.7, "metadata": {"page_url": "https://biodatacatalyst.nhlbi.nih.gov/about/overview",
+                                                                  "doc_type": "page", "headings": "Overview, Mission"}},
+            {"content": "BDC offers ...", "score": 0.8, "metadata": {"page_url": "https://bdcatalyst.freshdesk.com/support/solutions/articles/60000541522",
+                                                                     "doc_type": "faq", "title": "What can BDC offer me?"}},
+            {"content": "BDC is ... (again)", "score": 0.9, "metadata": {"page_url": "https://biodatacatalyst.nhlbi.nih.gov/about/overview",
+                                                                          "doc_type": "page", "headings": "Overview"}},
+        ]
+        yield "values", {"messages": [
+            AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": payload["messages"][0]["content"]}, "id": "t1"}]),
+            ToolMessage(content=[{"type": "text", "text": json.dumps(c)} for c in chunks], tool_call_id="t1"),
+            AIMessage(content=" ".join(words)),
+        ]}
 
 
 class ScriptedLLM:
@@ -45,8 +60,10 @@ class ScriptedLLM:
         elif text == self._CLASSIFIER:
             reply = "- covid"
         elif text.startswith(prompts.OUTPUT_GUARDRAIL_HUMAN.split("{")[0]):
+            await asyncio.sleep(2)  # slow on purpose: shows the answer + sources rendered before "done"
             reply = "Yes"
         elif text.startswith(prompts.SUGGEST_FOLLOWUPS_HUMAN.split("{")[0]):
+            await asyncio.sleep(2)
             reply = "- What is dbGaP?\n- How do I get access?"
         else:
             raise AssertionError(f"unexpected prompt: {text[:80]}")

@@ -31,6 +31,8 @@ class ChatResponse(BaseModel):
     topics: list[str] = []
     followups: list[str] = []
     tool_results: list[dict] = []  # {tool, args, result}: doc chunks + metadata, graph rows, ...
+    sources: dict = {}             # {"bdc-doc": [{title, link, type}]}, deduplicated
+    sources_md: str = ""           # the same as a markdown list
 
 
 graph = None
@@ -62,7 +64,9 @@ async def stream_chat(graph, input: str, chat_history: list):
       {"type": "status", "text"}  what the agent is doing (tool calls)
       {"type": "token", "text"}   one token of the agent's provisional answer
       {"type": "reset"}           new model turn — discard tokens so far
-      {"type": "done", answer, blocked, topics, followups, tool_results}  final state — the
+      {"type": "sources", sources, sources_md}  the agent finished; its doc sources
+      {"type": "done", answer, blocked, topics, followups, tool_results, sources, sources_md}
+        final state — the
         done answer is authoritative (rejects, disclaimers, canned replies).
     Custom-stream events come only from graph.py nodes, so guardrail/classifier
     LLM chatter never leaks."""
@@ -78,7 +82,8 @@ async def stream_chat(graph, input: str, chat_history: list):
     done = {"type": "done", "answer": state.get("answer", ""),
             "blocked": state.get("blocked", False),
             "topics": state.get("topics", []), "followups": state.get("followups", []),
-            "tool_results": state.get("tool_results", [])}
+            "tool_results": state.get("tool_results", []),
+            "sources": state.get("sources", {}), "sources_md": state.get("sources_md", "")}
     yield f"data: {json.dumps(done)}\n\n"
 
 
@@ -97,4 +102,5 @@ async def chat(req: ChatRequest) -> ChatResponse:
     })
     return ChatResponse(answer=state["answer"], blocked=state.get("blocked", False),
                         topics=state.get("topics", []), followups=state.get("followups", []),
-                        tool_results=state.get("tool_results", []))
+                        tool_results=state.get("tool_results", []),
+                        sources=state.get("sources", {}), sources_md=state.get("sources_md", ""))
