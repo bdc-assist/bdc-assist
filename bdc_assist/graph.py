@@ -222,9 +222,10 @@ def build_graph(llm, agent, predefined: dict):
 
     async def output_reject(state: BotState):
         """
-        Replace a rejected answer with the canned REJECT reply.
+        Replace a rejected answer with the canned REJECT reply, and drop its sources —
+        they belong to the answer that was rejected. tool_results stay, for debugging.
         """
-        return {"answer": REJECT}
+        return {"answer": REJECT, "sources": {}, "sources_md": ""}
 
     async def append_disclaimer(state: BotState):
         """

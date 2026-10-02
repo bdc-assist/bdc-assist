@@ -204,3 +204,6 @@ def test_rejected_answer_gets_reject_reply_without_disclaimer():
     assert agent.called
     assert state["rejected"] is True
     assert state["answer"] == REJECT
+    # the rejected answer's sources must not decorate the canned reply
+    assert state["sources"] == {}
+    assert state["sources_md"] == ""
