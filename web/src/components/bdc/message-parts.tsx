@@ -1,7 +1,21 @@
 import { makeAssistantDataUI, useAuiState } from '@assistant-ui/react'
-import { FileTextIcon, LoaderCircleIcon, RotateCcwIcon, ShieldAlertIcon } from 'lucide-react'
+import {
+  BookOpenIcon,
+  CalendarDaysIcon,
+  CircleHelpIcon,
+  CirclePlayIcon,
+  FileTextIcon,
+  GlobeIcon,
+  LoaderCircleIcon,
+  NewspaperIcon,
+  RotateCcwIcon,
+  ShieldAlertIcon,
+  UserRoundIcon,
+  type LucideIcon,
+} from 'lucide-react'
 
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 import {
   BLOCKED_PART,
@@ -43,38 +57,59 @@ const StatusUI = makeAssistantDataUI<StatusPartData>({
   ),
 })
 
-const SOURCE_TYPES: Record<string, string> = { page: 'Page', faq: 'FAQ' }
+// doc_type values come from bdc-doc-mcp's ingest (SOURCE_DOC_TYPES)
+const SOURCE_TYPES: Record<string, { label: string; Icon: LucideIcon }> = {
+  page: { label: 'BDC website', Icon: GlobeIcon },
+  docs: { label: 'Documentation', Icon: BookOpenIcon },
+  faq: { label: 'FAQ', Icon: CircleHelpIcon },
+  video: { label: 'Video', Icon: CirclePlayIcon },
+  event: { label: 'Event', Icon: CalendarDaysIcon },
+  update: { label: 'Update', Icon: NewspaperIcon },
+  fellow: { label: 'Fellow', Icon: UserRoundIcon },
+}
+const OTHER_SOURCE = { label: 'Source', Icon: FileTextIcon }
 
+// Right-aligned on the line of the message's copy/refresh toolbar. That
+// toolbar is vendored (thread.aui.tsx AssistantMessage), so rather than edit
+// it, this row copies its box: the message root is `relative pb-7.5`, and the
+// footer above that padding is `min-h-7.5 pt-1.5` with 24px (size-6) buttons.
+// It must stay inside the root's box: the root uses content-visibility, which
+// clips anything painted outside it.
 const SourcesUI = makeAssistantDataUI<Sources>({
   name: SOURCES_PART,
   render: ({ data }) => {
     const sources: Source[] = Object.values(data as Sources).flat()
     return (
-      <div className="border-border mt-4 border-t pt-3">
-        <p className="text-muted-foreground mb-1.5 text-xs font-medium tracking-wide uppercase">
-          Sources
-        </p>
-        <ul className="flex flex-col gap-1">
-          {sources.map((s) => (
-            <li key={s.link} className="flex items-baseline gap-2 text-sm">
-              <FileTextIcon className="text-muted-foreground size-3.5 shrink-0 translate-y-0.5" />
-              <a
-                href={s.link}
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary hover:text-primary/80 min-w-0 truncate underline underline-offset-2"
-              >
-                {s.title}
-              </a>
-              {s.type && (
-                <span className="text-muted-foreground shrink-0 text-xs">
-                  {SOURCE_TYPES[s.type] ?? s.type}
-                </span>
-              )}
+      <ul
+        data-slot="bdc-sources"
+        aria-label="Sources"
+        className="absolute right-2 bottom-7.5 flex min-h-7.5 items-center gap-1 pt-1.5"
+      >
+        {sources.map((s) => {
+          const { label, Icon } = SOURCE_TYPES[s.type] ?? OTHER_SOURCE
+          return (
+            <li key={s.link}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={s.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`${s.title} (${label})`}
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted flex size-6 items-center justify-center rounded-md p-1 transition-colors"
+                  >
+                    <Icon className="size-4" />
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="flex-col items-start gap-0">
+                  <span className="font-medium">{s.title}</span>
+                  <span className="opacity-70">{label}</span>
+                </TooltipContent>
+              </Tooltip>
             </li>
-          ))}
-        </ul>
-      </div>
+          )
+        })}
+      </ul>
     )
   },
 })
