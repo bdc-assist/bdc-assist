@@ -93,6 +93,25 @@ Minimal browser UI for it: open `tests/streaming_demo.html` (point it at another
 with `?api=http://host:port`). To try it without any real services:
 `uv run python tests/_stub_stream_server.py` serves a fake slow agent on :8011.
 
+## Web UI
+
+`web/` is a React chat client for `/chat/stream` (Vite + assistant-ui). It needs Node 20+.
+
+```bash
+npm --prefix web install                                  # once
+npm --prefix web run dev                                  # http://localhost:5173, API on :8010
+VITE_API_URL=http://127.0.0.1:8011 npm --prefix web run dev   # against the stub server instead
+npm --prefix web test                                     # unit tests, no server needed
+```
+
+Add `?reveal=after-check` to the page URL (or set `VITE_REVEAL=after-check`) to hold each answer
+back behind placeholder bars until the output guardrail has passed it, instead of streaming it.
+
+Without real services, run the stub (`uv run python tests/_stub_stream_server.py`) and put a
+keyword in the question to pick a path: `block` (input guardrail refuses), `reject` (output
+guardrail replaces the draft), `canned` (predefined reply), `covid` (disclaimer appended),
+`nosources`, or `crash` (stream breaks off mid-answer).
+
 ## Test / demo
 
 ```bash

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Spawn everything demo.ipynb needs:
+# Spawn everything demo.ipynb and the web UI (web/) need:
 #   1. Ollama embeddings at EMBEDDING_URL (../bdc-doc-mcp/.env) — reused if already running;
 #      else tunneled from Sterling when local (needs RENCI VPN), else `ollama serve` locally
 #      if installed, else a warning and we carry on; skipped when unset (cloud provider)
@@ -107,5 +107,7 @@ else
 fi
 
 echo
-echo "all services up — run demo.ipynb; Ctrl-C here to stop them"
+echo "all services up; Ctrl-C here to stop them"
+echo "  web UI: npm --prefix web run dev, then open http://localhost:5173"
+echo "  or run demo.ipynb"
 wait

@@ -1,5 +1,5 @@
 # Native Windows twin of demo_services.sh - same behavior, keep the two in sync.
-# Spawns everything demo.ipynb needs:
+# Spawns everything demo.ipynb and the web UI (web/) need:
 #   1. Ollama embeddings at EMBEDDING_URL (..\bdc-doc-mcp\.env) - reused if already running;
 #      else tunneled from Sterling when local (needs RENCI VPN), else `ollama serve` locally
 #      if installed, else a warning and we carry on; skipped when unset (cloud provider)
@@ -133,7 +133,11 @@ try {
   if ($procs.Count -eq 0) {
     Write-Host 'all services were already up - nothing started, nothing to stop'
   } else {
-    Write-Host 'all services up - run demo.ipynb; Ctrl-C here to stop them'
+    Write-Host 'all services up; Ctrl-C here to stop them'
+  }
+  Write-Host '  web UI: npm --prefix web run dev, then open http://localhost:5173'
+  Write-Host '  or run demo.ipynb'
+  if ($procs.Count -gt 0) {
     Wait-Process -Id ($procs | ForEach-Object Id)
   }
 } finally {
