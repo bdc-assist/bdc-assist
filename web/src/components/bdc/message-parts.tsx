@@ -46,14 +46,21 @@ const NODE_LABELS: Record<string, string> = {
 const toolLabel = (status: string) =>
   status.replace(/^calling (\w+)$/, (_, tool: string) => `Using ${tool.replace(/_/g, ' ')}…`)
 
+// The last snapshot of a stopped or failed answer still holds its progress
+// parts; draw them only while the answer is running, so no spinner is left behind.
+const useRunning = () => useAuiState((s) => s.message.status?.type === 'running')
+
 const StatusUI = makeAssistantDataUI<StatusPartData>({
   name: STATUS_PART,
-  render: ({ data: { node, status } }) => (
-    <p data-slot="bdc-status" className="text-muted-foreground my-2 flex items-center gap-1.5 text-sm">
-      <LoaderCircleIcon className="size-3.5 animate-spin motion-reduce:animate-none" />
-      {status ? toolLabel(status) : (NODE_LABELS[node!] ?? `${node}…`)}
-    </p>
-  ),
+  render: function StatusLine({ data: { node, status } }) {
+    if (!useRunning()) return null
+    return (
+      <p data-slot="bdc-status" className="text-muted-foreground my-2 flex items-center gap-1.5 text-sm">
+        <LoaderCircleIcon className="size-3.5 animate-spin motion-reduce:animate-none" />
+        {status ? toolLabel(status) : (NODE_LABELS[node!] ?? `${node}…`)}
+      </p>
+    )
+  },
 })
 
 // doc_type values come from bdc-doc-mcp's ingest (SOURCE_DOC_TYPES)
@@ -135,7 +142,8 @@ const MAX_BARS = 10
 
 const DraftUI = makeAssistantDataUI<DraftPartData>({
   name: DRAFT_PART,
-  render: ({ data: { words } }) => {
+  render: function DraftBars({ data: { words } }) {
+    if (!useRunning()) return null
     const bars = Math.min(MAX_BARS, Math.ceil(words / WORDS_PER_BAR))
     return (
       <div className="my-1 flex flex-col gap-2" aria-label="Writing the answer">
