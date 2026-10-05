@@ -1,34 +1,15 @@
-import {
-  AssistantRuntimeProvider,
-  useLocalRuntime,
-  type ChatModelAdapter,
-} from '@assistant-ui/react'
+import { AssistantRuntimeProvider, useLocalRuntime } from '@assistant-ui/react'
 
 import { Thread } from '@/components/assistant-ui/elements/thread.aui'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { createBdcAdapter } from '@/lib/bdc-adapter'
 
-// Placeholder until the bdc-assist adapter lands: streams a canned markdown
-// reply word by word, so the UI can be exercised with no API running.
-const dummyAdapter: ChatModelAdapter = {
-  async *run({ messages, abortSignal }) {
-    const last = messages.at(-1)
-    const question = last?.content.find((p) => p.type === 'text')?.text ?? ''
-    const reply =
-      `You asked: **${question}**\n\n` +
-      'This is a *dummy* reply, streamed one word at a time.\n\n' +
-      '- markdown lists\n- [links](https://biodatacatalyst.nhlbi.nih.gov)\n- `inline code`'
-    let text = ''
-    for (const word of reply.split(/(?<= )/)) {
-      if (abortSignal.aborted) return
-      await new Promise((r) => setTimeout(r, 40))
-      text += word
-      yield { content: [{ type: 'text', text }] }
-    }
-  },
-}
+// demo_services.sh runs bdc-assist on :8010; the stub server is on :8011
+const API_URL: string = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8010'
+const adapter = createBdcAdapter(API_URL)
 
 export default function App() {
-  const runtime = useLocalRuntime(dummyAdapter)
+  const runtime = useLocalRuntime(adapter)
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <TooltipProvider>
