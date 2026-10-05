@@ -1,4 +1,4 @@
-import type { ChatModelAdapter, ThreadMessage } from '@assistant-ui/react'
+import type { ChatModelAdapter, SuggestionAdapter, ThreadMessage } from '@assistant-ui/react'
 
 import { readSSE } from '@/lib/sse'
 
@@ -153,10 +153,11 @@ export function createBdcAdapter(
         })
       } catch (err) {
         if (abortSignal.aborted) return
-        throw new Error(`Can't reach bdc-assist at ${apiUrl} (${err})`)
+        console.error('bdc-assist fetch failed', err)
+        throw new Error(`Can't reach BDC Assist at ${apiUrl}. Is the API running?`)
       }
       if (!resp.ok || !resp.body) {
-        throw new Error(`bdc-assist returned HTTP ${resp.status}`)
+        throw new Error(`BDC Assist ran into a problem (HTTP ${resp.status}). Please try again.`)
       }
 
       try {
@@ -205,9 +206,20 @@ export function createBdcAdapter(
         }
       } catch (err) {
         if (abortSignal.aborted) return
-        throw err
+        console.error('bdc-assist stream failed', err)
+        throw new Error('Lost the connection to BDC Assist mid-answer. Please try again.')
       }
-      if (!meta.done) throw new Error('bdc-assist closed the stream before finishing')
+      if (!meta.done) throw new Error('BDC Assist stopped before finishing the answer. Please try again.')
     },
   }
+}
+
+/** Follow-up chips: the runtime asks after each completed run, and the server
+ * already sent them on done. */
+export const bdcSuggestionAdapter: SuggestionAdapter = {
+  async generate({ messages }) {
+    const meta = messages.at(-1)?.metadata.custom as Partial<BdcMessageMeta> | undefined
+    if (!meta?.done || meta.blocked) return []
+    return (meta.followups ?? []).map((prompt) => ({ prompt }))
+  },
 }

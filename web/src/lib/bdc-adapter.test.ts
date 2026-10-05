@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   BLOCKED_PART,
+  bdcSuggestionAdapter,
   createBdcAdapter,
   DRAFT_PART,
   PROVISIONAL_PART,
@@ -160,7 +161,7 @@ describe('createBdcAdapter', () => {
   })
 
   it('throws if the stream ends without done', async () => {
-    await expect(run(sse({ type: 'token', text: 'half' }))).rejects.toThrow('before finishing')
+    await expect(run(sse({ type: 'token', text: 'half' }))).rejects.toThrow('stopped before finishing')
   })
 
   it('returns quietly when the user cancels', async () => {
@@ -303,5 +304,41 @@ describe("reveal: 'after-check'", () => {
     expect(partsOf(yields[1]).map((p) => p.name)).toEqual([PROVISIONAL_PART])
     expect(partsOf(yields[2]).map((p) => p.name)).toEqual([PROVISIONAL_PART, SOURCES_PART])
     expect(partsOf(yields[4]).map((p) => p.name)).toEqual([SOURCES_PART])
+  })
+})
+
+describe('bdcSuggestionAdapter', () => {
+  const withMeta = (custom: object) =>
+    ({ role: 'assistant', content: [], metadata: { custom } }) as unknown as ThreadMessage
+  const generate = (custom: object) =>
+    bdcSuggestionAdapter.generate({ messages: [msg('user', 'q'), withMeta(custom)] }) as Promise<unknown>
+
+  it("offers the last answer's followups", async () => {
+    expect(await generate({ done: true, blocked: false, followups: ['A?', 'B?'] })).toEqual([
+      { prompt: 'A?' },
+      { prompt: 'B?' },
+    ])
+  })
+
+  it('offers none for a blocked, unfinished or stopped answer', async () => {
+    expect(await generate({ done: true, blocked: true, followups: ['A?'] })).toEqual([])
+    expect(await generate({ done: false, followups: ['A?'] })).toEqual([])
+    expect(await generate({})).toEqual([])
+  })
+})
+
+describe('errors', () => {
+  it('explains an unreachable API', async () => {
+    const adapter = createBdcAdapter('http://api', {
+      fetchImpl: (async () => {
+        throw new TypeError('fetch failed')
+      }) as unknown as typeof fetch,
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const gen = adapter.run({
+      messages: [msg('user', 'q')],
+      abortSignal: new AbortController().signal,
+    } as unknown as ChatModelRunOptions) as AsyncGenerator<ChatModelRunResult>
+    await expect(gen.next()).rejects.toThrow("Can't reach BDC Assist at http://api. Is the API running?")
   })
 })
