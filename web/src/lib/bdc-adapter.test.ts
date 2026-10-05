@@ -4,10 +4,14 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   BLOCKED_PART,
   createBdcAdapter,
+  DRAFT_PART,
+  PROVISIONAL_PART,
+  REJECTED_PART,
   SOURCES_PART,
   STATUS_PART,
   toRequest,
   type BdcMessageMeta,
+  type Reveal,
 } from '@/lib/bdc-adapter'
 import { streamOf } from '@/lib/test-utils'
 
@@ -29,9 +33,15 @@ const done = (over: object = {}) => ({
 })
 
 /** Runs the adapter against a canned response; returns every yield. */
-async function run(chunks: string[], opts: { status?: number; signal?: AbortSignal } = {}) {
+async function run(
+  chunks: string[],
+  opts: { status?: number; signal?: AbortSignal; reveal?: Reveal } = {},
+) {
   const fetchImpl = vi.fn(async () => new Response(streamOf(chunks), { status: opts.status ?? 200 }))
-  const adapter = createBdcAdapter('http://api', fetchImpl as unknown as typeof fetch)
+  const adapter = createBdcAdapter('http://api', {
+    fetchImpl: fetchImpl as unknown as typeof fetch,
+    reveal: opts.reveal,
+  })
   const yields: ChatModelRunResult[] = []
   const gen = adapter.run({
     messages: [msg('user', 'What is BDC?')],
@@ -90,6 +100,7 @@ describe('createBdcAdapter', () => {
       sources: { 'bdc-doc': [{ title: 'Overview', link: 'https://x/overview', type: 'page' }] },
       followups: ['What is dbGaP?'],
       blocked: false,
+      rejected: false,
       done: true,
     })
   })
@@ -126,6 +137,7 @@ describe('createBdcAdapter', () => {
     const last = yields.at(-1)!
     expect(textOf(last)).toBe('Sorry, I can only help with BDC.')
     expect(metaOf(last).sources).toEqual({})
+    expect(metaOf(last).rejected).toBe(true)
   })
 
   it('marks blocked replies', async () => {
@@ -157,7 +169,7 @@ describe('createBdcAdapter', () => {
       ctl.abort()
       throw new DOMException('aborted', 'AbortError')
     })
-    const adapter = createBdcAdapter('http://api', fetchImpl as unknown as typeof fetch)
+    const adapter = createBdcAdapter('http://api', { fetchImpl: fetchImpl as unknown as typeof fetch })
     const gen = adapter.run({
       messages: [msg('user', 'q')],
       abortSignal: ctl.signal,
@@ -190,12 +202,13 @@ describe('data parts', () => {
         done(),
       ),
     )
+    const statusOf = (y: ChatModelRunResult) => partsOf(y).find((p) => p.name === STATUS_PART)?.data
     expect(partsOf(yields[0])).toEqual([{ type: 'data', name: STATUS_PART, data: { node: 'agent', status: null } }])
-    expect(partsOf(yields[1])[0].data).toEqual({ node: 'agent', status: 'calling search_docs' })
-    expect(partsOf(yields[2])[0].data).toEqual({ node: 'agent', status: 'calling search_docs' }) // tool still running
-    expect(partsOf(yields[3])[0].data).toEqual({ node: 'agent', status: null }) // reset: "Thinking…"
-    expect(names(yields[4])).toEqual([]) // answer streaming
-    expect(partsOf(yields[5])[0].data).toEqual({ node: 'output_guardrail', status: null })
+    expect(statusOf(yields[1])).toEqual({ node: 'agent', status: 'calling search_docs' })
+    expect(statusOf(yields[2])).toEqual({ node: 'agent', status: 'calling search_docs' }) // tool still running
+    expect(statusOf(yields[3])).toEqual({ node: 'agent', status: null }) // reset: "Thinking…"
+    expect(names(yields[4])).toEqual([PROVISIONAL_PART]) // answer streaming
+    expect(statusOf(yields[5])).toEqual({ node: 'output_guardrail', status: null })
     expect(names(yields[6])).not.toContain(STATUS_PART) // done
   })
 
@@ -225,5 +238,70 @@ describe('data parts', () => {
       role: 'assistant',
       content: 'a1',
     })
+  })
+})
+
+describe('rejection', () => {
+  const finalMeta = async (...events: object[]) => metaOf((await run(sse(...events))).yields.at(-1)!)
+
+  it('is inferred when done replaces the streamed draft', async () => {
+    const meta = await finalMeta({ type: 'token', text: 'Off  target\n draft.' }, done({ answer: 'Canned.' }))
+    expect(meta.rejected).toBe(true)
+  })
+
+  it('is not inferred for a passed answer with a disclaimer appended', async () => {
+    const meta = await finalMeta(
+      { type: 'token', text: 'BDC is ' },
+      { type: 'token', text: 'a platform. ' },
+      done({ answer: 'BDC is a platform.\n\nCovid disclaimer.' }),
+    )
+    expect(meta.rejected).toBe(false)
+  })
+
+  it('is not inferred without a draft, or for a blocked question', async () => {
+    expect((await finalMeta(done({ answer: 'Canned.' }))).rejected).toBe(false)
+    expect((await finalMeta({ type: 'token', text: 'x' }, done({ answer: 'Refusal.', blocked: true }))).rejected).toBe(false)
+  })
+
+  it('adds a note in stream mode only', async () => {
+    const events = sse({ type: 'token', text: 'draft' }, done({ answer: 'Canned.' }))
+    const names = (y: ChatModelRunResult) => (y.content ?? []).map((p) => (p as { name?: string }).name)
+    expect(names((await run(events)).yields.at(-1)!)).toContain(REJECTED_PART)
+    expect(names((await run(events, { reveal: 'after-check' })).yields.at(-1)!)).not.toContain(REJECTED_PART)
+  })
+})
+
+describe("reveal: 'after-check'", () => {
+  const events = sse(
+    { type: 'node', node: 'agent' },
+    { type: 'token', text: 'one two three ' },
+    { type: 'sources', sources: { 'bdc-doc': [{ title: 'A', link: 'https://a', type: 'faq' }] }, sources_md: '- A' },
+    { type: 'token', text: 'four' },
+    done({ answer: 'one two three four' }),
+  )
+  const partsOf = (y: ChatModelRunResult) =>
+    (y.content ?? []).slice(1).map((p) => p as { name: string; data: unknown })
+
+  it('holds the text back and shows a growing draft instead', async () => {
+    const { yields } = await run(events, { reveal: 'after-check' })
+    expect(yields.slice(0, 4).map(textOf)).toEqual(['', '', '', ''])
+    expect(partsOf(yields[1]).find((p) => p.name === DRAFT_PART)?.data).toEqual({ words: 3 })
+    expect(partsOf(yields[3]).find((p) => p.name === DRAFT_PART)?.data).toEqual({ words: 4 })
+    expect(textOf(yields[4])).toBe('one two three four')
+    expect(partsOf(yields[4]).map((p) => p.name)).toEqual([SOURCES_PART])
+  })
+
+  it('keeps the status while tokens flow, and holds sources until done', async () => {
+    const { yields } = await run(events, { reveal: 'after-check' })
+    expect(partsOf(yields[1]).map((p) => p.name)).toEqual([DRAFT_PART, STATUS_PART])
+    expect(partsOf(yields[2]).map((p) => p.name)).not.toContain(SOURCES_PART)
+  })
+
+  it('stream mode marks the draft provisional instead', async () => {
+    const { yields } = await run(events)
+    expect(textOf(yields[1])).toBe('one two three ')
+    expect(partsOf(yields[1]).map((p) => p.name)).toEqual([PROVISIONAL_PART])
+    expect(partsOf(yields[2]).map((p) => p.name)).toEqual([PROVISIONAL_PART, SOURCES_PART])
+    expect(partsOf(yields[4]).map((p) => p.name)).toEqual([SOURCES_PART])
   })
 })

@@ -29,36 +29,69 @@ export type BdcMessageMeta = {
   status: string | null // latest tool-call status; cleared by reset and new nodes
   sources: Sources | null // null until the agent reports them
   followups: string[]
-  blocked: boolean
+  blocked: boolean // input guardrail refused the question
+  rejected: boolean // output guardrail replaced the streamed draft
   done: boolean
 }
+
+/** How the answer is shown before the server has checked it:
+ * - 'stream': the draft streams in, dimmed until done
+ * - 'after-check': placeholder bars grow with the draft; the text appears at done */
+export type Reveal = 'stream' | 'after-check'
 
 // Names of the `data` message parts the adapter emits, one renderer each.
 export const STATUS_PART = 'bdc-status'
 export const SOURCES_PART = 'bdc-sources'
 export const BLOCKED_PART = 'bdc-blocked'
+export const PROVISIONAL_PART = 'bdc-provisional'
+export const DRAFT_PART = 'bdc-draft'
+export const REJECTED_PART = 'bdc-rejected'
 
 export type StatusPartData = { node: string | null; status: string | null }
+export type DraftPartData = { words: number }
 
-/** Extra parts after the text: progress while running, then sources and the
- * blocked notice once known. History only sends text parts, so these never
- * reach the server. */
-function dataParts(meta: BdcMessageMeta, streaming: boolean) {
+type StreamState = {
+  text: string // the draft while running; the final answer once done
+  streaming: boolean // tokens arriving since the last node/status/reset
+  meta: BdcMessageMeta
+}
+
+const data = (name: string, data: object) => ({ type: 'data' as const, name, data })
+
+/** The message content for the current state: the text first, then data parts
+ * for message-parts.tsx to draw. History only sends text parts, so the data
+ * parts never reach the server. */
+export function toContent({ text, streaming, meta }: StreamState, reveal: Reveal) {
+  const hold = reveal === 'after-check' && !meta.done
   const parts = []
-  // while tokens flow they are the progress, so the node label steps aside
-  if (meta.status || (meta.node && !streaming)) {
-    parts.push({
-      type: 'data' as const,
-      name: STATUS_PART,
-      data: { node: meta.node, status: meta.status } satisfies StatusPartData,
-    })
+  parts.push({ type: 'text' as const, text: hold ? '' : text })
+  if (!meta.done && text) {
+    parts.push(
+      hold
+        ? data(DRAFT_PART, { words: text.split(/\s+/).filter(Boolean).length } satisfies DraftPartData)
+        : data(PROVISIONAL_PART, {}),
+    )
   }
-  if (meta.sources && Object.values(meta.sources).some((s) => s.length)) {
-    parts.push({ type: 'data' as const, name: SOURCES_PART, data: meta.sources })
+  // streamed tokens are the progress, so the node label steps aside for them;
+  // with the text held back, the label stays
+  if (meta.status || (meta.node && (hold || !streaming))) {
+    parts.push(data(STATUS_PART, { node: meta.node, status: meta.status } satisfies StatusPartData))
   }
-  if (meta.blocked) parts.push({ type: 'data' as const, name: BLOCKED_PART, data: {} })
+  if (!hold && meta.sources && Object.values(meta.sources).some((s) => s.length)) {
+    parts.push(data(SOURCES_PART, meta.sources))
+  }
+  // only worth saying if the user watched the draft stream in
+  if (reveal === 'stream' && meta.rejected) parts.push(data(REJECTED_PART, {}))
+  if (meta.blocked) parts.push(data(BLOCKED_PART, {}))
   return parts
 }
+
+const squash = (s: string) => s.replace(/\s+/g, ' ').trim()
+
+/** done carries no "rejected" flag, so infer it: a passed answer is the draft,
+ * possibly with disclaimers appended; a rejected one is the canned REJECT reply. */
+const replacedDraft = (draft: string, answer: string) =>
+  squash(draft) !== '' && !squash(answer).startsWith(squash(draft))
 
 const textOf = (m: ThreadMessage) =>
   m.content
@@ -79,29 +112,34 @@ export function toRequest(messages: readonly ThreadMessage[]) {
   return { input: textOf(last), chat_history }
 }
 
+export type BdcAdapterOptions = {
+  reveal?: Reveal
+  fetchImpl?: typeof fetch
+}
+
 export function createBdcAdapter(
   apiUrl: string,
-  fetchImpl: typeof fetch = fetch,
+  { reveal = 'stream', fetchImpl = fetch }: BdcAdapterOptions = {},
 ): ChatModelAdapter {
   return {
     async *run({ messages, abortSignal }) {
-      let text = ''
-      let streaming = false // tokens arriving since the last node/status/reset
-      const meta: BdcMessageMeta = {
-        node: null,
-        status: null,
-        sources: null,
-        followups: [],
-        blocked: false,
-        done: false,
+      const state: StreamState = {
+        text: '',
+        streaming: false,
+        meta: {
+          node: null,
+          status: null,
+          sources: null,
+          followups: [],
+          blocked: false,
+          rejected: false,
+          done: false,
+        },
       }
-      // the runtime replaces the message with each yield, so always send it all.
-      // metadata is the record; the data parts are what message-parts.tsx draws
+      const { meta } = state
+      // the runtime replaces the message with each yield, so always send it all
       const snapshot = () => ({
-        content: [
-          { type: 'text' as const, text },
-          ...dataParts(meta, streaming),
-        ],
+        content: toContent(state, reveal),
         metadata: { custom: { ...meta } },
       })
 
@@ -126,23 +164,23 @@ export function createBdcAdapter(
           const ev = data as StreamEvent
           switch (ev.type) {
             case 'node':
-              streaming = false
+              state.streaming = false
               meta.node = ev.node
               meta.status = null
               break
             case 'status':
-              streaming = false
+              state.streaming = false
               meta.status = ev.text
               break
             case 'token':
               // the tool status stays: a model often says "Let me look that up"
               // in the same chunk as the tool call, then waits on the tool
-              streaming = true
-              text += ev.text
+              state.streaming = true
+              state.text += ev.text
               break
             case 'reset':
-              text = '' // new model turn: only the last response counts
-              streaming = false
+              state.text = '' // new model turn: only the last response counts
+              state.streaming = false
               meta.status = null // the tool finished
               break
             case 'sources':
@@ -151,7 +189,8 @@ export function createBdcAdapter(
             case 'done':
               // authoritative: rejects, disclaimers and canned replies replace
               // the streamed text, and a rejected answer has no sources
-              text = ev.answer
+              meta.rejected = !ev.blocked && replacedDraft(state.text, ev.answer)
+              state.text = ev.answer
               meta.sources = ev.sources
               meta.followups = ev.followups
               meta.blocked = ev.blocked

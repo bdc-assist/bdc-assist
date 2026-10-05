@@ -155,3 +155,11 @@
   [data-slot="aui_assistant-message-indicator"] {
   display: none;
 }
+
+/* A draft the server hasn't checked yet streams in dimmed. */
+[data-slot="aui_assistant-message-content"] .aui-md {
+  transition: opacity 300ms;
+}
+[data-slot="aui_assistant-message-content"]:has([data-slot="bdc-provisional"]) .aui-md {
+  opacity: 0.6;
+}
