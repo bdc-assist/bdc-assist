@@ -149,3 +149,9 @@
 @custom-variant data-open (&:where([data-state="open"], [data-open]:not([data-open="false"])));
 
 @custom-variant data-closed (&:where([data-state="closed"], [data-closed]:not([data-closed="false"])));
+/* Our status line already says the assistant is working; hide assistant-ui's
+   pulsing dot while it's shown (the dot stays for the instant before it). */
+[data-slot="aui_assistant-message-content"]:has([data-slot="bdc-status"])
+  [data-slot="aui_assistant-message-indicator"] {
+  display: none;
+}

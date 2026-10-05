@@ -1,6 +1,7 @@
 import { AssistantRuntimeProvider, useLocalRuntime } from '@assistant-ui/react'
 
 import { Thread } from '@/components/assistant-ui/elements/thread.aui'
+import { BdcMessageParts } from '@/components/bdc/message-parts'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { createBdcAdapter } from '@/lib/bdc-adapter'
 
@@ -12,6 +13,7 @@ export default function App() {
   const runtime = useLocalRuntime(adapter)
   return (
     <AssistantRuntimeProvider runtime={runtime}>
+      <BdcMessageParts />
       <TooltipProvider>
         <div className="h-dvh">
           <Thread />

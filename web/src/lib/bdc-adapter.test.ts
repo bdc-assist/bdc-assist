@@ -1,7 +1,14 @@
 import type { ChatModelRunOptions, ChatModelRunResult, ThreadMessage } from '@assistant-ui/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { createBdcAdapter, toRequest, type BdcMessageMeta } from '@/lib/bdc-adapter'
+import {
+  BLOCKED_PART,
+  createBdcAdapter,
+  SOURCES_PART,
+  STATUS_PART,
+  toRequest,
+  type BdcMessageMeta,
+} from '@/lib/bdc-adapter'
 import { streamOf } from '@/lib/test-utils'
 
 const msg = (role: 'user' | 'assistant', text: string) =>
@@ -34,7 +41,7 @@ async function run(chunks: string[], opts: { status?: number; signal?: AbortSign
   return { yields, fetchImpl }
 }
 
-const textOf = (y: ChatModelRunResult) => (y.content?.[0] as { text: string }).text
+const textOf = (y: ChatModelRunResult) => (y.content![0] as { text: string }).text
 const metaOf = (y: ChatModelRunResult) => y.metadata?.custom as BdcMessageMeta
 
 describe('toRequest', () => {
@@ -76,7 +83,7 @@ describe('createBdcAdapter', () => {
     expect(yields.map(textOf)).toEqual(['', '', 'BDC ', 'BDC is', 'BDC is.'])
     expect(metaOf(yields[0])).toMatchObject({ node: 'agent', status: null })
     expect(metaOf(yields[1]).status).toBe('calling search_docs')
-    expect(metaOf(yields[2]).status).toBeNull() // tokens clear the status
+    expect(metaOf(yields[2]).status).toBe('calling search_docs') // tokens don't clear it
     expect(metaOf(yields.at(-1)!)).toEqual({
       node: null,
       status: null,
@@ -87,11 +94,19 @@ describe('createBdcAdapter', () => {
     })
   })
 
-  it('discards streamed text on reset', async () => {
+  it('discards streamed text and the tool status on reset', async () => {
     const { yields } = await run(
-      sse({ type: 'token', text: 'Let me look that up.' }, { type: 'reset' }, { type: 'token', text: 'BDC' }, done()),
+      sse(
+        { type: 'status', text: 'calling search_docs' },
+        { type: 'token', text: 'Let me look that up.' },
+        { type: 'reset' },
+        { type: 'token', text: 'BDC' },
+        done(),
+      ),
     )
-    expect(yields.map(textOf).slice(0, 3)).toEqual(['Let me look that up.', '', 'BDC'])
+    expect(yields.map(textOf).slice(1, 4)).toEqual(['Let me look that up.', '', 'BDC'])
+    expect(metaOf(yields[1]).status).toBe('calling search_docs')
+    expect(metaOf(yields[2]).status).toBeNull()
   })
 
   it('shows sources as soon as the agent reports them', async () => {
@@ -150,5 +165,65 @@ describe('createBdcAdapter', () => {
     const yields = []
     for await (const y of gen) yields.push(y)
     expect(yields).toEqual([])
+  })
+})
+
+describe('data parts', () => {
+  const partsOf = (y: ChatModelRunResult) =>
+    (y.content ?? []).slice(1).map((p) => (p as { name: string; data: unknown }))
+  const names = (y: ChatModelRunResult) => partsOf(y).map((p) => p.name)
+
+  it('keeps the text part first', async () => {
+    const { yields } = await run(sse({ type: 'node', node: 'agent' }, done({ blocked: true })))
+    for (const y of yields) expect(y.content?.[0].type).toBe('text')
+  })
+
+  it('shows the node label until tokens flow, and the tool status until reset', async () => {
+    const { yields } = await run(
+      sse(
+        { type: 'node', node: 'agent' },
+        { type: 'status', text: 'calling search_docs' },
+        { type: 'token', text: 'Let me look that up.' },
+        { type: 'reset' },
+        { type: 'token', text: 'BDC' },
+        { type: 'node', node: 'output_guardrail' },
+        done(),
+      ),
+    )
+    expect(partsOf(yields[0])).toEqual([{ type: 'data', name: STATUS_PART, data: { node: 'agent', status: null } }])
+    expect(partsOf(yields[1])[0].data).toEqual({ node: 'agent', status: 'calling search_docs' })
+    expect(partsOf(yields[2])[0].data).toEqual({ node: 'agent', status: 'calling search_docs' }) // tool still running
+    expect(partsOf(yields[3])[0].data).toEqual({ node: 'agent', status: null }) // reset: "Thinking…"
+    expect(names(yields[4])).toEqual([]) // answer streaming
+    expect(partsOf(yields[5])[0].data).toEqual({ node: 'output_guardrail', status: null })
+    expect(names(yields[6])).not.toContain(STATUS_PART) // done
+  })
+
+  it('adds sources once known, and none for empty sources', async () => {
+    const { yields } = await run(sse(done()))
+    expect(names(yields[0])).toEqual([SOURCES_PART])
+    const empty = await run(sse(done({ sources: {} })))
+    expect(names(empty.yields[0])).toEqual([])
+    const emptyList = await run(sse(done({ sources: { 'bdc-doc': [] } })))
+    expect(names(emptyList.yields[0])).toEqual([])
+  })
+
+  it('adds the blocked notice', async () => {
+    const { yields } = await run(sse(done({ blocked: true, sources: {} })))
+    expect(names(yields[0])).toEqual([BLOCKED_PART])
+  })
+
+  it('never sends data parts as history', () => {
+    const assistant = {
+      role: 'assistant',
+      content: [
+        { type: 'text', text: 'a1' },
+        { type: 'data', name: SOURCES_PART, data: {} },
+      ],
+    } as unknown as ThreadMessage
+    expect(toRequest([msg('user', 'q1'), assistant, msg('user', 'q2')]).chat_history[1]).toEqual({
+      role: 'assistant',
+      content: 'a1',
+    })
   })
 })

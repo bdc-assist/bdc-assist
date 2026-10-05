@@ -26,11 +26,38 @@ type StreamEvent =
  * so a thread can be persisted later as-is. */
 export type BdcMessageMeta = {
   node: string | null // graph node currently running; null once done
-  status: string | null // latest tool-call status; cleared by tokens and new nodes
+  status: string | null // latest tool-call status; cleared by reset and new nodes
   sources: Sources | null // null until the agent reports them
   followups: string[]
   blocked: boolean
   done: boolean
+}
+
+// Names of the `data` message parts the adapter emits, one renderer each.
+export const STATUS_PART = 'bdc-status'
+export const SOURCES_PART = 'bdc-sources'
+export const BLOCKED_PART = 'bdc-blocked'
+
+export type StatusPartData = { node: string | null; status: string | null }
+
+/** Extra parts after the text: progress while running, then sources and the
+ * blocked notice once known. History only sends text parts, so these never
+ * reach the server. */
+function dataParts(meta: BdcMessageMeta, streaming: boolean) {
+  const parts = []
+  // while tokens flow they are the progress, so the node label steps aside
+  if (meta.status || (meta.node && !streaming)) {
+    parts.push({
+      type: 'data' as const,
+      name: STATUS_PART,
+      data: { node: meta.node, status: meta.status } satisfies StatusPartData,
+    })
+  }
+  if (meta.sources && Object.values(meta.sources).some((s) => s.length)) {
+    parts.push({ type: 'data' as const, name: SOURCES_PART, data: meta.sources })
+  }
+  if (meta.blocked) parts.push({ type: 'data' as const, name: BLOCKED_PART, data: {} })
+  return parts
 }
 
 const textOf = (m: ThreadMessage) =>
@@ -59,6 +86,7 @@ export function createBdcAdapter(
   return {
     async *run({ messages, abortSignal }) {
       let text = ''
+      let streaming = false // tokens arriving since the last node/status/reset
       const meta: BdcMessageMeta = {
         node: null,
         status: null,
@@ -67,9 +95,13 @@ export function createBdcAdapter(
         blocked: false,
         done: false,
       }
-      // the runtime replaces the message with each yield, so always send it all
+      // the runtime replaces the message with each yield, so always send it all.
+      // metadata is the record; the data parts are what message-parts.tsx draws
       const snapshot = () => ({
-        content: [{ type: 'text' as const, text }],
+        content: [
+          { type: 'text' as const, text },
+          ...dataParts(meta, streaming),
+        ],
         metadata: { custom: { ...meta } },
       })
 
@@ -94,18 +126,24 @@ export function createBdcAdapter(
           const ev = data as StreamEvent
           switch (ev.type) {
             case 'node':
+              streaming = false
               meta.node = ev.node
               meta.status = null
               break
             case 'status':
+              streaming = false
               meta.status = ev.text
               break
             case 'token':
-              meta.status = null // flowing tokens are the status
+              // the tool status stays: a model often says "Let me look that up"
+              // in the same chunk as the tool call, then waits on the tool
+              streaming = true
               text += ev.text
               break
             case 'reset':
               text = '' // new model turn: only the last response counts
+              streaming = false
+              meta.status = null // the tool finished
               break
             case 'sources':
               meta.sources = ev.sources // agent finished: sources are final
