@@ -6,7 +6,6 @@ import {
   bdcSuggestionAdapter,
   createBdcAdapter,
   DRAFT_PART,
-  PROVISIONAL_PART,
   REJECTED_PART,
   SOURCES_PART,
   STATUS_PART,
@@ -208,7 +207,7 @@ describe('data parts', () => {
     expect(statusOf(yields[1])).toEqual({ node: 'agent', status: 'calling search_docs' })
     expect(statusOf(yields[2])).toEqual({ node: 'agent', status: 'calling search_docs' }) // tool still running
     expect(statusOf(yields[3])).toEqual({ node: 'agent', status: null }) // reset: "Thinking…"
-    expect(names(yields[4])).toEqual([PROVISIONAL_PART]) // answer streaming
+    expect(names(yields[4])).toEqual([]) // answer streaming
     expect(statusOf(yields[5])).toEqual({ node: 'output_guardrail', status: null })
     expect(names(yields[6])).not.toContain(STATUS_PART) // done
   })
@@ -298,11 +297,11 @@ describe("reveal: 'after-check'", () => {
     expect(partsOf(yields[2]).map((p) => p.name)).not.toContain(SOURCES_PART)
   })
 
-  it('stream mode marks the draft provisional instead', async () => {
+  it('stream mode shows the draft text instead, with sources as they come', async () => {
     const { yields } = await run(events)
     expect(textOf(yields[1])).toBe('one two three ')
-    expect(partsOf(yields[1]).map((p) => p.name)).toEqual([PROVISIONAL_PART])
-    expect(partsOf(yields[2]).map((p) => p.name)).toEqual([PROVISIONAL_PART, SOURCES_PART])
+    expect(partsOf(yields[1]).map((p) => p.name)).toEqual([])
+    expect(partsOf(yields[2]).map((p) => p.name)).toEqual([SOURCES_PART])
     expect(partsOf(yields[4]).map((p) => p.name)).toEqual([SOURCES_PART])
   })
 })

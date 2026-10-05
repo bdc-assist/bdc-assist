@@ -156,10 +156,51 @@
   display: none;
 }
 
-/* A draft the server hasn't checked yet streams in dimmed. */
-[data-slot="aui_assistant-message-content"] .aui-md {
-  transition: opacity 300ms;
+/* Follow-ups as a labelled, bordered panel styled like the scroll-to-bottom
+   button (outline: page background, 1px border; the radius is the composer's,
+   set on the thread root), so they read as controls, not as more of the answer: one question per line behind a corner-down-right arrow.
+   Restyles the vendored chip row, which kept each pill on one line and
+   scrolled sideways with a hidden scrollbar, so long ones looked cut off.
+   Unlayered, so these win over the Tailwind utilities. */
+.aui-thread-followup-suggestions > div {
+  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0.5rem;
+  border-radius: var(--composer-radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
 }
-[data-slot="aui_assistant-message-content"]:has([data-slot="bdc-provisional"]) .aui-md {
-  opacity: 0.6;
+.aui-thread-followup-suggestions > div::before {
+  content: "Ask a follow-up";
+  padding: 0.125rem 0.5rem 0.25rem;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+.aui-thread-followup-suggestion {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  border: none;
+  padding: 0.375rem 0.5rem;
+  white-space: normal;
+  text-align: start;
+}
+/* lucide corner-down-right, drawn in the text colour via a mask */
+.aui-thread-followup-suggestion::before {
+  content: "";
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  align-self: center;
+  background: var(--color-muted-foreground);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 10 20 15 15 20'/%3E%3Cpath d='M4 4v7a4 4 0 0 0 4 4h12'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: background-color 150ms;
+}
+.aui-thread-followup-suggestion:hover::before {
+  background: var(--color-foreground);
 }

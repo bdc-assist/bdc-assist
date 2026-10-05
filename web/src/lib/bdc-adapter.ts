@@ -35,7 +35,7 @@ export type BdcMessageMeta = {
 }
 
 /** How the answer is shown before the server has checked it:
- * - 'stream': the draft streams in, dimmed until done
+ * - 'stream': the draft streams in as written
  * - 'after-check': placeholder bars grow with the draft; the text appears at done */
 export type Reveal = 'stream' | 'after-check'
 
@@ -43,7 +43,6 @@ export type Reveal = 'stream' | 'after-check'
 export const STATUS_PART = 'bdc-status'
 export const SOURCES_PART = 'bdc-sources'
 export const BLOCKED_PART = 'bdc-blocked'
-export const PROVISIONAL_PART = 'bdc-provisional'
 export const DRAFT_PART = 'bdc-draft'
 export const REJECTED_PART = 'bdc-rejected'
 
@@ -65,12 +64,8 @@ export function toContent({ text, streaming, meta }: StreamState, reveal: Reveal
   const hold = reveal === 'after-check' && !meta.done
   const parts = []
   parts.push({ type: 'text' as const, text: hold ? '' : text })
-  if (!meta.done && text) {
-    parts.push(
-      hold
-        ? data(DRAFT_PART, { words: text.split(/\s+/).filter(Boolean).length } satisfies DraftPartData)
-        : data(PROVISIONAL_PART, {}),
-    )
+  if (hold && text) {
+    parts.push(data(DRAFT_PART, { words: text.split(/\s+/).filter(Boolean).length } satisfies DraftPartData))
   }
   // streamed tokens are the progress, so the node label steps aside for them;
   // with the text held back, the label stays

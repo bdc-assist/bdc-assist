@@ -20,7 +20,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import {
   BLOCKED_PART,
   DRAFT_PART,
-  PROVISIONAL_PART,
   REJECTED_PART,
   SOURCES_PART,
   STATUS_PART,
@@ -75,9 +74,16 @@ const OTHER_SOURCE = { label: 'Source', Icon: FileTextIcon }
 // footer above that padding is `min-h-7.5 pt-1.5` with 24px (size-6) buttons.
 // It must stay inside the root's box: the root uses content-visibility, which
 // clips anything painted outside it.
+// Shown and hidden with the toolbar it sits beside, by the same rules as its
+// ActionBarPrimitive.Root (hideWhenRunning, autohide="not-last").
+const useToolbarVisible = () =>
+  useAuiState((s) => !s.thread.isRunning && (s.message.isLast || s.message.isHovering))
+
 const SourcesUI = makeAssistantDataUI<Sources>({
   name: SOURCES_PART,
-  render: ({ data }) => {
+  render: function SourcesRow({ data }) {
+    const visible = useToolbarVisible()
+    if (!visible) return null
     const sources: Source[] = Object.values(data as Sources).flat()
     return (
       <ul
@@ -124,18 +130,6 @@ const BlockedUI = makeAssistantDataUI({
   ),
 })
 
-// A marker only: index.css dims the answer text while it is present. Shown
-// only while running, so a stopped draft doesn't stay dimmed.
-const ProvisionalMarker = () => {
-  const running = useAuiState((s) => s.message.status?.type === 'running')
-  return running ? <span data-slot="bdc-provisional" hidden /> : null
-}
-
-const ProvisionalUI = makeAssistantDataUI({
-  name: PROVISIONAL_PART,
-  render: ProvisionalMarker,
-})
-
 const WORDS_PER_BAR = 12
 const MAX_BARS = 10
 
@@ -170,7 +164,6 @@ export function BdcMessageParts() {
       <StatusUI />
       <SourcesUI />
       <BlockedUI />
-      <ProvisionalUI />
       <DraftUI />
       <RejectedUI />
     </>
