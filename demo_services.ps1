@@ -1,13 +1,13 @@
 # Native Windows twin of demo_services.sh - same behavior, keep the two in sync.
 # Spawns everything demo.ipynb needs:
-#   1. Ollama embeddings at EMBEDDING_URL (..\bdc-doc-mcp\.env) - reused if already running;
-#      else tunneled from Sterling when local (needs RENCI VPN), else `ollama serve` locally
-#      if installed, else a warning and we carry on; skipped when unset (cloud provider)
-#   2. bdc-doc-mcp MCP server (HTTP) on MCP_PORT (..\bdc-doc-mcp\.env, default 8001),
-#      health-checked at the bdc_doc_mcp url in .\data\mcp_servers.yaml - the URL bdc-assist actually connects to
-#   3. bdc-assist API on :8010 (hardcoded - demo.ipynb hardcodes it too)
+#   1. r-doc-mcp MCP server (HTTP) from DOC_MCP_DIR (.\.env, default ..\r-doc-mcp) on MCP_PORT
+#      (that repo's .env, default 8001), health-checked at the r_doc_mcp url in
+#      <CONFIG_DIR>\mcp_servers.yaml - the URL r-assist actually connects to
+#   2. r-assist API on API_PORT (.\.env, default 8010)
+# Embedding/LLM endpoints are whatever the two .env files point at; start those yourself.
 # Services already running are left alone; Ctrl-C stops only what this script started.
-# Logs: %TEMP%\bdc_*.log
+# Each service gets START_TIMEOUT seconds (.\.env, default 30) to answer.
+# Logs: %TEMP%\r_*.log
 # ASCII only: PowerShell 5.1 misparses BOM-less UTF-8.
 Set-Location $PSScriptRoot
 
@@ -23,9 +23,11 @@ function Get-DotEnv([string]$file, [string]$key, [string]$default) {
   if ($v) { $v } else { $default }
 }
 
-$EMBEDDING_URL   = Get-DotEnv '..\bdc-doc-mcp\.env' 'EMBEDDING_URL' ''
-$EMBEDDING_MODEL = Get-DotEnv '..\bdc-doc-mcp\.env' 'EMBEDDING_MODEL' 'bge-m3'
-$MCP_PORT        = Get-DotEnv '..\bdc-doc-mcp\.env' 'MCP_PORT' '8001'
+$DOC_MCP_DIR     = Get-DotEnv '.\.env' 'DOC_MCP_DIR' '..\r-doc-mcp'
+$START_TIMEOUT   = Get-DotEnv '.\.env' 'START_TIMEOUT' '30'
+$MCP_PORT        = Get-DotEnv (Join-Path $DOC_MCP_DIR '.env') 'MCP_PORT' '8001'
+$API_PORT        = Get-DotEnv '.\.env' 'API_PORT' '8010'
+$CONFIG_DIR      = Get-DotEnv '.\.env' 'CONFIG_DIR' 'config'
 
 function Get-McpUrl([string]$file, [string]$server, [string]$default) {
   # shell DOC_RAG_MCP_URL wins (test hook), then the yaml block's url:, then default - twin of mcp_url in the .sh
@@ -40,7 +42,7 @@ function Get-McpUrl([string]$file, [string]$server, [string]$default) {
   }
   if ($v) { $v } else { $default }
 }
-$DOC_RAG_MCP_URL = Get-McpUrl '.\data\mcp_servers.yaml' 'bdc_doc_mcp' 'http://127.0.0.1:8001/mcp'
+$DOC_RAG_MCP_URL = Get-McpUrl (Join-Path $CONFIG_DIR 'mcp_servers.yaml') 'r_doc_mcp' 'http://127.0.0.1:8001/mcp'
 
 function Test-Http([string]$url) {  # any HTTP response counts, even 4xx
   try {
@@ -53,16 +55,11 @@ function Test-Http([string]$url) {  # any HTTP response counts, even 4xx
   } catch { $false }
 }
 
-function Wait-Up([string]$url, [int]$tries) {
+function Wait-Http([string]$name, [string]$url, [int]$tries, [string]$hint) {
   for ($i = 0; $i -lt $tries; $i++) {
-    if (Test-Http $url) { return $true }
+    if (Test-Http $url) { Write-Host "${name}: up ($url)"; return }
     Start-Sleep -Seconds 1
   }
-  $false
-}
-
-function Wait-Http([string]$name, [string]$url, [int]$tries, [string]$hint) {  # like Wait-Up, but fatal
-  if (Wait-Up $url $tries) { Write-Host "${name}: up ($url)"; return }
   Write-Host "${name}: not answering at $url - $hint"
   exit 1  # finally below still runs and reaps whatever was started
 }
@@ -75,58 +72,21 @@ function Start-Bg([string]$cmdline, [string]$log) {
 }
 
 try {
-  # 1. embeddings - reuse; else (localhost URL) tunnel from Sterling, else local `ollama serve`
-  #    if installed; else warn and carry on: the other services still start, searches just
-  #    fail until Ollama answers at EMBEDDING_URL
-  if (-not $EMBEDDING_URL) {
-    Write-Host 'embeddings: EMBEDDING_URL unset - cloud provider, nothing to spawn'
-  } elseif (Test-Http $EMBEDDING_URL) {
-    Write-Host "ollama: already running ($EMBEDDING_URL)"
-  } else {
-    if ($EMBEDDING_URL -match '://(localhost|127\.0\.0\.1)') {
-      $port = if ($EMBEDDING_URL -match ':(\d+)') { $Matches[1] } else { '11434' }
-      if (Get-Command kubectl -ErrorAction SilentlyContinue) {
-        # foreground pre-flight: cluster auth is OIDC (kubelogin) - with a stale token this
-        # pops a browser login, which would hang forever inside the backgrounded port-forward
-        Write-Host 'checking cluster access - if a browser login tab opens (maybe unfocused), complete it; waiting...'
-        & kubectl -n ner get svc ollama | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-          Start-Bg "kubectl -n ner port-forward svc/ollama ${port}:11434" "$env:TEMP\bdc_ollama.log"
-          if (Wait-Up $EMBEDDING_URL 15) { Write-Host "ollama: up via Sterling tunnel ($EMBEDDING_URL)" }
-          else {
-            Write-Host "tunnel didn't come up (see $env:TEMP\bdc_ollama.log)"
-            taskkill /T /F /PID $procs[-1].Id 2>$null | Out-Null
-          }
-        } else { Write-Host 'kubectl cannot reach the cluster - RENCI VPN off? OIDC login?' }
-      } else { Write-Host 'kubectl not found - skipping the Sterling tunnel' }
-      if (-not (Test-Http $EMBEDDING_URL) -and (Get-Command ollama -ErrorAction SilentlyContinue)) {
-        Write-Host "ollama: starting locally on :$port (needs 'ollama pull $EMBEDDING_MODEL' once)"
-        $env:OLLAMA_HOST = "127.0.0.1:$port"
-        Start-Bg 'ollama serve' "$env:TEMP\bdc_ollama_local.log"
-        if (Wait-Up $EMBEDDING_URL 15) { Write-Host "ollama: up locally ($EMBEDDING_URL)" }
-        else { Write-Host "local ollama didn't come up (see $env:TEMP\bdc_ollama_local.log)" }
-      }
-    }
-    if (-not (Test-Http $EMBEDDING_URL)) {
-      Write-Host "embeddings at $EMBEDDING_URL not answering - start Ollama there yourself (ollama serve; ollama pull $EMBEDDING_MODEL); continuing, searches will fail until it's up"
-    }
-  }
-
-  # 2. doc MCP server
+  # 1. doc MCP server
   if (Test-Http $DOC_RAG_MCP_URL) {
-    Write-Host "bdc-doc-mcp: already running ($DOC_RAG_MCP_URL)"
+    Write-Host "r-doc-mcp: already running ($DOC_RAG_MCP_URL)"
   } else {
-    Start-Bg 'uv run --directory ..\bdc-doc-mcp python -m bdc_doc_mcp.mcp_server --http' "$env:TEMP\bdc_doc_mcp.log"
-    Wait-Http 'bdc-doc-mcp' $DOC_RAG_MCP_URL 30 `
-      "server binds MCP_PORT=$MCP_PORT; if that mismatches the url in data\mcp_servers.yaml, fix it (see $env:TEMP\bdc_doc_mcp.log)"
+    Start-Bg "uv run --directory `"$DOC_MCP_DIR`" python -m r_doc_mcp.mcp_server --http" "$env:TEMP\r_doc_mcp.log"
+    Wait-Http 'r-doc-mcp' $DOC_RAG_MCP_URL $START_TIMEOUT `
+      "server binds MCP_PORT=$MCP_PORT; if that mismatches the url in $CONFIG_DIR\mcp_servers.yaml, fix it (see $env:TEMP\r_doc_mcp.log)"
   }
 
-  # 3. bdc-assist API
-  if (Test-Http 'http://127.0.0.1:8010/health') {
-    Write-Host 'bdc-assist: already running'
+  # 2. r-assist API
+  if (Test-Http "http://127.0.0.1:$API_PORT/health") {
+    Write-Host 'r-assist: already running'
   } else {
-    Start-Bg 'uv run uvicorn bdc_assist.api:app --port 8010' "$env:TEMP\bdc_assist.log"
-    Wait-Http 'bdc-assist' 'http://127.0.0.1:8010/health' 30 "see $env:TEMP\bdc_assist.log"
+    Start-Bg "uv run uvicorn r_assist.api:app --port $API_PORT" "$env:TEMP\r_assist.log"
+    Wait-Http 'r-assist' "http://127.0.0.1:$API_PORT/health" $START_TIMEOUT "see $env:TEMP\r_assist.log"
   }
 
   Write-Host ''

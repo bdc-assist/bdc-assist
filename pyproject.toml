@@ -1,5 +1,5 @@
 [project]
-name = "bdc-assist"
+name = "r-assist"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
@@ -22,6 +22,6 @@ dev = [
     "pytest>=9.1.1",
 ]
 
-# not installed — run from the repo root (same convention as bdc_doc_mcp)
+# not installed — run from the repo root (same convention as r_doc_mcp)
 [tool.pytest.ini_options]
 pythonpath = ["."]

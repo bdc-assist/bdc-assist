@@ -1,4 +1,4 @@
-"""The bdc-assist LangGraph workflow.
+"""The r-assist LangGraph workflow.
 
     START → input_guardrail ──blocked──────────────────────→ END (REFUSAL)
                 │ ok
@@ -18,7 +18,7 @@ from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, StateGraph
 
 from . import prompts
-from .prompts import REJECT, REFUSAL  # canned answers live in data/prompts.yaml
+from .prompts import REJECT, REFUSAL  # canned answers live in config/prompts.yaml
 
 
 class BotState(TypedDict, total=False):
@@ -29,10 +29,9 @@ class BotState(TypedDict, total=False):
     disclaimers: list[str]  # "a"-topic texts to append after the agent answer
     answer: str             # final response (canned, agent, REFUSAL, or REJECT)
     followups: list[str]    # suggested follow-up questions (empty when none needed)
-    tool_results: list      # every tool call the agent made: {tool, args, result} — doc chunks
-                            # with their metadata, knowledge-graph rows, etc., for the client to show
-    sources: dict           # {"bdc-doc": [{title, link, type}]} — distinct documents behind search_docs
-    sources_md: str         # the same as a markdown list, ready to append to the answer
+    sources: dict           # {sources_key: [{title, link, type}]} — distinct documents behind doc_search_tool
+    sources_md: str         # the same as a markdown list, ready to show under the answer
+    kg: list                # knowledge graphs attached to tool results, one per tool call
     blocked: bool           # input_guardrail verdict
     rejected: bool          # output_guardrail rejected the agent answer
 
@@ -51,39 +50,27 @@ def _parse_tool_content(content):
     return parsed[0] if len(parsed) == 1 else parsed
 
 
-def _tool_results(messages) -> list[dict]:
-    """Pair each ToolMessage with the AI tool call that produced it."""
-    calls = {tc["id"]: tc for m in messages if isinstance(m, AIMessage) for tc in (m.tool_calls or [])}
-    return [{"tool": calls.get(m.tool_call_id, {}).get("name", m.name),
-             "args": calls.get(m.tool_call_id, {}).get("args", {}),
-             "result": _parse_tool_content(m.content)}
-            for m in messages if isinstance(m, ToolMessage)]
-
-
 def _doc_title(m: dict, link: str) -> str:
-    """title (faq, video, news, fellows) → last breadcrumb (gitbook docs) → first
-    heading (website pages) → last URL segment."""
+    """title (front matter, page/video/faq titles) → the document's top heading (first
+    entry of the chunk's hierarchy) → last URL segment."""
     if m.get("title"):
         return str(m["title"])
-    h = m.get("hierarchy")
-    if isinstance(h, list) and h:
-        return str(h[-1])
-    if isinstance(h, str) and h:
-        return h.split(">")[-1].strip()
-    if m.get("headings"):
-        return str(m["headings"]).split(",")[0].strip()
+    if m.get("hierarchy"):
+        # ponytail: r-doc-builder joins headings with ", ", so a comma inside the top heading truncates it
+        return str(m["hierarchy"]).split(", ")[0].strip()
     return link.rstrip("/").rsplit("/", 1)[-1] or link
 
 
-def _doc_sources(tool_results: list) -> list[dict]:
-    """Distinct documents behind the search_docs chunks, deduplicated on page_url,
+def _doc_sources(messages) -> list[dict]:
+    """Distinct documents behind the doc search tool's chunks, deduplicated on page_url,
     in first-seen order (each call's chunks arrive ranked by relevance)."""
+    names = {tc["id"]: tc["name"] for m in messages if isinstance(m, AIMessage) for tc in m.tool_calls or []}
     out, seen = [], set()
-    for tr in tool_results:
-        if tr["tool"] != "search_docs":
+    for msg in messages:
+        if not (isinstance(msg, ToolMessage) and names.get(msg.tool_call_id, msg.name) == prompts.DOC_SEARCH_TOOL):
             continue
-        chunks = tr["result"] if isinstance(tr["result"], list) else [tr["result"]]
-        for c in chunks:
+        result = _parse_tool_content(msg.content)
+        for c in result if isinstance(result, list) else [result]:
             m = c.get("metadata", {}) if isinstance(c, dict) else {}
             link = m.get("page_url")
             if not link or link in seen:
@@ -93,10 +80,18 @@ def _doc_sources(tool_results: list) -> list[dict]:
     return out
 
 
+def _kgs(messages) -> list:
+    """Knowledge graphs attached to tool results as structured content "kg" (by the server, or
+    by a <config dir>/interceptors.py interceptor), in call order. The LLM never sees them."""
+    found = [(m.artifact.get("structured_content") or {}).get("kg")
+             for m in messages if isinstance(m, ToolMessage) and isinstance(m.artifact, dict)]
+    return [kg for kg in found if kg]
+
+
 def _sources_md(sources: list[dict]) -> str:
     if not sources:
         return ""
-    return "**Sources**\n" + "\n".join(f"- [{s['title']}]({s['link']}) ({s['type']})" for s in sources)
+    return prompts.SOURCES.format(items="\n".join(prompts.SOURCES_ITEM.format(**s) for s in sources))
 
 
 def build_graph(llm, agent, predefined: dict):
@@ -105,7 +100,7 @@ def build_graph(llm, agent, predefined: dict):
     llm: any chat model — runs the guardrail/contextualize/classify prompts.
     agent: has astream({'messages': [...]}, stream_mode=["messages", "values"]) —
         produces the real answer, token-streamable.
-    predefined: lowercased topic → {response, flag}, from data/prompts.yaml.
+    predefined: lowercased topic → {response, flag}, from config/predefined_responses.yaml.
         flag "r" = replace: the canned response IS the answer, agent is skipped.
         flag "a" = append: the response is a disclaimer added after the agent answer.
     """
@@ -198,20 +193,19 @@ def build_graph(llm, agent, predefined: dict):
                     writer({"type": "reset"})
                 last_id = msg.id
                 writer({"type": "token", "text": msg.content})
-        tool_results = _tool_results(result["messages"])
-        docs = _doc_sources(tool_results)
-        sources, sources_md = ({"bdc-doc": docs} if docs else {}), _sources_md(docs)
-        # sources are final once the agent is done: send them now rather than with
-        # "done", which waits for the guardrail and follow-up nodes
-        writer({"type": "sources", "sources": sources, "sources_md": sources_md})
-        return {"answer": result["messages"][-1].content, "tool_results": tool_results,
-                "sources": sources, "sources_md": sources_md}
+        docs = _doc_sources(result["messages"])
+        sources, sources_md = ({prompts.SOURCES_KEY: docs} if docs else {}), _sources_md(docs)
+        kg = _kgs(result["messages"])
+        # sources are known once the agent is done: send them now rather than with "done",
+        # which waits for the guardrail and follow-up nodes (a reject clears them in "done")
+        writer({"type": "sources", "sources": sources, "sources_md": sources_md, "kg": kg})
+        return {"answer": result["messages"][-1].content, "sources": sources, "sources_md": sources_md, "kg": kg}
 
     async def output_guardrail(state: BotState):
         """
         LLM self-check that the answer addresses the question; "no" → REJECT.
         """
-        # no normalize_bdc_names pass — the agent prompt already enforces "BDC"
+        # no deterministic name-normalising pass — the agent prompt already enforces the short name
         answer = state["answer"]
         resp = await llm.ainvoke([
             ("human", prompts.OUTPUT_GUARDRAIL_HUMAN.format(input=state["question"], answer=answer)),
@@ -222,9 +216,9 @@ def build_graph(llm, agent, predefined: dict):
 
     async def output_reject(state: BotState):
         """
-        Replace a rejected answer with the canned REJECT reply.
+        Replace a rejected answer with the canned REJECT reply; its sources and kg go with it.
         """
-        return {"answer": REJECT}
+        return {"answer": REJECT, "sources": {}, "sources_md": "", "kg": []}
 
     async def append_disclaimer(state: BotState):
         """
@@ -234,8 +228,9 @@ def build_graph(llm, agent, predefined: dict):
 
     async def suggest_followups(state: BotState):
         """
-        Decide if follow-up questions would help; if so, suggest 3
-        (LLM returns a markdown list, or "- none" when nothing is needed).
+        Decide if follow-up questions would help; if so, suggest
+        prompts.FOLLOWUPS of them (LLM returns a markdown list, or "- none"
+        when nothing is needed).
         """
         try:
             resp = await llm.ainvoke([
@@ -246,7 +241,7 @@ def build_graph(llm, agent, predefined: dict):
         except Exception:
             # followups are decorative — never lose a good answer over them
             parsed = []
-        return {"followups": [q for q in parsed if q.lower() != "none"][:3]}
+        return {"followups": [q for q in parsed if q.lower() != "none"][:prompts.FOLLOWUPS]}
 
     def announce(name, fn):
         # emit {"type": "node"} on the custom stream when the node starts, so a

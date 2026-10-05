@@ -4,25 +4,30 @@ import json
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 
-from bdc_assist.graph import REJECT, REFUSAL, build_graph
-from bdc_assist.prompts import normalize_bdc_names
+from r_assist import prompts
+from r_assist.graph import REJECT, REFUSAL, build_graph
 
 PREDEFINED = {
     "fisma": {"response": "FISMA canned answer.", "flag": "r"},
     "covid": {"response": "Covid disclaimer.", "flag": "a"},
 }
 # what the fake agent's one search_docs call yields, decoded — two chunks of the same faq
-# article (dedupe) and one gitbook doc without a title (breadcrumb fallback)
+# article (dedupe), one markdown doc without a title (top-heading fallback), and an
+# ad-hoc push without a page_url (skipped)
 CHUNKS = [
     {"content": "chunk 1", "metadata": {"page_url": "https://x/faq", "title": "FAQ title", "doc_type": "faq"}},
     {"content": "chunk 2", "metadata": {"page_url": "https://x/faq", "title": "FAQ title", "doc_type": "faq"}},
-    {"content": "chunk 3", "metadata": {"page_url": "https://x/doc", "hierarchy": ["Data Access", "Check access"],
+    {"content": "chunk 3", "metadata": {"page_url": "https://x/doc", "hierarchy": "Data Access, Check access",
                                         "doc_type": "docs"}},
+    {"content": "chunk 4", "metadata": {"source": "notes.md"}},
 ]
-TOOL_RESULT = {"tool": "search_docs", "args": {"query": "q"}, "result": CHUNKS}
-SOURCES = {"bdc-doc": [{"title": "FAQ title", "link": "https://x/faq", "type": "faq"},
-                       {"title": "Check access", "link": "https://x/doc", "type": "docs"}]}
-SOURCES_MD = "**Sources**\n- [FAQ title](https://x/faq) (faq)\n- [Check access](https://x/doc) (docs)"
+SOURCES = {prompts.SOURCES_KEY: [{"title": "FAQ title", "link": "https://x/faq", "type": "faq"},
+                                 {"title": "Data Access", "link": "https://x/doc", "type": "docs"}]}
+SOURCES_MD = "**Sources**\n- [FAQ title](https://x/faq) (faq)\n- [Data Access](https://x/doc) (docs)"
+# what an interceptor attached to the fake agent's second tool call (structured content "kg")
+KG = {"tool": "get_concept_graph", "args": {"concept_id": "MONDO:1"},
+      "nodes": [{"id": "MONDO:1", "name": "mi"}, {"id": "phv1", "name": "MI_EVER"}],
+      "edges": [{"subject": "phv1", "object": "MONDO:1"}]}
 
 
 class FakeAgent:
@@ -42,9 +47,12 @@ class FakeAgent:
         for part in (self.reply[:half], self.reply[half:]):
             yield "messages", (AIMessageChunk(content=part, id="m2"), {})
         yield "values", {"messages": [
-            AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": "q"}, "id": "t1"}]),
+            AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": "q"}, "id": "t1"},
+                                              {"name": "get_concept_graph", "args": {"concept_id": "MONDO:1"}, "id": "t2"}]),
             # like langchain-mcp-adapters: a list of text blocks, one per chunk, each holding JSON
             ToolMessage(content=[{"type": "text", "text": json.dumps(c)} for c in CHUNKS], tool_call_id="t1"),
+            # and structuredContent arrives as the artifact, which the LLM never reads
+            ToolMessage(content="{}", artifact={"structured_content": {"kg": KG}}, tool_call_id="t2"),
             AIMessage(content=self.reply)]}
 
 
@@ -59,7 +67,7 @@ def run(llm_responses, **state):
 def test_mcp_tool_retry():
     from langchain_core.tools import StructuredTool
 
-    from bdc_assist.agent import _with_retry
+    from r_assist.agent import _with_retry
 
     calls = {"n": 0}
 
@@ -73,49 +81,6 @@ def test_mcp_tool_retry():
     _with_retry(tool)
     assert asyncio.run(tool.coroutine(query="x")) == "ok"
     assert calls["n"] == 2
-
-
-def test_mcp_tool_errors_are_logged(caplog):
-    from langchain_core.tools import StructuredTool
-
-    from bdc_assist.agent import _with_retry
-
-    async def raises(query: str) -> str:
-        raise ConnectionError("boom")
-
-    async def error_payload(query: str) -> tuple:  # dug-mcp style failure, in the adapter's (content, artifact) shape
-        return [{"type": "text", "text": '{\n  "error": "Error executing tool: NoneType has no query"\n}'}], None
-
-    async def warnings_payload(query: str) -> tuple:  # empty data + warnings, dug-mcp's other failure shape
-        return [{"type": "text", "text": '{"total_variables_found": 0, "variables": [], "warnings": ["PIC-SURE returned HTTP 404 for \'phv1\'"]}'}], None
-
-    with caplog.at_level("WARNING", logger="bdc_assist.agent"):
-        tool = _with_retry(StructuredTool.from_function(coroutine=error_payload, name="search_concepts", description="d"))
-        asyncio.run(tool.coroutine(query="heart attack"))
-        tool = _with_retry(StructuredTool.from_function(coroutine=warnings_payload, name="find_cohort_variables", description="d"))
-        asyncio.run(tool.coroutine(query="x"))
-        tool = _with_retry(StructuredTool.from_function(coroutine=raises, name="picsure_search", description="d"))
-        try:
-            asyncio.run(tool.coroutine(query="x"))
-        except ConnectionError:
-            pass
-    msgs = [r.getMessage() for r in caplog.records]
-    assert any("search_concepts{'query': 'heart attack'} returned an error: Error executing tool: NoneType has no query" == m for m in msgs)
-    assert any("find_cohort_variables{'query': 'x'} returned an error: PIC-SURE returned HTTP 404 for 'phv1'" == m for m in msgs)
-    assert sum("picsure_search{'query': 'x'} raised ConnectionError: boom" in m for m in msgs) == 2
-
-
-def test_mcp_servers_yaml():
-    from bdc_assist.agent import load_mcp_servers
-
-    servers = load_mcp_servers()
-    assert servers["bdc_doc_mcp"]["url"].startswith("http")
-    assert all("transport" in v for v in servers.values())
-
-
-def test_normalize_bdc_names():
-    assert normalize_bdc_names("NHLBI BioData Catalyst (BDC) is great") == "BDC is great"
-    assert normalize_bdc_names("Use BioData Catalyst today") == "Use BDC today"
 
 
 def test_blocked_input_skips_everything():
@@ -153,9 +118,20 @@ def test_regular_question_appends_disclaimer():
     assert agent.called
     assert state["answer"] == "Agent answer about BDC.\n\nCovid disclaimer."
     assert state["followups"] == ["What is BDC?", "How do I get access?", "Where are the docs?"]
-    assert state["tool_results"] == [TOOL_RESULT]
     assert state["sources"] == SOURCES
     assert state["sources_md"] == SOURCES_MD
+    assert state["kg"] == [KG]
+
+
+def test_sources_follow_project_and_prompts_yaml(monkeypatch):
+    # llm calls: guardrail "No", classifier "- other", output check "Yes", followups "- none"
+    monkeypatch.setattr(prompts, "SOURCES", "Refs:\n{items}")
+    monkeypatch.setattr(prompts, "SOURCES_ITEM", "* {title} <{link}>")
+    state, _ = run(["No", "- other", "Yes", "- none"])
+    assert state["sources_md"] == "Refs:\n* FAQ title <https://x/faq>\n* Data Access <https://x/doc>"
+    monkeypatch.setattr(prompts, "DOC_SEARCH_TOOL", "some_other_tool")
+    state, _ = run(["No", "- other", "Yes", "- none"])
+    assert state["sources"] == {} and state["sources_md"] == "", "only the configured tool's results are sources"
 
 
 def test_followups_none_means_empty():
@@ -168,7 +144,7 @@ def test_followups_none_means_empty():
 def test_stream_chat_emits_progress_tokens_and_done():
     import json
 
-    from bdc_assist.api import stream_chat
+    from r_assist.api import stream_chat
 
     # llm calls: guardrail "No", classifier "- covid", output check "Yes", followups "- none"
     llm = FakeListChatModel(responses=["No", "- covid", "Yes", "- none"])
@@ -185,7 +161,7 @@ def test_stream_chat_emits_progress_tokens_and_done():
     # the agent's tool call surfaces as a status event
     assert {"type": "status", "text": "calling search_docs"} in events
     # sources go out as soon as the agent node ends, before output_guardrail starts
-    i_sources = events.index({"type": "sources", "sources": SOURCES, "sources_md": SOURCES_MD})
+    i_sources = events.index({"type": "sources", "sources": SOURCES, "sources_md": SOURCES_MD, "kg": [KG]})
     i_guard = events.index({"type": "node", "node": "output_guardrail"})
     assert i_sources < i_guard
     # tokens after the last reset are exactly the agent's final response —
@@ -195,7 +171,7 @@ def test_stream_chat_emits_progress_tokens_and_done():
     assert "".join(tokens) == "Agent answer about BDC."  # no guardrail/classifier chatter mixed in
     assert events[-1] == {"type": "done", "answer": "Agent answer about BDC.\n\nCovid disclaimer.",
                           "blocked": False, "topics": ["covid"], "followups": [],
-                          "tool_results": [TOOL_RESULT], "sources": SOURCES, "sources_md": SOURCES_MD}
+                          "sources": SOURCES, "sources_md": SOURCES_MD, "kg": [KG]}
 
 
 def test_rejected_answer_gets_reject_reply_without_disclaimer():
@@ -204,3 +180,50 @@ def test_rejected_answer_gets_reject_reply_without_disclaimer():
     assert agent.called
     assert state["rejected"] is True
     assert state["answer"] == REJECT
+    assert state["sources"] == {} and state["sources_md"] == ""  # no sources under "I couldn't answer"
+    assert state["kg"] == []
+
+
+def test_mcp_servers_yaml():
+    from pathlib import Path
+
+    from r_assist.agent import load_mcp_servers
+
+    servers = load_mcp_servers()  # the template config/
+    assert servers["r_doc_mcp"]["url"].startswith("http")
+    assert all("transport" in v for v in servers.values())
+
+    servers = load_mcp_servers(Path("examples/bdc"))
+    assert {"r_doc_mcp", "dug_mcp"} <= set(servers)
+    assert all("transport" in v for v in servers.values())
+    assert "interceptors" not in servers["dug_mcp"], "r-assist's key, never handed to the transport"
+
+
+def test_mcp_tool_errors_are_logged(caplog):
+    from langchain_core.tools import StructuredTool
+
+    from r_assist.agent import _with_retry
+
+    async def raises(query: str) -> str:
+        raise ConnectionError("boom")
+
+    async def error_payload(query: str) -> tuple:  # failure reported as a normal result, in the adapter's (content, artifact) shape
+        return [{"type": "text", "text": '{\n  "error": "Error executing tool: NoneType has no query"\n}'}], None
+
+    async def warnings_payload(query: str) -> tuple:  # empty data plus warnings, the other soft-failure shape
+        return [{"type": "text", "text": '{"total": 0, "items": [], "warnings": ["upstream returned HTTP 404 for \'x1\'"]}'}], None
+
+    with caplog.at_level("WARNING", logger="r_assist.agent"):
+        tool = _with_retry(StructuredTool.from_function(coroutine=error_payload, name="search_a", description="d"))
+        asyncio.run(tool.coroutine(query="heart attack"))
+        tool = _with_retry(StructuredTool.from_function(coroutine=warnings_payload, name="search_b", description="d"))
+        asyncio.run(tool.coroutine(query="x"))
+        tool = _with_retry(StructuredTool.from_function(coroutine=raises, name="search_c", description="d"))
+        try:
+            asyncio.run(tool.coroutine(query="x"))
+        except ConnectionError:
+            pass
+    msgs = [r.getMessage() for r in caplog.records]
+    assert "search_a{'query': 'heart attack'} returned an error: Error executing tool: NoneType has no query" in msgs
+    assert "search_b{'query': 'x'} returned an error: upstream returned HTTP 404 for 'x1'" in msgs
+    assert sum("search_c{'query': 'x'} raised ConnectionError: boom" in m for m in msgs) == 2

@@ -39,7 +39,7 @@ contextualize_system: |
   in user input with "BDC".
   Do NOT answer the question, just reformulate it if needed and otherwise return it as is.
 
-# Matches the question against the predefined topics (data/predefined_responses.yaml).
+# Matches the question against the predefined topics (config/predefined_responses.yaml).
 topic_classifier_system: |
   You are a topic classifier. Given a user query, determine if it's related to any of the following topics: {topics}.
   If the query clearly relates to one or more of these topics, return ONLY a comma-separated list of topic names from the list.
@@ -150,3 +150,11 @@ output_guardrail_human: |
 
   Question: Is the answer inside <answer> helpful and relevant to the user question inside <question>? (Yes or No)
   Answer:
+
+# Sources block shown under an answer (the API's sources_md), built from the documents the
+# doc search tool returned (tool name: project.yaml). {items} = one sources_item line per
+# document; sources_item fills {title}, {link} and {type} (the doc_type).
+sources: |-
+  **Sources**
+  {items}
+sources_item: "- [{title}]({link}) ({type})"

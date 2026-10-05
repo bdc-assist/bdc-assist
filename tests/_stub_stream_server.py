@@ -1,6 +1,6 @@
-"""Throwaway stub for eyeballing tests/streaming_demo.html without real services:
+"""Throwaway stub for eyeballing tests/ui/demo.html and tests/ui/kg_demo.html without real services:
 serves the real api app on :8011 with a fake slow agent. Run: uv run python tests/_stub_stream_server.py
-then open streaming_demo.html?api=http://127.0.0.1:8011"""
+then open tests/ui/demo.html?api=http://127.0.0.1:8011 (or kg_demo.html?api=...)"""
 
 import asyncio
 import json
@@ -11,9 +11,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))  # runnable from anywhere
 
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 
-import bdc_assist.api as api
-from bdc_assist import prompts
-from bdc_assist.graph import build_graph
+import r_assist.api as api
+from r_assist import prompts
+from r_assist.graph import build_graph
 
 
 class SlowAgent:
@@ -22,23 +22,37 @@ class SlowAgent:
             content="Let me look that up. ", id="m1",
             tool_call_chunks=[{"name": "search_docs", "args": "", "id": "t1", "index": 0}]), {})
         await asyncio.sleep(1.5)
-        words = ("**BDC** (BioData Catalyst) is NHLBI's cloud platform for heart, lung, blood, and sleep "
-                 "research data. See the [overview](https://biodatacatalyst.nhlbi.nih.gov/about/overview).").split()
+        words = ("This project's **documentation chatbot** answers questions about the configured docs. "
+                 "See [getting started](https://example.org/docs/start).").split()
         for w in words:
             await asyncio.sleep(0.12)
             yield "messages", (AIMessageChunk(content=w + " ", id="m2"), {})
         # final state like the real agent: the tool call, its doc chunks, the answer
         chunks = [
-            {"content": "BDC is ...", "score": 0.7, "metadata": {"page_url": "https://biodatacatalyst.nhlbi.nih.gov/about/overview",
-                                                                  "doc_type": "page", "headings": "Overview, Mission"}},
-            {"content": "BDC offers ...", "score": 0.8, "metadata": {"page_url": "https://bdcatalyst.freshdesk.com/support/solutions/articles/60000541522",
-                                                                     "doc_type": "faq", "title": "What can BDC offer me?"}},
-            {"content": "BDC is ... (again)", "score": 0.9, "metadata": {"page_url": "https://biodatacatalyst.nhlbi.nih.gov/about/overview",
-                                                                          "doc_type": "page", "headings": "Overview"}},
+            {"content": "Start here ...", "score": 0.7, "metadata": {"page_url": "https://example.org/docs/start",
+                                                                      "doc_type": "docs", "hierarchy": "Getting started, Install"}},
+            {"content": "Access ...", "score": 0.8, "metadata": {"page_url": "https://example.org/faq/access",
+                                                                  "doc_type": "faq", "title": "How do I get access?"}},
+            {"content": "Start here ... (again)", "score": 0.9, "metadata": {"page_url": "https://example.org/docs/start",
+                                                                              "doc_type": "docs", "hierarchy": "Getting started"}},
         ]
+        # a knowledge graph as an interceptor attaches it (examples/bdc/interceptors.py), for kg_demo.html
+        kg = {"tool": "get_concept_graph", "args": {"concept_id": "MONDO:0005068"},
+              "nodes": [{"id": "MONDO:0005068", "name": "myocardial infarction", "category": "Disease"},
+                        {"id": "phv1", "name": "MI_EVER", "category": "StudyVariable",
+                         "description": "Ever told by a doctor you had a heart attack?"},
+                        {"id": "phv2", "name": "MI_AGE", "category": "StudyVariable"},
+                        {"id": "phv3", "name": "ECG_MI", "category": "StudyVariable"},
+                        {"id": "phs000007", "name": "Framingham Cohort", "category": "Study"},
+                        {"id": "phs000280", "name": "Atherosclerosis Risk in Communities (ARIC) Cohort", "category": "Study"}],
+              "edges": [{"subject": v, "object": "MONDO:0005068", "predicate": "related_to"} for v in ("phv1", "phv2", "phv3")]
+                       + [{"subject": "phv1", "object": "phs000007"}, {"subject": "phv2", "object": "phs000007"},
+                          {"subject": "phv3", "object": "phs000280"}]}
         yield "values", {"messages": [
-            AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": payload["messages"][0]["content"]}, "id": "t1"}]),
+            AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": payload["messages"][0]["content"]}, "id": "t1"},
+                                              {"name": "get_concept_graph", "args": kg["args"], "id": "t2"}]),
             ToolMessage(content=[{"type": "text", "text": json.dumps(c)} for c in chunks], tool_call_id="t1"),
+            ToolMessage(content="{}", artifact={"structured_content": {"kg": kg}}, tool_call_id="t2"),
             AIMessage(content=" ".join(words)),
         ]}
 

@@ -1,0 +1,12 @@
+# The BDC bot's servers: the doc search server plus the Dug knowledge-graph tools.
+# Loaded instead of config/mcp_servers.yaml when CONFIG_DIR=examples/bdc.
+
+r_doc_mcp:
+  transport: streamable_http
+  url: http://127.0.0.1:8001/mcp
+
+# Dug knowledge-graph tools (github.com/bdc-assist/dug-mcp)
+dug_mcp:
+  transport: sse
+  url: https://dug-mcp.apps.renci.org/sse
+  interceptors: [dug_kg]  # functions in interceptors.py, run on this server's tool calls only

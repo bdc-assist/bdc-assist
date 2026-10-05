@@ -9,8 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from . import prompts
 from .agent import build_agent
-from .config import get_llm
+from .config import CORS_ORIGINS, LOG_LEVEL, get_llm
 from .graph import build_graph
 from .prompts import load_predefined_responses
 
@@ -30,9 +31,9 @@ class ChatResponse(BaseModel):
     blocked: bool = False
     topics: list[str] = []
     followups: list[str] = []
-    tool_results: list[dict] = []  # {tool, args, result}: doc chunks + metadata, graph rows, ...
-    sources: dict = {}             # {"bdc-doc": [{title, link, type}]}, deduplicated
+    sources: dict = {}             # {sources_key: [{title, link, type}]}, deduplicated (project.yaml)
     sources_md: str = ""           # the same as a markdown list
+    kg: list = []                  # knowledge graphs attached to tool results, one per tool call
 
 
 graph = None
@@ -47,10 +48,10 @@ async def lifespan(app: FastAPI):
 
 
 # app loggers (e.g. MCP tool failures in agent.py) print alongside uvicorn's own lines
-logging.basicConfig(level=logging.WARNING, format="%(levelname)s:     %(name)s: %(message)s")
+logging.basicConfig(level=LOG_LEVEL, format="%(levelname)s:     %(name)s: %(message)s")
 
-app = FastAPI(title="BDC Assist", version="0.2.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app = FastAPI(title=prompts.PROJECT.get("assistant_name", "r-assist"), version="0.2.0", lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
 
 
 @app.get("/health")
@@ -64,10 +65,9 @@ async def stream_chat(graph, input: str, chat_history: list):
       {"type": "status", "text"}  what the agent is doing (tool calls)
       {"type": "token", "text"}   one token of the agent's provisional answer
       {"type": "reset"}           new model turn — discard tokens so far
-      {"type": "sources", sources, sources_md}  the agent finished; its doc sources
-      {"type": "done", answer, blocked, topics, followups, tool_results, sources, sources_md}
-        final state — the
-        done answer is authoritative (rejects, disclaimers, canned replies).
+      {"type": "sources", sources, sources_md, kg}  the agent finished; its doc sources and graphs
+      {"type": "done", answer, blocked, topics, followups, sources, sources_md, kg}
+        final state — the done answer is authoritative (rejects, disclaimers, canned replies).
     Custom-stream events come only from graph.py nodes, so guardrail/classifier
     LLM chatter never leaks."""
     state = {}
@@ -82,8 +82,8 @@ async def stream_chat(graph, input: str, chat_history: list):
     done = {"type": "done", "answer": state.get("answer", ""),
             "blocked": state.get("blocked", False),
             "topics": state.get("topics", []), "followups": state.get("followups", []),
-            "tool_results": state.get("tool_results", []),
-            "sources": state.get("sources", {}), "sources_md": state.get("sources_md", "")}
+            "sources": state.get("sources", {}), "sources_md": state.get("sources_md", ""),
+            "kg": state.get("kg", [])}
     yield f"data: {json.dumps(done)}\n\n"
 
 
@@ -102,5 +102,5 @@ async def chat(req: ChatRequest) -> ChatResponse:
     })
     return ChatResponse(answer=state["answer"], blocked=state.get("blocked", False),
                         topics=state.get("topics", []), followups=state.get("followups", []),
-                        tool_results=state.get("tool_results", []),
-                        sources=state.get("sources", {}), sources_md=state.get("sources_md", ""))
+                        sources=state.get("sources", {}), sources_md=state.get("sources_md", ""),
+                        kg=state.get("kg", []))

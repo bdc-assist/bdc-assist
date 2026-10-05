@@ -1,0 +1,12 @@
+# topic -> {response, flag}. The classifier matches the user's question against the topic
+# names, so keep them short and specific. flag r = replace the answer (the agent is skipped),
+# flag a = append the response as a disclaimer after the agent's answer.
+# ${name} / ${short_name} / ${assistant_name} from project.yaml work here too.
+# examples/bdc/predefined_responses.yaml is a filled-in one.
+#
+# Security compliance:
+#   response: "${short_name} runs in a certified secure environment. See the security page for details."
+#   flag: "r"
+# Medical advice:
+#   response: "${assistant_name} cannot give medical advice; consult a professional."
+#   flag: "a"

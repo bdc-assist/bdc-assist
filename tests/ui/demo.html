@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>BDC Assist — streaming demo</title>
+<title>r-assist — streaming demo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
@@ -35,11 +35,11 @@
 </style>
 </head>
 <body>
-<header>BDC Assist — demo</header>
+<header>r-assist — demo</header>
 <div id="log"></div>
 <div id="followups"></div>
 <form id="form">
-  <input id="input" placeholder="Ask about BioData Catalyst…" autocomplete="off" autofocus>
+  <input id="input" placeholder="Ask a question…" autocomplete="off" autofocus>
   <button id="send">Send</button>
 </form>
 <script>
@@ -122,7 +122,7 @@ form.onsubmit = async (e) => {
         } else if (ev.type === "status") {
           bot.status.textContent = ev.text;
         } else if (ev.type === "sources") {
-          renderMd(bot.sources, ev.sources_md || "");  // agent finished: sources are final
+          renderMd(bot.sources, ev.sources_md || "");  // agent finished: sources are known
         } else if (ev.type === "reset") {
           bot.text.textContent = "";  // new model turn: only the last response counts
         } else if (ev.type === "token") {
@@ -144,7 +144,7 @@ form.onsubmit = async (e) => {
       log.scrollTop = log.scrollHeight;
     }
   } catch (err) {
-    bot.text.textContent = "Error: " + err.message + " — is bdc-assist running at " + API + "?";
+    bot.text.textContent = "Error: " + err.message + " — is r-assist running at " + API + "?";
   } finally {
     bot.d.classList.remove("busy");
     bot.status.textContent = "";

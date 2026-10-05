@@ -1,0 +1,7 @@
+# Fills the ${placeholders} in prompts.yaml and predefined_responses.yaml.
+name: My Project            # full name, as users see it
+short_name: MP              # how the assistant refers to it (use the full name again if there is no short form)
+assistant_name: MP Assist   # the bot's own name
+followups: 3                # how many follow-up questions the bot suggests after an answer
+doc_search_tool: search_docs  # MCP tool whose results are listed as sources under an answer
+sources_key: r-doc            # key of that list in the API's "sources" field
