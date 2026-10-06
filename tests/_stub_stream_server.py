@@ -11,6 +11,8 @@ A keyword anywhere in the question picks the path (otherwise a normal answer):
   covid      an "a" topic matches: disclaimer appended to the answer
   nosources  the agent answers without searching: no sources
   crash      the agent fails mid-answer: the stream breaks off without "done"
+  kg         the agent also calls Dug's get_concept_graph: a real result for congenital
+             heart disease (fixtures/dug_concept_graph_chd.json)
 """
 
 import asyncio
@@ -25,6 +27,9 @@ from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 import bdc_assist.api as api
 from bdc_assist import prompts
 from bdc_assist.graph import build_graph
+
+
+DUG_CHD = json.loads((Path(__file__).parent / "fixtures" / "dug_concept_graph_chd.json").read_text())
 
 
 def _has(text: str, word: str) -> bool:
@@ -42,6 +47,12 @@ class SlowAgent:
             content="Let me look that up. ", id="m1",
             tool_call_chunks=[{"name": "search_docs", "args": "", "id": "t1", "index": 0}]), {})
         await asyncio.sleep(1.5)
+        kg = _has(question, "kg")
+        if kg:
+            yield "messages", (AIMessageChunk(
+                content="", id="m1b",
+                tool_call_chunks=[{"name": "get_concept_graph", "args": "", "id": "t2", "index": 0}]), {})
+            await asyncio.sleep(1.5)
         words = ("**BDC** (BioData Catalyst) is NHLBI's cloud platform for heart, lung, blood, and sleep "
                  "research data. See the [overview](https://biodatacatalyst.nhlbi.nih.gov/about/overview).").split()
         for i, w in enumerate(words):
@@ -58,11 +69,17 @@ class SlowAgent:
             {"content": "BDC is ... (again)", "score": 0.9, "metadata": {"page_url": "https://biodatacatalyst.nhlbi.nih.gov/about/overview",
                                                                           "doc_type": "page", "headings": "Overview"}},
         ]
-        yield "values", {"messages": [
-            AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": payload["messages"][0]["content"]}, "id": "t1"}]),
+        messages = [
+            AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": question}, "id": "t1"}]),
             ToolMessage(content=[{"type": "text", "text": json.dumps(c)} for c in chunks], tool_call_id="t1"),
-            AIMessage(content=" ".join(words)),
-        ]}
+        ]
+        if kg:
+            messages += [
+                AIMessage(content="", tool_calls=[{"name": "get_concept_graph", "id": "t2",
+                                                   "args": {"concept_id": "MONDO:0005453", "expand_depth": 2, "limit": 50}}]),
+                ToolMessage(content=[{"type": "text", "text": json.dumps(DUG_CHD)}], tool_call_id="t2"),
+            ]
+        yield "values", {"messages": [*messages, AIMessage(content=" ".join(words))]}
 
     async def _answer_without_search(self):
         words = "BDC stands for BioData Catalyst. No documents were needed for that.".split()

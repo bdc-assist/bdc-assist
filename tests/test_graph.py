@@ -4,7 +4,7 @@ import json
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 
-from bdc_assist.graph import REJECT, REFUSAL, build_graph
+from bdc_assist.graph import REJECT, REFUSAL, _knowledge_graph, build_graph
 from bdc_assist.prompts import normalize_bdc_names
 
 PREDEFINED = {
@@ -195,7 +195,10 @@ def test_stream_chat_emits_progress_tokens_and_done():
     assert "".join(tokens) == "Agent answer about BDC."  # no guardrail/classifier chatter mixed in
     assert events[-1] == {"type": "done", "answer": "Agent answer about BDC.\n\nCovid disclaimer.",
                           "blocked": False, "topics": ["covid"], "followups": [],
-                          "tool_results": [TOOL_RESULT], "sources": SOURCES, "sources_md": SOURCES_MD}
+                          "tool_results": [TOOL_RESULT], "sources": SOURCES, "sources_md": SOURCES_MD,
+                          "graph": {}}
+    # no tool returned a graph, so no graph event
+    assert not any(e["type"] == "graph" for e in events)
 
 
 def test_rejected_answer_gets_reject_reply_without_disclaimer():
@@ -207,3 +210,25 @@ def test_rejected_answer_gets_reject_reply_without_disclaimer():
     # the rejected answer's sources must not decorate the canned reply
     assert state["sources"] == {}
     assert state["sources_md"] == ""
+    assert state["graph"] == {}
+
+
+def test_knowledge_graph_from_dug_concept_graph():
+    def row(vid, sid):
+        return {"concept": "chd", "concept_id": "C", "concept_type": "biolink.NamedThing",
+                "variable_name": f"name {vid}", "variable_id": vid,
+                "study_name": f"study {sid}", "study_id": sid, "related_concepts_count": 3}
+
+    call = {"tool": "get_concept_graph", "args": {"concept_id": "C"},
+            "result": {"concept_id": "C", "graph": [row("v1", "s1"), row("v2", "s1")]}}
+    again = {**call, "result": {"graph": [row("v2", "s1")]}}  # same nodes and edges twice
+    other = {"tool": "search_concepts", "args": {}, "result": {"graph": [row("v9", "s9")]}}  # wrong tool
+    graph = _knowledge_graph([TOOL_RESULT, call, again, other])
+    assert graph["nodes"] == [
+        {"id": "C", "label": "chd", "type": "concept", "concept_type": "biolink.NamedThing"},  # as Dug wrote it
+        {"id": "v1", "label": "name v1", "type": "variable", "related_concepts_count": 3},
+        {"id": "s1", "label": "study s1", "type": "study"},
+        {"id": "v2", "label": "name v2", "type": "variable", "related_concepts_count": 3}]
+    assert graph["edges"] == [{"source": "v1", "target": "C"}, {"source": "v1", "target": "s1"},
+                              {"source": "v2", "target": "C"}, {"source": "v2", "target": "s1"}]
+    assert _knowledge_graph([TOOL_RESULT, other]) == {}

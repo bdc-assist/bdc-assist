@@ -69,7 +69,7 @@ uv run uvicorn bdc_assist.api:app --port 8010
 ```
 
 `POST /chat` with `{"input": "...", "chat_history": [{"role": "user|assistant", "content": "..."}]}`
-returns `{"answer", "blocked", "topics", "followups", "tool_results", "sources", "sources_md"}`. The
+returns `{"answer", "blocked", "topics", "followups", "tool_results", "sources", "sources_md", "graph"}`. The
 server is stateless — the
 client keeps history. `tool_results` is every tool call the agent made, as `{tool, args, result}` with
 the tool's decoded JSON: doc chunks with their metadata (`page_url`, `doc_type`, ...) from `search_docs`,
@@ -86,7 +86,10 @@ deduplicated on link and in relevance order; `sources_md` is the same list as ma
 - `{"type": "sources", sources, sources_md}` — the agent finished; its documentation sources
   (same values as in `done`, sent early so a UI can show them while the guardrail and
   follow-up steps still run)
-- `{"type": "done", answer, blocked, topics, followups, tool_results, sources, sources_md}` — final state; the done answer is
+- `{"type": "graph", graph}` — the agent finished; the graph behind its Dug `get_concept_graph`
+  calls (concept ← variables → studies), as `{nodes: [{id, label, type}], edges: [{source,
+  target}]}`; type is `concept`, `variable` or `study`. Only sent when non-empty
+- `{"type": "done", answer, blocked, topics, followups, tool_results, sources, sources_md, graph}` — final state; the done answer is
   authoritative (rejects, disclaimers, canned replies may replace the streamed text)
 
 Minimal browser UI for it: open `tests/streaming_demo.html` (point it at another server
@@ -110,7 +113,7 @@ back behind placeholder bars until the output guardrail has passed it, instead o
 Without real services, run the stub (`uv run python tests/_stub_stream_server.py`) and put a
 keyword in the question to pick a path: `block` (input guardrail refuses), `reject` (output
 guardrail replaces the draft), `canned` (predefined reply), `covid` (disclaimer appended),
-`nosources`, or `crash` (stream breaks off mid-answer).
+`nosources`, `crash` (stream breaks off mid-answer), or `kg` (adds a real Dug `get_concept_graph` result, so a graph).
 
 ## Test / demo
 

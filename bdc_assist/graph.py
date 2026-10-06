@@ -33,6 +33,7 @@ class BotState(TypedDict, total=False):
                             # with their metadata, knowledge-graph rows, etc., for the client to show
     sources: dict           # {"bdc-doc": [{title, link, type}]} — distinct documents behind search_docs
     sources_md: str         # the same as a markdown list, ready to append to the answer
+    graph: dict             # {"nodes": [...], "edges": [...]}: concepts, variables, studies from Dug
     blocked: bool           # input_guardrail verdict
     rejected: bool          # output_guardrail rejected the agent answer
 
@@ -91,6 +92,30 @@ def _doc_sources(tool_results: list) -> list[dict]:
             seen.add(link)
             out.append({"title": _doc_title(m, link), "link": link, "type": m.get("doc_type", "")})
     return out
+
+
+def _knowledge_graph(tool_results: list) -> dict:
+    """The graph behind Dug's get_concept_graph calls. Each result row
+    {concept_id, concept, concept_type, variable_id, variable_name, study_id,
+    study_name, related_concepts_count} links one variable to the concept and to its
+    study. Returns {"nodes": [{id, label, type}], "edges": [{source, target}]}, type
+    being "concept" | "variable" | "study"; concepts also carry Dug's concept_type,
+    variables its related_concepts_count. Edges run variable → concept and variable →
+    study, untyped (Dug names no relation). Nodes and edges are deduplicated across
+    calls; empty dict when there were no such calls."""
+    nodes, edges = {}, {}
+    for tr in tool_results:
+        rows = tr["result"].get("graph") if tr["tool"] == "get_concept_graph" and isinstance(tr["result"], dict) else None
+        for r in rows if isinstance(rows, list) else []:
+            cid, vid, sid = r["concept_id"], r["variable_id"], r["study_id"]
+            nodes.setdefault(cid, {"id": cid, "label": r.get("concept", cid), "type": "concept",
+                                   "concept_type": r.get("concept_type", "")})
+            nodes.setdefault(vid, {"id": vid, "label": r.get("variable_name", vid), "type": "variable",
+                                   "related_concepts_count": r.get("related_concepts_count", 0)})
+            nodes.setdefault(sid, {"id": sid, "label": r.get("study_name", sid), "type": "study"})
+            for target in (cid, sid):
+                edges.setdefault((vid, target), {"source": vid, "target": target})
+    return {"nodes": list(nodes.values()), "edges": list(edges.values())} if nodes else {}
 
 
 def _sources_md(sources: list[dict]) -> str:
@@ -204,8 +229,11 @@ def build_graph(llm, agent, predefined: dict):
         # sources are final once the agent is done: send them now rather than with
         # "done", which waits for the guardrail and follow-up nodes
         writer({"type": "sources", "sources": sources, "sources_md": sources_md})
+        kg = _knowledge_graph(tool_results)
+        if kg:
+            writer({"type": "graph", "graph": kg})
         return {"answer": result["messages"][-1].content, "tool_results": tool_results,
-                "sources": sources, "sources_md": sources_md}
+                "sources": sources, "sources_md": sources_md, "graph": kg}
 
     async def output_guardrail(state: BotState):
         """
@@ -222,10 +250,10 @@ def build_graph(llm, agent, predefined: dict):
 
     async def output_reject(state: BotState):
         """
-        Replace a rejected answer with the canned REJECT reply, and drop its sources —
-        they belong to the answer that was rejected. tool_results stay, for debugging.
+        Replace a rejected answer with the canned REJECT reply, and drop its sources and
+        graph — they belong to the answer that was rejected. tool_results stay, for debugging.
         """
-        return {"answer": REJECT, "sources": {}, "sources_md": ""}
+        return {"answer": REJECT, "sources": {}, "sources_md": "", "graph": {}}
 
     async def append_disclaimer(state: BotState):
         """

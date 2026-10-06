@@ -33,6 +33,7 @@ class ChatResponse(BaseModel):
     tool_results: list[dict] = []  # {tool, args, result}: doc chunks + metadata, graph rows, ...
     sources: dict = {}             # {"bdc-doc": [{title, link, type}]}, deduplicated
     sources_md: str = ""           # the same as a markdown list
+    graph: dict = {}               # {"nodes": [{id, label, type}], "edges": [{source, target}]}
 
 
 graph = None
@@ -65,7 +66,8 @@ async def stream_chat(graph, input: str, chat_history: list):
       {"type": "token", "text"}   one token of the agent's provisional answer
       {"type": "reset"}           new model turn — discard tokens so far
       {"type": "sources", sources, sources_md}  the agent finished; its doc sources
-      {"type": "done", answer, blocked, topics, followups, tool_results, sources, sources_md}
+      {"type": "graph", graph}    the agent finished; its knowledge graph (only when non-empty)
+      {"type": "done", answer, blocked, topics, followups, tool_results, sources, sources_md, graph}
         final state — the
         done answer is authoritative (rejects, disclaimers, canned replies).
     Custom-stream events come only from graph.py nodes, so guardrail/classifier
@@ -83,7 +85,8 @@ async def stream_chat(graph, input: str, chat_history: list):
             "blocked": state.get("blocked", False),
             "topics": state.get("topics", []), "followups": state.get("followups", []),
             "tool_results": state.get("tool_results", []),
-            "sources": state.get("sources", {}), "sources_md": state.get("sources_md", "")}
+            "sources": state.get("sources", {}), "sources_md": state.get("sources_md", ""),
+            "graph": state.get("graph", {})}
     yield f"data: {json.dumps(done)}\n\n"
 
 
@@ -103,4 +106,5 @@ async def chat(req: ChatRequest) -> ChatResponse:
     return ChatResponse(answer=state["answer"], blocked=state.get("blocked", False),
                         topics=state.get("topics", []), followups=state.get("followups", []),
                         tool_results=state.get("tool_results", []),
-                        sources=state.get("sources", {}), sources_md=state.get("sources_md", ""))
+                        sources=state.get("sources", {}), sources_md=state.get("sources_md", ""),
+                        graph=state.get("graph", {}))
