@@ -1,4 +1,4 @@
-import { makeAssistantDataUI, ThreadPrimitive, useAuiState } from '@assistant-ui/react'
+import { makeAssistantDataUI, useAui, useAuiState } from '@assistant-ui/react'
 import {
   BookOpenIcon,
   CalendarDaysIcon,
@@ -171,24 +171,28 @@ const RejectedUI = makeAssistantDataUI({
 // Under the last answer, in the message itself rather than the sticky footer
 // above the composer, so they scroll away with the answer instead of taking
 // room from the chat. Only the last answer's are offered, and not while a new
-// one runs; clicking one sends it.
+// one runs; clicking one sends it. Not ThreadPrimitive.Suggestion: inside a
+// message its `composer` is the message's edit composer, and clearing that after
+// sending throws ("Composer is not available"). Appending to the thread directly
+// also leaves whatever the user has typed in the composer alone.
 const FollowupsUI = makeAssistantDataUI<string[]>({
   name: FOLLOWUPS_PART,
   render: function Followups({ data }: { data: string[] }) {
+    const aui = useAui()
     const offered = useAuiState((s) => s.message.isLast && !s.thread.isRunning)
     if (!offered) return null
     return (
       <ul data-slot="bdc-followups" aria-label="Suggested follow-ups" className="mt-3 flex flex-col items-start gap-0.5">
         {data.map((prompt) => (
           <li key={prompt}>
-            <ThreadPrimitive.Suggestion
-              prompt={prompt}
-              send
+            <button
+              type="button"
+              onClick={() => aui.thread().append({ content: [{ type: 'text', text: prompt }] })}
               className="text-muted-foreground hover:text-foreground hover:bg-muted -mx-1.5 flex items-baseline gap-1.5 rounded-md px-1.5 py-0.5 text-start text-sm transition-colors"
             >
               <CornerDownRightIcon className="size-3.5 shrink-0 self-center" />
               {prompt}
-            </ThreadPrimitive.Suggestion>
+            </button>
           </li>
         ))}
       </ul>
