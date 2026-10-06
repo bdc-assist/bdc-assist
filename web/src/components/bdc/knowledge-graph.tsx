@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { bridges, sharedOnly as onlyShared } from '@/kg/bridges'
 import { collapseVersions } from '@/kg/collapse'
 import { connections } from '@/kg/connections'
 import { nodeLinks, type KgLink } from '@/kg/links'
@@ -67,7 +68,7 @@ const VIEW_LABELS: Record<KgLayout | 'list', string> = { radial: 'Radial', colum
  * the list is this wrapper's own, but to the user they're all ways to view it. */
 function ViewPicker({ layout, mode, onLayout, onMode }: Pick<GraphBodyProps, 'layout' | 'mode' | 'onLayout' | 'onMode'>) {
   return (
-    <label className="ml-auto flex items-center gap-1.5">
+    <label className="flex items-center gap-1.5">
       View
       <select
         value={mode === 'list' ? 'list' : layout}
@@ -231,13 +232,17 @@ type GraphBodyProps = {
   onLayout: (l: KgLayout) => void
   mode: ViewMode
   onMode: (m: ViewMode) => void
+  sharedOnly: boolean
+  onSharedOnly: (on: boolean) => void
+  canShare: boolean // some study connects two or more concepts: offer the filter
   zoomGestures: boolean | 'modifier' // see mountGraph: 'modifier' where the chat scrolls around the graph
 }
 
 const ZOOM_STEP = 1.3
 const ZOOM_KEY = /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl'
 
-function GraphBody({ json, shown, canvasClass, layout, onLayout, mode, onMode, zoomGestures }: GraphBodyProps) {
+function GraphBody(props: GraphBodyProps) {
+  const { json, shown, canvasClass, layout, onLayout, mode, onMode, sharedOnly, onSharedOnly, canShare, zoomGestures } = props
   const container = useRef<HTMLDivElement>(null)
   const view = useRef<GraphView | null>(null)
   const [selected, setSelected] = useState<KgNode | null>(null)
@@ -253,6 +258,7 @@ function GraphBody({ json, shown, canvasClass, layout, onLayout, mode, onMode, z
   useEffect(() => {
     const v = mountGraph(container.current!, JSON.parse(json) as KgGraph, {
       layout,
+      sharedOnly,
       zoomGestures,
       onZoomHint: showZoomHint,
       onSelect: setSelected,
@@ -272,6 +278,7 @@ function GraphBody({ json, shown, canvasClass, layout, onLayout, mode, onMode, z
   }, [json]) // eslint-disable-line react-hooks/exhaustive-deps -- layout: see below
 
   useEffect(() => view.current?.setOptions({ layout }), [layout])
+  useEffect(() => view.current?.setOptions({ sharedOnly }), [sharedOnly])
 
   // picked in the list: the graph shows it selected too, for when it's switched back
   // (clicking the selected row again clears it, like the graph's background)
@@ -285,7 +292,15 @@ function GraphBody({ json, shown, canvasClass, layout, onLayout, mode, onMode, z
     <div data-slot="bdc-graph" className="flex min-h-0 flex-1 flex-col text-xs">
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-3 py-1.5">
         <Legend />
-        <ViewPicker layout={layout} mode={mode} onLayout={onLayout} onMode={onMode} />
+        <div className="ml-auto flex items-center gap-3">
+          {canShare && (
+            <label className="flex items-center gap-1.5" title="Only the studies with variables on two or more concepts">
+              <input type="checkbox" checked={sharedOnly} onChange={(e) => onSharedOnly(e.target.checked)} />
+              Shared only
+            </label>
+          )}
+          <ViewPicker layout={layout} mode={mode} onLayout={onLayout} onMode={onMode} />
+        </div>
       </div>
       {mode === 'list' && (
         <div className={`overflow-y-auto border-t ${canvasClass}`}>
@@ -333,15 +348,24 @@ export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
   // shared by the panel and the dialog
   const [layout, setLayout] = useState<KgLayout>('radial')
   const [mode, setMode] = useState<ViewMode>('graph')
+  const [sharedOnly, setSharedOnly] = useState(false)
   // the message is re-rendered on every stream event, and done delivers the same
   // graph again as a new object: redraw only when the content changes
   const json = JSON.stringify(graph)
-  const shown = useMemo(() => collapseVersions(JSON.parse(json) as KgGraph), [json])
+  const merged = useMemo(() => collapseVersions(JSON.parse(json) as KgGraph), [json])
+  const sharedStudies = useMemo(() => {
+    const ids = bridges(merged)
+    return merged.nodes.filter((n) => n.type === 'study' && ids.has(n.id)).length
+  }, [merged])
+  // what the list and the details see: the same as mountGraph draws
+  const shown = useMemo(() => (sharedOnly ? onlyShared(merged) : merged), [merged, sharedOnly])
   const title = (
     <>
-      <span className="text-foreground font-medium">Knowledge graph</span> · {summary(shown)}
+      <span className="text-foreground font-medium">Knowledge graph</span> · {summary(merged)}
+      {sharedStudies > 0 && ` · ${sharedStudies} shared`}
     </>
   )
+  const filter = { sharedOnly, onSharedOnly: setSharedOnly, canShare: sharedStudies > 0 }
 
   return (
     <>
@@ -369,6 +393,7 @@ export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
           onLayout={setLayout}
           mode={mode}
           onMode={setMode}
+          {...filter}
           zoomGestures="modifier"
         />
       </details>
@@ -387,6 +412,7 @@ export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
               onLayout={setLayout}
               mode={mode}
               onMode={setMode}
+              {...filter}
               zoomGestures
             />
           )}

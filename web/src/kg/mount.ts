@@ -1,5 +1,6 @@
 import cytoscape, { type LayoutOptions, type StylesheetJson } from 'cytoscape'
 
+import { bridges, sharedOnly } from './bridges'
 import { collapseVersions } from './collapse'
 import { columnPositions } from './columns'
 import { connections } from './connections'
@@ -20,6 +21,8 @@ export type GraphOptions = {
   collapseVersions?: boolean
   /** How to arrange the nodes (default 'radial'). */
   layout?: KgLayout
+  /** Show only what two or more concepts share (see bridges/sharedOnly; default false). */
+  sharedOnly?: boolean
   /** Zoom with the mouse wheel and pinch. false (default): no, the wheel scrolls
    * the page. 'modifier': only with Ctrl/⌘ held (trackpad pinch counts: browsers
    * send it as Ctrl + wheel), so a plain wheel still scrolls the page around the
@@ -35,7 +38,8 @@ export type GraphOptions = {
 export type GraphView = {
   /** Draw another graph, or the same with changed options. */
   update(graph: KgGraph, options?: Partial<GraphOptions>): void
-  /** Change options for the current graph: a new layout only rearranges the nodes. */
+  /** Change options for the current graph: a new layout only rearranges the nodes;
+   * collapseVersions and sharedOnly redraw it (and clear the selection). */
   setOptions(options: Partial<GraphOptions>): void
   /** Mark a node selected (null: none), e.g. one picked in a list next to the graph.
    * Ids are as drawn (collapsed or not). Doesn't call onSelect. */
@@ -71,7 +75,8 @@ const PADDING = 16
 /**
  * Draw `graph` into `container` (which needs a height). Variables are coloured from
  * --kg-variable-low to --kg-variable-high the more other concepts they link to
- * (related_concepts_count). Clicking a
+ * (related_concepts_count); nodes connecting two or more concepts get an amber halo.
+ * Clicking a
  * node (or select()) highlights what it's connected to (see connections) and fades
  * the rest; clicking the background clears it.
  * No framework required; React, Vue or plain HTML hosts all call this the same way.
@@ -127,10 +132,14 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
   let drawn: KgGraph = graph
   function draw() {
     drawn = opts.collapseVersions ? collapseVersions(current) : current
+    if (opts.sharedOnly) drawn = sharedOnly(drawn) // after merging: it can create bridges
     shown = new Map(drawn.nodes.map((n) => [n.id, n]))
+    const shared = bridges(drawn)
     cy.batch(() => {
       cy.elements().remove()
       cy.add(toElements(drawn))
+      // nodes that connect two or more concepts get a halo (`bridge`)
+      cy.nodes().forEach((n) => void n.toggleClass('bridge', shared.has(n.id())))
     })
     arrange()
   }
@@ -195,7 +204,8 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
       draw()
     },
     setOptions(o) {
-      const redraw = o.collapseVersions !== undefined && o.collapseVersions !== opts.collapseVersions
+      const changed = (k: 'collapseVersions' | 'sharedOnly') => o[k] !== undefined && o[k] !== opts[k]
+      const redraw = changed('collapseVersions') || changed('sharedOnly')
       const relayout = o.layout !== undefined && o.layout !== opts.layout
       opts = { ...opts, ...o }
       cy.userZoomingEnabled(opts.zoomGestures === true)
@@ -282,6 +292,17 @@ function styleFor(el: HTMLElement): StylesheetJson {
     },
     { selector: 'node.columns[type = "concept"]', style: { 'text-halign': 'left', 'text-margin-x': -5 } },
     { selector: 'edge', style: { width: 1, 'line-color': color('edge'), 'curve-style': 'straight' } },
+    {
+      // connects two or more concepts: a soft halo in the concept colour
+      selector: 'node.bridge',
+      style: {
+        'underlay-color': color('concept'),
+        'underlay-padding': 6,
+        'underlay-opacity': 0.35,
+        'underlay-shape': 'ellipse',
+      },
+    },
+    { selector: 'node.bridge[type = "study"]', style: { 'underlay-shape': 'round-rectangle' } },
     { selector: '.faded', style: { opacity: 0.15 } },
     {
       // highlighted: whole labels (no "…"), on a backing so they stay readable over edges
