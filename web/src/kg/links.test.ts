@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { collapseVersions } from './collapse'
 import chd from './fixtures/chd-graph.json'
+// every CURIE prefix Dug can return, per biolink category (from the Dug team)
+import dugPrefixes from '../../../tests/fixtures/dug_curie_prefixes.json'
 import { conceptLink, nodeLinks } from './links'
 import type { KgGraph } from './types'
 
@@ -48,12 +50,26 @@ describe('conceptLink', () => {
   it('uses the right provider per prefix', () => {
     expect(conceptLink('EFO:1002011')?.url).toBe('https://www.ebi.ac.uk/ols4/ontologies/efo/classes?obo_id=EFO%3A1002011')
     expect(conceptLink('UMLS:C0155886')).toEqual({
-      label: 'UMLS:C0155886 (UMLS login)',
+      label: 'UMLS:C0155886 (login)',
       url: 'https://uts.nlm.nih.gov/uts/umls/concept/C0155886',
     })
+    expect(conceptLink('GTOPDB:1755')?.url).toBe(
+      'https://www.guidetopharmacology.org/GRAC/LigandDisplayForward?ligandId=1755',
+    )
     // any prefix Dug hasn't returned yet
     expect(conceptLink('HP:0001903')?.url).toBe('https://bioregistry.io/HP%3A0001903')
     expect(conceptLink('NCBIGene:3043')?.url).toBe('https://bioregistry.io/NCBIGene%3A3043')
+  })
+
+  it('marks sources that need an account', () => {
+    for (const id of ['UMLS:C1', 'SNOMEDCT:1', 'MEDDRA:1', 'GTOPDB:1']) expect(conceptLink(id)?.label).toBe(`${id} (login)`)
+    expect(conceptLink('MONDO:1')?.label).toBe('MONDO:1')
+  })
+
+  it('links every prefix Dug can return', () => {
+    const prefixes = new Set(Object.values(dugPrefixes).flatMap((c) => Object.keys(c.curie_prefix)))
+    expect(prefixes.size).toBe(67)
+    for (const p of prefixes) expect(conceptLink(`${p}:123`)?.url, p).toMatch(/^https:\/\//)
   })
 
   it('needs a prefix', () => {

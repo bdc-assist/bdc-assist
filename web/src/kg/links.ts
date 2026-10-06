@@ -4,18 +4,25 @@ export type KgLink = { label: string; url: string }
 
 const DBGAP = 'https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin'
 
-/** The page for a concept id (CURIE). Only the prefixes Dug has returned so far get
- * their own scheme: MONDO → OBO PURL, EFO → EBI's ontology browser, UMLS → NLM's UTS
- * (needs a UTS login). Any other prefix → bioregistry.io, which redirects to the
- * prefix's own provider. */
+// Sources whose pages need an account (UTS, BioPortal, GtoPdb): the link says so
+const LOGIN = new Set(['UMLS', 'SNOMEDCT', 'MEDDRA', 'GTOPDB'])
+
+/** The page for a concept id (CURIE). Dug's prefixes are listed in
+ * tests/fixtures/dug_curie_prefixes.json. Most common: MONDO → OBO PURL, EFO → EBI's
+ * ontology browser, UMLS → NLM's UTS. GTOPDB → Guide to Pharmacology (its ligands;
+ * bioregistry knows it under another name). Any other prefix → bioregistry.io,
+ * which redirects to the prefix's own provider. */
 export function conceptLink(id: string): KgLink | null {
   const i = id.indexOf(':')
   if (i < 1) return null
   const [prefix, local] = [id.slice(0, i), id.slice(i + 1)]
-  if (prefix === 'MONDO') return { label: id, url: `https://purl.obolibrary.org/obo/MONDO_${local}` }
-  if (prefix === 'EFO') return { label: id, url: `https://www.ebi.ac.uk/ols4/ontologies/efo/classes?obo_id=${encodeURIComponent(id)}` }
-  if (prefix === 'UMLS') return { label: `${id} (UMLS login)`, url: `https://uts.nlm.nih.gov/uts/umls/concept/${encodeURIComponent(local)}` }
-  return { label: id, url: `https://bioregistry.io/${encodeURIComponent(id)}` }
+  const label = LOGIN.has(prefix) ? `${id} (login)` : id
+  const local_ = encodeURIComponent(local)
+  if (prefix === 'MONDO') return { label, url: `https://purl.obolibrary.org/obo/MONDO_${local_}` }
+  if (prefix === 'EFO') return { label, url: `https://www.ebi.ac.uk/ols4/ontologies/efo/classes?obo_id=${encodeURIComponent(id)}` }
+  if (prefix === 'UMLS') return { label, url: `https://uts.nlm.nih.gov/uts/umls/concept/${local_}` }
+  if (prefix === 'GTOPDB') return { label, url: `https://www.guidetopharmacology.org/GRAC/LigandDisplayForward?ligandId=${local_}` }
+  return { label, url: `https://bioregistry.io/${encodeURIComponent(id)}` }
 }
 
 // phv00001546.v1.p15 → variable number 1546, participant set p15
