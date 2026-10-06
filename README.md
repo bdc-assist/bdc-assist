@@ -74,8 +74,10 @@ server is stateless — the
 client keeps history. `tool_results` is every tool call the agent made, as `{tool, args, result}` with
 the tool's decoded JSON: doc chunks with their metadata (`page_url`, `doc_type`, ...) from `search_docs`,
 knowledge-graph rows from the Dug tools. Render sources/graphs from it; the answer text is separate.
-`sources` is the distinct documents behind those chunks, `{"bdc-doc": [{title, link, type}]}`,
-deduplicated on link and in relevance order; `sources_md` is the same list as markdown.
+`sources` is what the answer drew on, keyed by where it came from, each entry `{title, link, type}`
+and deduplicated on link: `"bdc-doc"`, the distinct documents behind those chunks in relevance
+order, and `"dug"`, the studies the Dug tools cite (their `_sources`, `type: "dbgap-study"`).
+`sources_md` is all of them as one markdown list.
 
 `POST /chat/stream` takes the same body and answers as SSE, one JSON object per event:
 
@@ -83,7 +85,7 @@ deduplicated on link and in relevance order; `sources_md` is the same list as ma
 - `{"type": "status", "text"}` — what the agent is doing (tool calls)
 - `{"type": "token", "text"}` — one token of the agent's provisional answer
 - `{"type": "reset"}` — new model turn: discard the tokens streamed so far
-- `{"type": "sources", sources, sources_md}` — the agent finished; its documentation sources
+- `{"type": "sources", sources, sources_md}` — the agent finished; its sources (documents, studies)
   (same values as in `done`, sent early so a UI can show them while the guardrail and
   follow-up steps still run)
 - `{"type": "graph", graph}` — the agent finished; the graph behind its Dug `get_concept_graph`

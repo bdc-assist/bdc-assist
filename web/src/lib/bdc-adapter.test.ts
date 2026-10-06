@@ -145,7 +145,7 @@ describe('createBdcAdapter', () => {
   it('keeps the graph from its event, and lets done override it', async () => {
     const graph = {
       nodes: [
-        { id: 'MONDO:1', label: 'chd', type: 'concept', concept_type: 'biolink.NamedThing' },
+        { id: 'MONDO:1', label: 'chd', type: 'concept', concept_type: 'biolink:NamedThing' },
         { id: 'phv1', label: 'FC219', type: 'variable', related_concepts_count: 12 },
       ],
       edges: [{ source: 'phv1', target: 'MONDO:1' }],

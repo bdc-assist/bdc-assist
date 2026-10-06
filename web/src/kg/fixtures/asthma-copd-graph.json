@@ -4,7 +4,7 @@
       "id": "MONDO:0004979",
       "label": "asthma",
       "type": "concept",
-      "concept_type": "biolink.NamedThing"
+      "concept_type": "biolink:NamedThing"
     },
     {
       "id": "phv00123418.v1.p1",
@@ -410,7 +410,7 @@
       "id": "MONDO:0005002",
       "label": "chronic obstructive pulmonary disease",
       "type": "concept",
-      "concept_type": "biolink.NamedThing"
+      "concept_type": "biolink:NamedThing"
     },
     {
       "id": "phv00002837.v1.p15",

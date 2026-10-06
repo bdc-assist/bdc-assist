@@ -4,7 +4,7 @@ import json
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 
-from bdc_assist.graph import REJECT, REFUSAL, _knowledge_graph, build_graph
+from bdc_assist.graph import REJECT, REFUSAL, _dug_sources, _knowledge_graph, _sources_md, build_graph
 from bdc_assist.prompts import normalize_bdc_names
 
 PREDEFINED = {
@@ -215,7 +215,7 @@ def test_rejected_answer_gets_reject_reply_without_disclaimer():
 
 def test_knowledge_graph_from_dug_concept_graph():
     def row(vid, sid):
-        return {"concept": "chd", "concept_id": "C", "concept_type": "biolink.NamedThing",
+        return {"concept": "chd", "concept_id": "C", "concept_type": "biolink:NamedThing",
                 "variable_name": f"name {vid}", "variable_id": vid,
                 "study_name": f"study {sid}", "study_id": sid, "related_concepts_count": 3}
 
@@ -225,10 +225,25 @@ def test_knowledge_graph_from_dug_concept_graph():
     other = {"tool": "search_concepts", "args": {}, "result": {"graph": [row("v9", "s9")]}}  # wrong tool
     graph = _knowledge_graph([TOOL_RESULT, call, again, other])
     assert graph["nodes"] == [
-        {"id": "C", "label": "chd", "type": "concept", "concept_type": "biolink.NamedThing"},  # as Dug wrote it
+        {"id": "C", "label": "chd", "type": "concept", "concept_type": "biolink:NamedThing"},  # verbatim
         {"id": "v1", "label": "name v1", "type": "variable", "related_concepts_count": 3},
         {"id": "s1", "label": "study s1", "type": "study"},
         {"id": "v2", "label": "name v2", "type": "variable", "related_concepts_count": 3}]
     assert graph["edges"] == [{"source": "v1", "target": "C"}, {"source": "v1", "target": "s1"},
                               {"source": "v2", "target": "C"}, {"source": "v2", "target": "s1"}]
     assert _knowledge_graph([TOOL_RESULT, other]) == {}
+
+
+def test_dug_sources_merge_and_dedupe():
+    fhs = {"title": "Framingham Cohort", "link": "https://x/study?phs000007", "type": "dbgap-study"}
+    aric = {"title": "ARIC", "link": "https://x/study?phs000280", "type": "dbgap-study"}
+    results = [
+        TOOL_RESULT,  # doc chunks: no _sources
+        {"tool": "get_concept_graph", "args": {}, "result": {"graph": [], "_sources": [fhs]}},
+        {"tool": "get_concept_graph", "args": {}, "result": {"graph": [], "_sources": [aric, fhs]}},
+    ]
+    assert _dug_sources(results) == [fhs, aric]  # Framingham once, first-seen order
+    assert _dug_sources([TOOL_RESULT]) == []
+    # in the markdown list after the docs, like any other source
+    md = _sources_md(SOURCES["bdc-doc"] + [fhs])
+    assert md.endswith("\n- [Framingham Cohort](https://x/study?phs000007) (dbgap-study)")

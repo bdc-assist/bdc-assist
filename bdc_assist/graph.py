@@ -31,7 +31,7 @@ class BotState(TypedDict, total=False):
     followups: list[str]    # suggested follow-up questions (empty when none needed)
     tool_results: list      # every tool call the agent made: {tool, args, result} — doc chunks
                             # with their metadata, knowledge-graph rows, etc., for the client to show
-    sources: dict           # {"bdc-doc": [{title, link, type}]} — distinct documents behind search_docs
+    sources: dict           # {"bdc-doc": [...], "dug": [...]} of {title, link, type}: docs behind search_docs, studies from Dug
     sources_md: str         # the same as a markdown list, ready to append to the answer
     graph: dict             # {"nodes": [...], "edges": [...]}: concepts, variables, studies from Dug
     blocked: bool           # input_guardrail verdict
@@ -116,6 +116,20 @@ def _knowledge_graph(tool_results: list) -> dict:
             for target in (cid, sid):
                 edges.setdefault((vid, target), {"source": vid, "target": target})
     return {"nodes": list(nodes.values()), "edges": list(edges.values())} if nodes else {}
+
+
+def _dug_sources(tool_results: list) -> list[dict]:
+    """The studies Dug cites: every result's "_sources" list ({title, link, type:
+    "dbgap-study"}, one per study), deduplicated on link in first-seen order — two
+    concept graphs often share studies."""
+    out, seen = [], set()
+    for tr in tool_results:
+        r = tr["result"]
+        for s in r.get("_sources", []) if isinstance(r, dict) else []:
+            if isinstance(s, dict) and s.get("link") and s["link"] not in seen:
+                seen.add(s["link"])
+                out.append({"title": s.get("title") or s["link"], "link": s["link"], "type": s.get("type", "")})
+    return out
 
 
 def _sources_md(sources: list[dict]) -> str:
@@ -224,8 +238,9 @@ def build_graph(llm, agent, predefined: dict):
                 last_id = msg.id
                 writer({"type": "token", "text": msg.content})
         tool_results = _tool_results(result["messages"])
-        docs = _doc_sources(tool_results)
-        sources, sources_md = ({"bdc-doc": docs} if docs else {}), _sources_md(docs)
+        docs, dug = _doc_sources(tool_results), _dug_sources(tool_results)
+        sources = {k: v for k, v in (("bdc-doc", docs), ("dug", dug)) if v}
+        sources_md = _sources_md(docs + dug)
         # sources are final once the agent is done: send them now rather than with
         # "done", which waits for the guardrail and follow-up nodes
         writer({"type": "sources", "sources": sources, "sources_md": sources_md})

@@ -6,6 +6,7 @@ import {
   CircleHelpIcon,
   CirclePlayIcon,
   CornerDownRightIcon,
+  DatabaseIcon,
   FileTextIcon,
   GlobeIcon,
   LoaderCircleIcon,
@@ -80,6 +81,39 @@ const SOURCE_TYPES: Record<string, { label: string; Icon: LucideIcon }> = {
 }
 const OTHER_SOURCE = { label: 'Source', Icon: FileTextIcon }
 
+// Dug cites every study behind a graph (often 10–20): one icon for them all,
+// listing the studies on hover, instead of a row of identical icons
+const STUDY_TYPE = 'dbgap-study'
+
+function StudiesSource({ studies }: { studies: Source[] }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={`dbGaP studies (${studies.length})`}
+          className="text-muted-foreground hover:text-foreground hover:bg-muted flex h-6 items-center gap-0.5 rounded-md px-1 text-xs transition-colors"
+        >
+          <DatabaseIcon className="size-4" />
+          {studies.length}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="max-h-72 flex-col items-start gap-1 overflow-y-auto">
+        <span className="font-medium">dbGaP studies ({studies.length})</span>
+        <ul className="flex flex-col gap-0.5">
+          {studies.map((s) => (
+            <li key={s.link}>
+              <a href={s.link} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
+                {s.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
 // Right-aligned on the line of the message's copy/refresh toolbar. That
 // toolbar is vendored (thread.aui.tsx AssistantMessage), so rather than edit
 // it, this row copies its box: the message root is `relative pb-7.5`, and the
@@ -96,7 +130,9 @@ const SourcesUI = makeAssistantDataUI<Sources>({
   render: function SourcesRow({ data }) {
     const visible = useToolbarVisible()
     if (!visible) return null
-    const sources: Source[] = Object.values(data as Sources).flat()
+    const all: Source[] = Object.values(data as Sources).flat()
+    const sources = all.filter((s) => s.type !== STUDY_TYPE)
+    const studies = all.filter((s) => s.type === STUDY_TYPE)
     return (
       <ul
         data-slot="bdc-sources"
@@ -127,6 +163,11 @@ const SourcesUI = makeAssistantDataUI<Sources>({
             </li>
           )
         })}
+        {studies.length > 0 && (
+          <li>
+            <StudiesSource studies={studies} />
+          </li>
+        )}
       </ul>
     )
   },

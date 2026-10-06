@@ -6,7 +6,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "F33ANGHRTHSP",
             "variable_id": "phv00202373.v3.p3",
             "study_name": "Women's Health Initiative Clinical Trial and Observational Study",
@@ -16,7 +16,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "FC219",
             "variable_id": "phv00001546.v1.p15",
             "study_name": "Framingham Cohort",
@@ -26,7 +26,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "ANGDIADAY",
             "variable_id": "phv00124261.v1.p1",
             "study_name": "NHLBI Cleveland Family Study (CFS) Candidate Gene Association Resource (CARe)",
@@ -36,7 +36,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "FB230",
             "variable_id": "phv00001350.v1.p12",
             "study_name": "Framingham Cohort",
@@ -46,7 +46,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "F33ANGHRTHSP",
             "variable_id": "phv00202361.v3.p3",
             "study_name": "Women's Health Initiative Clinical Trial and Observational Study",
@@ -56,7 +56,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "HFAA11F",
             "variable_id": "phv00206800.v6.p2",
             "study_name": "Atherosclerosis Risk in Communities (ARIC) Cohort",
@@ -66,7 +66,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "HEARTDIS",
             "variable_id": "phv00122460.v1.p1",
             "study_name": "NHLBI Cleveland Family Study (CFS) Candidate Gene Association Resource (CARe)",
@@ -76,7 +76,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "AFFECTION_STATUS",
             "variable_id": "phv00407048.v1.p1",
             "study_name": "Molecular Genetics of Heterotaxy and Related Congenital Heart Defects",
@@ -86,7 +86,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "FC219",
             "variable_id": "phv00001546.v1.p12",
             "study_name": "Framingham Cohort",
@@ -96,7 +96,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "F33ANGHRTHSPDY",
             "variable_id": "phv00202374.v3.p3",
             "study_name": "Women's Health Initiative Clinical Trial and Observational Study",
@@ -106,7 +106,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "B09CHD",
             "variable_id": "phv00114408.v2.p2",
             "study_name": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
@@ -116,7 +116,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "A09CHD",
             "variable_id": "phv00113042.v2.p2",
             "study_name": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
@@ -126,7 +126,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "A08HRMED",
             "variable_id": "phv00113013.v2.p2",
             "study_name": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
@@ -136,7 +136,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "AFFECTION_STATUS",
             "variable_id": "phv00266817.v1.p2",
             "study_name": "National Heart, Lung, and Blood Institute (NHLBI) Bench to Bassinet Program: The Pediatric Cardiac Genetics Consortium (PCGC) Study",
@@ -146,7 +146,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "FB230",
             "variable_id": "phv00001350.v1.p15",
             "study_name": "Framingham Cohort",
@@ -156,7 +156,7 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "DSRA4",
             "variable_id": "phv00205042.v2.p2",
             "study_name": "Atherosclerosis Risk in Communities (ARIC) Cohort",
@@ -166,12 +166,49 @@
         {
             "concept": "congenital heart disease",
             "concept_id": "MONDO:0005453",
-            "concept_type": "biolink.NamedThing",
+            "concept_type": "biolink:NamedThing",
             "variable_name": "F33ANGHRTHSPDY",
             "variable_id": "phv00202362.v3.p3",
             "study_name": "Women's Health Initiative Clinical Trial and Observational Study",
             "study_id": "phs000200.v12.p3",
             "related_concepts_count": 35
+        }
+    ],
+    "_sources": [
+        {
+            "title": "Women's Health Initiative Clinical Trial and Observational Study",
+            "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000200",
+            "type": "dbgap-study"
+        },
+        {
+            "title": "Framingham Cohort",
+            "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000007",
+            "type": "dbgap-study"
+        },
+        {
+            "title": "NHLBI Cleveland Family Study (CFS) Candidate Gene Association Resource (CARe)",
+            "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000284",
+            "type": "dbgap-study"
+        },
+        {
+            "title": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+            "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000280",
+            "type": "dbgap-study"
+        },
+        {
+            "title": "Molecular Genetics of Heterotaxy and Related Congenital Heart Defects",
+            "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001814",
+            "type": "dbgap-study"
+        },
+        {
+            "title": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+            "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000285",
+            "type": "dbgap-study"
+        },
+        {
+            "title": "National Heart, Lung, and Blood Institute (NHLBI) Bench to Bassinet Program: The Pediatric Cardiac Genetics Consortium (PCGC) Study",
+            "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001194",
+            "type": "dbgap-study"
         }
     ]
 }
