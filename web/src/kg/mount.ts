@@ -3,6 +3,7 @@ import cytoscape, { type LayoutOptions, type StylesheetJson } from 'cytoscape'
 import { collapseVersions } from './collapse'
 import { columnPositions } from './columns'
 import { toElements } from './elements'
+import { orient } from './orient'
 import type { KgGraph, KgNode } from './types'
 
 /**
@@ -18,6 +19,14 @@ export type GraphOptions = {
   collapseVersions?: boolean
   /** How to arrange the nodes (default 'radial'). */
   layout?: KgLayout
+  /** Zoom with the mouse wheel and pinch. false (default): no, the wheel scrolls
+   * the page. 'modifier': only with Ctrl/⌘ held (trackpad pinch counts: browsers
+   * send it as Ctrl + wheel), so a plain wheel still scrolls the page around the
+   * graph. true: always. zoomBy works either way. */
+  zoomGestures?: boolean | 'modifier'
+  /** 'modifier' mode: the wheel turned over the graph without Ctrl/⌘ held, so the
+   * host can say how to zoom. */
+  onZoomHint?: () => void
   /** A node was clicked (null: the background). The host decides what to show. */
   onSelect?: (node: KgNode | null) => void
 }
@@ -27,6 +36,10 @@ export type GraphView = {
   update(graph: KgGraph, options?: Partial<GraphOptions>): void
   /** Change options for the current graph: a new layout only rearranges the nodes. */
   setOptions(options: Partial<GraphOptions>): void
+  /** Zoom in (factor > 1) or out (< 1) around the middle of the view. */
+  zoomBy(factor: number): void
+  /** Show the whole graph. */
+  fit(): void
   /** Call after the container changed size (e.g. was hidden, then shown). */
   resize(): void
   /** Re-read the --kg-* colours (e.g. after a theme change). */
@@ -61,8 +74,9 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
   const cy = cytoscape({
     container,
     style: styleFor(container),
-    // wheel zoom would hijack scrolling of the page or chat the graph sits in
-    userZoomingEnabled: false,
+    userZoomingEnabled: opts.zoomGestures === true,
+    minZoom: 0.1,
+    maxZoom: 4,
     boxSelectionEnabled: false,
   })
   cy.on('tap', 'node', (e) => opts.onSelect?.(shown.get(e.target.id()) ?? null))
@@ -80,6 +94,21 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
     container.style.cursor = ''
   })
 
+  // 'modifier' zoom: Cytoscape's own wheel zoom is off, so handle Ctrl/⌘ + wheel here
+  // (non-passive, to keep the browser from zooming the page instead)
+  function onWheel(e: WheelEvent) {
+    if (opts.zoomGestures !== 'modifier') return
+    if (!(e.ctrlKey || e.metaKey)) return opts.onZoomHint?.()
+    e.preventDefault()
+    const lines = e.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : 1 // Firefox: lines, not pixels
+    const box = container.getBoundingClientRect()
+    cy.zoom({
+      level: cy.zoom() * Math.exp(-e.deltaY * lines * 0.002),
+      renderedPosition: { x: e.clientX - box.left, y: e.clientY - box.top },
+    })
+  }
+  container.addEventListener('wheel', onWheel, { passive: false })
+
   let drawn: KgGraph = graph
   function draw() {
     drawn = opts.collapseVersions ? collapseVersions(current) : current
@@ -94,7 +123,20 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
   function arrange() {
     // labels sit beside the nodes in columns (concepts' on the left), below otherwise
     cy.nodes().toggleClass('columns', opts.layout === 'columns')
-    cy.layout(layoutOptions(opts.layout ?? 'radial')).run()
+    const layout = cy.layout(layoutOptions(opts.layout ?? 'radial'))
+    // force layouts settle at any angle: turn them to match the container's shape
+    if (opts.layout === 'force') layout.one('layoutstop', orientToContainer)
+    layout.run()
+  }
+
+  function orientToContainer() {
+    const nodes = cy.nodes()
+    const turned = orient(
+      nodes.map((n) => ({ ...n.position() })),
+      container.clientWidth >= container.clientHeight,
+    )
+    cy.batch(() => nodes.forEach((n, i) => void n.position(turned[i])))
+    cy.fit(undefined, PADDING)
   }
 
   function layoutOptions(layout: KgLayout): LayoutOptions {
@@ -127,10 +169,20 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
       const redraw = o.collapseVersions !== undefined && o.collapseVersions !== opts.collapseVersions
       const relayout = o.layout !== undefined && o.layout !== opts.layout
       opts = { ...opts, ...o }
+      cy.userZoomingEnabled(opts.zoomGestures === true)
       if (redraw) {
         opts.onSelect?.(null)
         draw()
       } else if (relayout) arrange()
+    },
+    zoomBy(factor) {
+      cy.zoom({
+        level: cy.zoom() * factor,
+        renderedPosition: { x: container.clientWidth / 2, y: container.clientHeight / 2 },
+      })
+    },
+    fit() {
+      cy.fit(undefined, PADDING)
     },
     resize() {
       cy.resize()
@@ -140,6 +192,7 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
       cy.style(styleFor(container))
     },
     destroy() {
+      container.removeEventListener('wheel', onWheel)
       cy.destroy()
     },
   }

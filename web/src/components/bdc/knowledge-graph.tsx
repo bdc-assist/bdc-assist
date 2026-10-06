@@ -1,5 +1,5 @@
 import { makeAssistantDataUI } from '@assistant-ui/react'
-import { ExternalLinkIcon, Maximize2Icon } from 'lucide-react'
+import { ExternalLinkIcon, Maximize2Icon, MinusIcon, PlusIcon, ScanIcon } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -117,16 +117,32 @@ type GraphBodyProps = {
   canvasClass: string
   layout: KgLayout
   onLayout: (l: KgLayout) => void
+  zoomGestures: boolean | 'modifier' // see mountGraph: 'modifier' where the chat scrolls around the graph
 }
 
-function GraphBody({ json, shown, canvasClass, layout, onLayout }: GraphBodyProps) {
+const ZOOM_STEP = 1.3
+const ZOOM_KEY = /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl'
+
+function GraphBody({ json, shown, canvasClass, layout, onLayout, zoomGestures }: GraphBodyProps) {
   const container = useRef<HTMLDivElement>(null)
   const view = useRef<GraphView | null>(null)
   const [selected, setSelected] = useState<KgNode | null>(null)
+  const [zoomHint, setZoomHint] = useState(false)
+  const hintTimer = useRef<number | undefined>(undefined)
+  const showZoomHint = () => {
+    setZoomHint(true)
+    clearTimeout(hintTimer.current)
+    hintTimer.current = window.setTimeout(() => setZoomHint(false), 1500)
+  }
 
   // mounts with the layout of the moment; later changes go through setOptions below
   useEffect(() => {
-    const v = mountGraph(container.current!, JSON.parse(json) as KgGraph, { layout, onSelect: setSelected })
+    const v = mountGraph(container.current!, JSON.parse(json) as KgGraph, {
+      layout,
+      zoomGestures,
+      onZoomHint: showZoomHint,
+      onSelect: setSelected,
+    })
     view.current = v
     // the container's size can change without the window's (details reopened,
     // dialog opening animation): keep the graph fitted to it
@@ -137,6 +153,7 @@ function GraphBody({ json, shown, canvasClass, layout, onLayout }: GraphBodyProp
       v.destroy()
       view.current = null
       setSelected(null)
+      clearTimeout(hintTimer.current)
     }
   }, [json]) // eslint-disable-line react-hooks/exhaustive-deps -- layout: see below
 
@@ -148,7 +165,29 @@ function GraphBody({ json, shown, canvasClass, layout, onLayout }: GraphBodyProp
         <Legend />
         <LayoutPicker layout={layout} onLayout={onLayout} />
       </div>
-      <div ref={container} className={`border-t ${canvasClass}`} aria-label="Knowledge graph" role="img" />
+      <div className={`relative border-t ${canvasClass}`}>
+        {/* sized by height, not `absolute inset-0`: Cytoscape gives its container
+            `position: relative` from an unlayered style sheet, which beats Tailwind's
+            layered utilities, so `absolute` would be dropped and the box collapse */}
+        <div ref={container} className="h-full w-full" aria-label="Knowledge graph" role="img" />
+        <p
+          aria-hidden
+          className={`bg-foreground/75 text-background pointer-events-none absolute inset-x-0 top-1/2 mx-auto w-fit -translate-y-1/2 rounded-md px-3 py-1.5 transition-opacity ${zoomHint ? 'opacity-100' : 'opacity-0'}`}
+        >
+          Hold {ZOOM_KEY} and scroll to zoom
+        </p>
+        <div className="bg-background/80 absolute right-1.5 bottom-1.5 flex rounded-md border">
+          <Button variant="ghost" size="icon-xs" aria-label="Zoom in" title="Zoom in" onClick={() => view.current?.zoomBy(ZOOM_STEP)}>
+            <PlusIcon />
+          </Button>
+          <Button variant="ghost" size="icon-xs" aria-label="Zoom out" title="Zoom out" onClick={() => view.current?.zoomBy(1 / ZOOM_STEP)}>
+            <MinusIcon />
+          </Button>
+          <Button variant="ghost" size="icon-xs" aria-label="Show all" title="Show all" onClick={() => view.current?.fit()}>
+            <ScanIcon />
+          </Button>
+        </div>
+      </div>
       <div className="border-t px-3 py-2">
         <NodeDetails node={selected} graph={shown} />
       </div>
@@ -187,7 +226,14 @@ export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
             <Maximize2Icon />
           </Button>
         </summary>
-        <GraphBody json={json} shown={shown} canvasClass="h-72" layout={layout} onLayout={setLayout} />
+        <GraphBody
+          json={json}
+          shown={shown}
+          canvasClass="h-72"
+          layout={layout}
+          onLayout={setLayout}
+          zoomGestures="modifier"
+        />
       </details>
       <Dialog open={maximized} onOpenChange={setMaximized}>
         <DialogContent
@@ -196,7 +242,14 @@ export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
         >
           <DialogTitle className="text-muted-foreground px-3 py-2.5 pr-12 text-xs font-normal">{title}</DialogTitle>
           {maximized && (
-            <GraphBody json={json} shown={shown} canvasClass="min-h-0 flex-1" layout={layout} onLayout={setLayout} />
+            <GraphBody
+              json={json}
+              shown={shown}
+              canvasClass="min-h-0 flex-1"
+              layout={layout}
+              onLayout={setLayout}
+              zoomGestures
+            />
           )}
         </DialogContent>
       </Dialog>
