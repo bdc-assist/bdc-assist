@@ -1,4 +1,4 @@
-import type { ChatModelAdapter, SuggestionAdapter, ThreadMessage } from '@assistant-ui/react'
+import type { ChatModelAdapter, ThreadMessage } from '@assistant-ui/react'
 
 import { asGraph, type KgGraph } from '@/kg/types'
 import { readSSE } from '@/lib/sse'
@@ -50,6 +50,7 @@ export const BLOCKED_PART = 'bdc-blocked'
 export const DRAFT_PART = 'bdc-draft'
 export const REJECTED_PART = 'bdc-rejected'
 export const GRAPH_PART = 'bdc-graph' // data: KgGraph
+export const FOLLOWUPS_PART = 'bdc-followups' // data: string[]
 
 export type StatusPartData = { node: string | null; status: string | null }
 export type DraftPartData = { words: number }
@@ -85,6 +86,8 @@ export function toContent({ text, streaming, meta }: StreamState, reveal: Reveal
   // only worth saying if the user watched the draft stream in
   if (reveal === 'stream' && meta.rejected) parts.push(data(REJECTED_PART, {}))
   if (meta.blocked) parts.push(data(BLOCKED_PART, {}))
+  // the server sends none for a blocked question; checked anyway, they'd make no sense there
+  if (meta.done && !meta.blocked && meta.followups.length) parts.push(data(FOLLOWUPS_PART, meta.followups))
   return parts
 }
 
@@ -219,14 +222,4 @@ export function createBdcAdapter(
       if (!meta.done) throw new Error('BDC Assist stopped before finishing the answer. Please try again.')
     },
   }
-}
-
-/** Follow-up chips: the runtime asks after each completed run, and the server
- * already sent them on done. */
-export const bdcSuggestionAdapter: SuggestionAdapter = {
-  async generate({ messages }) {
-    const meta = messages.at(-1)?.metadata.custom as Partial<BdcMessageMeta> | undefined
-    if (!meta?.done || meta.blocked) return []
-    return (meta.followups ?? []).map((prompt) => ({ prompt }))
-  },
 }

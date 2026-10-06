@@ -12,7 +12,7 @@ import { Thread } from '@/components/assistant-ui/elements/thread.aui'
 import { BdcMessageParts } from '@/components/bdc/message-parts'
 import { NewConversation } from '@/components/bdc/new-conversation'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { bdcSuggestionAdapter, createBdcAdapter, type Reveal } from '@/lib/bdc-adapter'
+import { createBdcAdapter, type Reveal } from '@/lib/bdc-adapter'
 import { browserStorage, createThreadStorage } from '@/lib/thread-storage'
 
 // demo_services.sh runs bdc-assist on :8010; the stub server is on :8011
@@ -46,7 +46,7 @@ function Starters({ children }: { children: ReactNode }) {
 
 export default function App() {
   const runtime = useLocalRuntime(adapter, {
-    adapters: { suggestion: bdcSuggestionAdapter, history: threadStorage },
+    adapters: { history: threadStorage },
   })
   return (
     <AssistantRuntimeProvider runtime={runtime}>

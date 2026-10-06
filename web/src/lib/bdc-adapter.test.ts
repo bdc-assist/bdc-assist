@@ -3,9 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   BLOCKED_PART,
-  bdcSuggestionAdapter,
   createBdcAdapter,
   DRAFT_PART,
+  FOLLOWUPS_PART,
   GRAPH_PART,
   REJECTED_PART,
   SOURCES_PART,
@@ -236,11 +236,11 @@ describe('data parts', () => {
   })
 
   it('adds sources once known, and none for empty sources', async () => {
-    const { yields } = await run(sse(done()))
+    const { yields } = await run(sse(done({ followups: [] })))
     expect(names(yields[0])).toEqual([SOURCES_PART])
-    const empty = await run(sse(done({ sources: {} })))
+    const empty = await run(sse(done({ sources: {}, followups: [] })))
     expect(names(empty.yields[0])).toEqual([])
-    const emptyList = await run(sse(done({ sources: { 'bdc-doc': [] } })))
+    const emptyList = await run(sse(done({ sources: { 'bdc-doc': [] }, followups: [] })))
     expect(names(emptyList.yields[0])).toEqual([])
   })
 
@@ -254,6 +254,18 @@ describe('data parts', () => {
     const held = await run(events, { reveal: 'after-check' })
     expect(names(held.yields[1])).not.toContain(GRAPH_PART)
     expect(names(held.yields.at(-1)!)).toContain(GRAPH_PART)
+  })
+
+  it('adds the follow-ups last, once done', async () => {
+    const { yields } = await run(sse({ type: 'node', node: 'agent' }, done({ followups: ['A?', 'B?'] })))
+    expect(names(yields[0])).not.toContain(FOLLOWUPS_PART)
+    const last = partsOf(yields.at(-1)!)
+    expect(last.at(-1)).toEqual({ type: 'data', name: FOLLOWUPS_PART, data: ['A?', 'B?'] })
+  })
+
+  it('adds no follow-ups when there are none, or for a blocked question', async () => {
+    expect(names((await run(sse(done({ followups: [] })))).yields[0])).not.toContain(FOLLOWUPS_PART)
+    expect(names((await run(sse(done({ blocked: true })))).yields[0])).not.toContain(FOLLOWUPS_PART)
   })
 
   it('adds the blocked notice', async () => {
@@ -312,7 +324,7 @@ describe("reveal: 'after-check'", () => {
     { type: 'token', text: 'one two three ' },
     { type: 'sources', sources: { 'bdc-doc': [{ title: 'A', link: 'https://a', type: 'faq' }] }, sources_md: '- A' },
     { type: 'token', text: 'four' },
-    done({ answer: 'one two three four' }),
+    done({ answer: 'one two three four', followups: [] }),
   )
   const partsOf = (y: ChatModelRunResult) =>
     (y.content ?? []).slice(1).map((p) => p as { name: string; data: unknown })
@@ -338,26 +350,6 @@ describe("reveal: 'after-check'", () => {
     expect(partsOf(yields[1]).map((p) => p.name)).toEqual([])
     expect(partsOf(yields[2]).map((p) => p.name)).toEqual([SOURCES_PART])
     expect(partsOf(yields[4]).map((p) => p.name)).toEqual([SOURCES_PART])
-  })
-})
-
-describe('bdcSuggestionAdapter', () => {
-  const withMeta = (custom: object) =>
-    ({ role: 'assistant', content: [], metadata: { custom } }) as unknown as ThreadMessage
-  const generate = (custom: object) =>
-    bdcSuggestionAdapter.generate({ messages: [msg('user', 'q'), withMeta(custom)] }) as Promise<unknown>
-
-  it("offers the last answer's followups", async () => {
-    expect(await generate({ done: true, blocked: false, followups: ['A?', 'B?'] })).toEqual([
-      { prompt: 'A?' },
-      { prompt: 'B?' },
-    ])
-  })
-
-  it('offers none for a blocked, unfinished or stopped answer', async () => {
-    expect(await generate({ done: true, blocked: true, followups: ['A?'] })).toEqual([])
-    expect(await generate({ done: false, followups: ['A?'] })).toEqual([])
-    expect(await generate({})).toEqual([])
   })
 })
 
