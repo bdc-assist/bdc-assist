@@ -55,6 +55,16 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
   cy.on('tap', (e) => {
     if (e.target === cy) opts.onSelect?.(null)
   })
+  // labels on the canvas are cut short ("…"): show the whole one as the browser's
+  // own tooltip, and a pointer, since nodes are clickable
+  cy.on('mouseover', 'node', (e) => {
+    container.title = String(e.target.data('label'))
+    container.style.cursor = 'pointer'
+  })
+  cy.on('mouseout', 'node', () => {
+    container.removeAttribute('title')
+    container.style.cursor = ''
+  })
 
   function draw(g: KgGraph) {
     const drawn = opts.collapseVersions ? collapseVersions(g) : g

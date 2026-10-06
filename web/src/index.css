@@ -164,8 +164,12 @@
 }
 
 /* Knowledge graph colours: src/kg reads these from the graph's container (any CSS
-   colour; unset ones fall back to its defaults). Labels and edges follow the theme. */
+   colour; unset ones fall back to its defaults), and the legend uses the same ones.
+   Node colours are src/kg's defaults; labels and edges follow the theme. */
 [data-slot="bdc-graph"] {
+  --kg-concept: #d97706;
+  --kg-variable: #2563eb;
+  --kg-study: #059669;
   --kg-label: var(--color-muted-foreground);
   --kg-edge: var(--color-ring);
   --kg-selected: var(--color-foreground);
