@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { collapseVersions } from '@/kg/collapse'
+import { connections } from '@/kg/connections'
 import { nodeLinks, type KgLink } from '@/kg/links'
 import { studyList } from '@/kg/list'
 import { KG_LAYOUTS, mountGraph, type GraphView, type KgLayout } from '@/kg/mount'
@@ -32,7 +33,7 @@ function summary(g: KgGraph) {
 // Swatches drawn like the nodes: same --kg-* colours (index.css), same shapes
 const LEGEND: { type: KgNode['type']; shape: string }[] = [
   { type: 'concept', shape: 'size-3 rounded-full' },
-  { type: 'variable', shape: 'size-2.5 rounded-full' },
+  { type: 'variable', shape: 'h-2.5 w-5 rounded-full' }, // the colour ramp
   { type: 'study', shape: 'size-2.5 rounded-[2px]' },
 ]
 
@@ -41,7 +42,15 @@ function Legend() {
     <ul aria-label="Legend" className="flex flex-wrap items-center gap-x-3 gap-y-1">
       {LEGEND.map(({ type, shape }) => (
         <li key={type} className="flex items-center gap-1.5">
-          <span className={shape} style={{ background: `var(--kg-${type})` }} />
+          <span
+            className={shape}
+            style={{
+              background:
+                type === 'variable'
+                  ? 'linear-gradient(to right, var(--kg-variable-low), var(--kg-variable-high))'
+                  : `var(--kg-${type})`,
+            }}
+          />
           {TYPE_LABELS[type]}
           {type === 'variable' && <span className="opacity-70">(darker: links more concepts)</span>}
         </li>
@@ -128,13 +137,18 @@ function ConceptTags({ concepts }: { concepts: KgNode[] }) {
   )
 }
 
-const rowClass = (on: boolean) =>
-  `flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-1.5 py-1 text-start ${on ? 'bg-muted' : 'hover:bg-muted/60'}`
+// selected: shaded; outside the selection's connections: dimmed, as in the graph
+const rowClass = (selected: boolean, dimmed: boolean) =>
+  `flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-1.5 py-1 text-start transition-opacity ${selected ? 'bg-muted' : 'hover:bg-muted/60'} ${dimmed ? 'opacity-35' : ''}`
 
 /** The graph as text: studies (foldable) with their variables (studyList). Rows
- * select like nodes in the graph. Concept tags only when there are several. */
+ * select like nodes in the graph (clicking the selected one again clears it), and
+ * dim like them too when not connected to the selection. Concept tags only when
+ * there are several. */
 function StudyList({ graph, selected, onSelect }: { graph: KgGraph; selected: KgNode | null; onSelect: (n: KgNode) => void }) {
   const groups = useMemo(() => studyList(graph), [graph])
+  const linked = useMemo(() => (selected ? connections(graph, selected.id).nodes : null), [graph, selected])
+  const dimmed = (id: string) => linked !== null && !linked.has(id)
   const several = graph.nodes.filter((n) => n.type === 'concept').length > 1
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
   const toggle = (id: string) =>
@@ -161,7 +175,11 @@ function StudyList({ graph, selected, onSelect }: { graph: KgGraph; selected: Kg
                 <ChevronRightIcon className={`size-3.5 transition-transform ${open ? 'rotate-90' : ''}`} />
               </button>
               {study ? (
-                <button type="button" onClick={() => onSelect(study)} className={rowClass(selected?.id === study.id)}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(study)}
+                  className={rowClass(selected?.id === study.id, dimmed(study.id))}
+                >
                   <span className="size-2 shrink-0 self-center rounded-[2px]" style={{ background: 'var(--kg-study)' }} />
                   <span className="truncate font-medium">{study.label}</span>
                   <span className="text-muted-foreground shrink-0 font-mono">{study.id}</span>
@@ -176,10 +194,16 @@ function StudyList({ graph, selected, onSelect }: { graph: KgGraph; selected: Kg
               <ul className="pl-6">
                 {variables.map(({ variable, concepts: vc, weight }) => (
                   <li key={variable.id} className="flex">
-                    <button type="button" onClick={() => onSelect(variable)} className={rowClass(selected?.id === variable.id)}>
+                    <button
+                      type="button"
+                      onClick={() => onSelect(variable)}
+                      className={rowClass(selected?.id === variable.id, dimmed(variable.id))}
+                    >
                       <span
                         className="size-2 shrink-0 self-center rounded-full"
-                        style={{ background: 'var(--kg-variable)', opacity: 0.25 + 0.75 * weight }}
+                        style={{
+                          background: `color-mix(in srgb, var(--kg-variable-high) ${Math.round(weight * 100)}%, var(--kg-variable-low))`,
+                        }}
                       />
                       <span className="font-mono">{variable.label}</span>
                       <span className="text-muted-foreground truncate font-mono">{variable.id}</span>
@@ -250,9 +274,11 @@ function GraphBody({ json, shown, canvasClass, layout, onLayout, mode, onMode, z
   useEffect(() => view.current?.setOptions({ layout }), [layout])
 
   // picked in the list: the graph shows it selected too, for when it's switched back
+  // (clicking the selected row again clears it, like the graph's background)
   const selectFromList = (node: KgNode) => {
-    setSelected(node)
-    view.current?.select(node.id)
+    const next = selected?.id === node.id ? null : node
+    setSelected(next)
+    view.current?.select(next?.id ?? null)
   }
 
   return (

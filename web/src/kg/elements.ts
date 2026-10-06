@@ -23,7 +23,7 @@ export function variableWeights(graph: KgGraph): Map<string, number> {
  * Cytoscape elements for a graph. Each node's data carries `order`, the key the
  * radial layout sorts by within a ring: studies by id, variables by their study's
  * id, so a study's variables sit together, next to it. Variables also carry
- * `weight` (variableWeights), drawn as opacity.
+ * `weight` (variableWeights), drawn as a light-to-dark colour.
  */
 export function toElements(graph: KgGraph): ElementDefinition[] {
   const studyOf = new Map<string, string>() // variable id → study id

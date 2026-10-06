@@ -2,6 +2,7 @@ import cytoscape, { type LayoutOptions, type StylesheetJson } from 'cytoscape'
 
 import { collapseVersions } from './collapse'
 import { columnPositions } from './columns'
+import { connections } from './connections'
 import { toElements } from './elements'
 import { orient } from './orient'
 import type { KgGraph, KgNode } from './types'
@@ -55,18 +56,24 @@ export type GraphView = {
 // can't parse e.g. oklch() itself, so toRgb converts through a canvas.
 const COLORS = {
   concept: ['--kg-concept', '#d97706'],
-  variable: ['--kg-variable', '#2563eb'],
+  // variables run from low to high along their weight (related_concepts_count)
+  variableLow: ['--kg-variable-low', '#93c5fd'],
+  variableHigh: ['--kg-variable-high', '#1e40af'],
   study: ['--kg-study', '#059669'],
   edge: ['--kg-edge', '#cbd5e1'],
   label: ['--kg-label', '#475569'],
   selected: ['--kg-selected', '#0f172a'],
+  background: ['--kg-background', '#ffffff'], // behind highlighted nodes' labels
 } as const
 
 const PADDING = 16
 
 /**
- * Draw `graph` into `container` (which needs a height). Variables are drawn more
- * opaque the more other concepts they link to (related_concepts_count).
+ * Draw `graph` into `container` (which needs a height). Variables are coloured from
+ * --kg-variable-low to --kg-variable-high the more other concepts they link to
+ * (related_concepts_count). Clicking a
+ * node (or select()) highlights what it's connected to (see connections) and fades
+ * the rest; clicking the background clears it.
  * No framework required; React, Vue or plain HTML hosts all call this the same way.
  */
 export function mountGraph(container: HTMLElement, graph: KgGraph, options: GraphOptions = {}): GraphView {
@@ -82,9 +89,14 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
     maxZoom: 4,
     boxSelectionEnabled: false,
   })
-  cy.on('tap', 'node', (e) => opts.onSelect?.(shown.get(e.target.id()) ?? null))
+  cy.on('tap', 'node', (e) => {
+    highlight(e.target.id())
+    opts.onSelect?.(shown.get(e.target.id()) ?? null)
+  })
   cy.on('tap', (e) => {
-    if (e.target === cy) opts.onSelect?.(null)
+    if (e.target !== cy) return
+    highlight(null)
+    opts.onSelect?.(null)
   })
   // labels on the canvas are cut short ("…"): show the whole one as the browser's
   // own tooltip, and a pointer, since nodes are clickable
@@ -121,6 +133,20 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
       cy.add(toElements(drawn))
     })
     arrange()
+  }
+
+  // the node's connections get `focus`, everything else `faded`; null clears both
+  function highlight(id: string | null) {
+    const c = id ? connections(drawn, id) : null
+    cy.batch(() => {
+      cy.elements().removeClass('focus faded')
+      if (!c?.nodes.size) return
+      cy.elements().forEach((el) => {
+        const elId = el.id()
+        const on = el.isNode() ? c.nodes.has(elId) : c.edges.has(elId)
+        el.addClass(on ? 'focus' : 'faded')
+      })
+    })
   }
 
   function arrange() {
@@ -183,6 +209,7 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
         cy.$(':selected').unselect()
         if (id) cy.getElementById(id).select()
       })
+      highlight(id)
     },
     zoomBy(factor) {
       cy.zoom({
@@ -243,7 +270,7 @@ function styleFor(el: HTMLElement): StylesheetJson {
     },
     {
       selector: 'node[type = "variable"]',
-      style: { 'background-color': color('variable'), 'background-opacity': (n) => 0.25 + 0.75 * (n.data('weight') ?? 1) },
+      style: { 'background-color': (n) => mix(color('variableLow'), color('variableHigh'), n.data('weight') ?? 1) },
     },
     {
       selector: 'node[type = "study"]',
@@ -255,8 +282,37 @@ function styleFor(el: HTMLElement): StylesheetJson {
     },
     { selector: 'node.columns[type = "concept"]', style: { 'text-halign': 'left', 'text-margin-x': -5 } },
     { selector: 'edge', style: { width: 1, 'line-color': color('edge'), 'curve-style': 'straight' } },
+    { selector: '.faded', style: { opacity: 0.15 } },
+    {
+      // highlighted: whole labels (no "…"), on a backing so they stay readable over edges
+      selector: 'node.focus',
+      style: {
+        'text-wrap': 'none',
+        'z-index': 10,
+        'text-background-color': color('background'),
+        'text-background-opacity': 0.85,
+        'text-background-padding': '2px',
+        'text-background-shape': 'roundrectangle',
+      },
+    },
+    { selector: 'edge.focus', style: { 'line-color': color('label'), width: 1.5, 'z-index': 9 } },
     { selector: 'node:selected', style: { 'border-width': 3, 'border-color': color('selected') } },
   ]
+}
+
+/** A colour t (0..1) of the way from a to b, mixed in RGB (fine within one hue).
+ * Takes toRgb's "rgb(r, g, b)" or a "#rrggbb" fallback. */
+function mix(a: string, b: string, t: number): string {
+  const [x, y] = [a, b].map(channels)
+  const c = x.map((v, i) => Math.round(v + (y[i] - v) * Math.min(1, Math.max(0, t))))
+  return `rgb(${c.join(', ')})`
+}
+
+function channels(color: string): number[] {
+  const rgb = /rgb\((\d+), (\d+), (\d+)\)/.exec(color)
+  if (rgb) return rgb.slice(1).map(Number)
+  const hex = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(color)
+  return hex ? hex.slice(1).map((h) => parseInt(h, 16)) : [0, 0, 0]
 }
 
 let ctx: CanvasRenderingContext2D | null | undefined

@@ -168,9 +168,11 @@
    Node colours are src/kg's defaults; labels and edges follow the theme. */
 [data-slot="bdc-graph"] {
   --kg-concept: #d97706;
-  --kg-variable: #2563eb;
+  --kg-variable-low: #93c5fd;
+  --kg-variable-high: #1e40af;
   --kg-study: #059669;
   --kg-label: var(--color-muted-foreground);
   --kg-edge: var(--color-ring);
   --kg-selected: var(--color-foreground);
+  --kg-background: var(--color-background);
 }
