@@ -36,6 +36,9 @@ export type GraphView = {
   update(graph: KgGraph, options?: Partial<GraphOptions>): void
   /** Change options for the current graph: a new layout only rearranges the nodes. */
   setOptions(options: Partial<GraphOptions>): void
+  /** Mark a node selected (null: none), e.g. one picked in a list next to the graph.
+   * Ids are as drawn (collapsed or not). Doesn't call onSelect. */
+  select(id: string | null): void
   /** Zoom in (factor > 1) or out (< 1) around the middle of the view. */
   zoomBy(factor: number): void
   /** Show the whole graph. */
@@ -174,6 +177,12 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
         opts.onSelect?.(null)
         draw()
       } else if (relayout) arrange()
+    },
+    select(id) {
+      cy.batch(() => {
+        cy.$(':selected').unselect()
+        if (id) cy.getElementById(id).select()
+      })
     },
     zoomBy(factor) {
       cy.zoom({

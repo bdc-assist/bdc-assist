@@ -1,17 +1,19 @@
-import { ExternalLinkIcon, Maximize2Icon, MinusIcon, PlusIcon, ScanIcon } from 'lucide-react'
+import { ChevronRightIcon, ExternalLinkIcon, Maximize2Icon, MinusIcon, PlusIcon, ScanIcon } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { collapseVersions } from '@/kg/collapse'
 import { nodeLinks, type KgLink } from '@/kg/links'
+import { studyList } from '@/kg/list'
 import { KG_LAYOUTS, mountGraph, type GraphView, type KgLayout } from '@/kg/mount'
 import type { KgGraph, KgNode } from '@/kg/types'
 
-// The demo's wrapper around src/kg (loaded on demand: see GraphUI in message-parts.tsx): a collapsible panel under the answer with the
-// graph and the clicked node's details, and a button to show it all in a large
-// dialog. Another host would write its own wrapper
-// around mountGraph; nothing in src/kg depends on this file.
+// The demo's wrapper around src/kg (loaded on demand: see GraphUI in message-parts.tsx):
+// a collapsible panel under the answer with the graph, or the same as a list, and
+// the selected node's details, plus a button to show it all in a large dialog.
+// Another host would write its own wrapper around mountGraph and studyList;
+// nothing in src/kg depends on this file.
 
 const TYPE_LABELS: Record<KgNode['type'], string> = { concept: 'Concept', variable: 'Variable', study: 'Study' }
 
@@ -48,20 +50,28 @@ function Legend() {
   )
 }
 
-const LAYOUT_LABELS: Record<KgLayout, string> = { radial: 'Radial', columns: 'Columns', force: 'Force' }
+type ViewMode = 'graph' | 'list'
 
-function LayoutPicker({ layout, onLayout }: { layout: KgLayout; onLayout: (l: KgLayout) => void }) {
+const VIEW_LABELS: Record<KgLayout | 'list', string> = { radial: 'Radial', columns: 'Columns', force: 'Force', list: 'List' }
+
+/** One dropdown for the graph's layouts and the list: a layout is a mountGraph option,
+ * the list is this wrapper's own, but to the user they're all ways to view it. */
+function ViewPicker({ layout, mode, onLayout, onMode }: Pick<GraphBodyProps, 'layout' | 'mode' | 'onLayout' | 'onMode'>) {
   return (
     <label className="ml-auto flex items-center gap-1.5">
-      Layout
+      View
       <select
-        value={layout}
-        onChange={(e) => onLayout(e.target.value as KgLayout)}
+        value={mode === 'list' ? 'list' : layout}
+        onChange={(e) => {
+          const v = e.target.value as KgLayout | 'list'
+          onMode(v === 'list' ? 'list' : 'graph')
+          if (v !== 'list') onLayout(v)
+        }}
         className="bg-background text-foreground rounded-md border px-1 py-0.5"
       >
-        {KG_LAYOUTS.map((l) => (
-          <option key={l} value={l}>
-            {LAYOUT_LABELS[l]}
+        {[...KG_LAYOUTS, 'list' as const].map((v) => (
+          <option key={v} value={v}>
+            {VIEW_LABELS[v]}
           </option>
         ))}
       </select>
@@ -106,6 +116,86 @@ function NodeDetails({ node, graph }: { node: KgNode | null; graph: KgGraph }) {
   )
 }
 
+function ConceptTags({ concepts }: { concepts: KgNode[] }) {
+  return (
+    <span className="flex shrink-0 gap-1">
+      {concepts.map((c) => (
+        <span key={c.id} className="bg-muted text-muted-foreground rounded px-1">
+          {c.label}
+        </span>
+      ))}
+    </span>
+  )
+}
+
+const rowClass = (on: boolean) =>
+  `flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-1.5 py-1 text-start ${on ? 'bg-muted' : 'hover:bg-muted/60'}`
+
+/** The graph as text: studies (foldable) with their variables (studyList). Rows
+ * select like nodes in the graph. Concept tags only when there are several. */
+function StudyList({ graph, selected, onSelect }: { graph: KgGraph; selected: KgNode | null; onSelect: (n: KgNode) => void }) {
+  const groups = useMemo(() => studyList(graph), [graph])
+  const several = graph.nodes.filter((n) => n.type === 'concept').length > 1
+  const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
+  const toggle = (id: string) =>
+    setFolded((f) => {
+      const next = new Set(f)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
+  return (
+    <ul aria-label="Studies and their variables" className="divide-y">
+      {groups.map(({ study, concepts, variables }) => {
+        const key = study?.id ?? '(no study)'
+        const open = !folded.has(key)
+        return (
+          <li key={key} className="px-1.5 py-1">
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                aria-expanded={open}
+                aria-label={`${open ? 'Fold' : 'Unfold'} ${study?.label ?? 'variables without a study'}`}
+                onClick={() => toggle(key)}
+                className="text-muted-foreground hover:text-foreground rounded p-1"
+              >
+                <ChevronRightIcon className={`size-3.5 transition-transform ${open ? 'rotate-90' : ''}`} />
+              </button>
+              {study ? (
+                <button type="button" onClick={() => onSelect(study)} className={rowClass(selected?.id === study.id)}>
+                  <span className="size-2 shrink-0 self-center rounded-[2px]" style={{ background: 'var(--kg-study)' }} />
+                  <span className="truncate font-medium">{study.label}</span>
+                  <span className="text-muted-foreground shrink-0 font-mono">{study.id}</span>
+                  <span className="text-muted-foreground shrink-0">· {variables.length}</span>
+                  {several && <ConceptTags concepts={concepts} />}
+                </button>
+              ) : (
+                <span className="text-muted-foreground px-1.5 py-1">Variables without a study</span>
+              )}
+            </div>
+            {open && (
+              <ul className="pl-6">
+                {variables.map(({ variable, concepts: vc, weight }) => (
+                  <li key={variable.id} className="flex">
+                    <button type="button" onClick={() => onSelect(variable)} className={rowClass(selected?.id === variable.id)}>
+                      <span
+                        className="size-2 shrink-0 self-center rounded-full"
+                        style={{ background: 'var(--kg-variable)', opacity: 0.25 + 0.75 * weight }}
+                      />
+                      <span className="font-mono">{variable.label}</span>
+                      <span className="text-muted-foreground truncate font-mono">{variable.id}</span>
+                      {several && <ConceptTags concepts={vc} />}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 /** Legend, graph and the clicked node's details: one mountGraph view. Rendered
  * inline and, separately, in the maximized dialog. Carries the --kg-* colours
  * (index.css), so they apply in the dialog's portal too. */
@@ -115,13 +205,15 @@ type GraphBodyProps = {
   canvasClass: string
   layout: KgLayout
   onLayout: (l: KgLayout) => void
+  mode: ViewMode
+  onMode: (m: ViewMode) => void
   zoomGestures: boolean | 'modifier' // see mountGraph: 'modifier' where the chat scrolls around the graph
 }
 
 const ZOOM_STEP = 1.3
 const ZOOM_KEY = /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl'
 
-function GraphBody({ json, shown, canvasClass, layout, onLayout, zoomGestures }: GraphBodyProps) {
+function GraphBody({ json, shown, canvasClass, layout, onLayout, mode, onMode, zoomGestures }: GraphBodyProps) {
   const container = useRef<HTMLDivElement>(null)
   const view = useRef<GraphView | null>(null)
   const [selected, setSelected] = useState<KgNode | null>(null)
@@ -157,17 +249,34 @@ function GraphBody({ json, shown, canvasClass, layout, onLayout, zoomGestures }:
 
   useEffect(() => view.current?.setOptions({ layout }), [layout])
 
+  // picked in the list: the graph shows it selected too, for when it's switched back
+  const selectFromList = (node: KgNode) => {
+    setSelected(node)
+    view.current?.select(node.id)
+  }
+
   return (
     <div data-slot="bdc-graph" className="flex min-h-0 flex-1 flex-col text-xs">
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-3 py-1.5">
         <Legend />
-        <LayoutPicker layout={layout} onLayout={onLayout} />
+        <ViewPicker layout={layout} mode={mode} onLayout={onLayout} onMode={onMode} />
       </div>
-      <div className={`relative border-t ${canvasClass}`}>
+      {mode === 'list' && (
+        <div className={`overflow-y-auto border-t ${canvasClass}`}>
+          <StudyList graph={shown} selected={selected} onSelect={selectFromList} />
+        </div>
+      )}
+      {/* kept mounted while the list shows, so the graph keeps its layout and zoom */}
+      <div className={`relative border-t ${canvasClass} ${mode === 'list' ? 'hidden' : ''}`}>
         {/* sized by height, not `absolute inset-0`: Cytoscape gives its container
             `position: relative` from an unlayered style sheet, which beats Tailwind's
             layered utilities, so `absolute` would be dropped and the box collapse */}
-        <div ref={container} className="h-full w-full" aria-label="Knowledge graph" role="img" />
+        <div
+          ref={container}
+          className="h-full w-full"
+          role="img"
+          aria-label="Knowledge graph. The List view shows the same studies and variables as text."
+        />
         <p
           aria-hidden
           className={`bg-foreground/75 text-background pointer-events-none absolute inset-x-0 top-1/2 mx-auto w-fit -translate-y-1/2 rounded-md px-3 py-1.5 transition-opacity ${zoomHint ? 'opacity-100' : 'opacity-0'}`}
@@ -195,7 +304,9 @@ function GraphBody({ json, shown, canvasClass, layout, onLayout, zoomGestures }:
 
 export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
   const [maximized, setMaximized] = useState(false)
-  const [layout, setLayout] = useState<KgLayout>('radial') // shared by the panel and the dialog
+  // shared by the panel and the dialog
+  const [layout, setLayout] = useState<KgLayout>('radial')
+  const [mode, setMode] = useState<ViewMode>('graph')
   // the message is re-rendered on every stream event, and done delivers the same
   // graph again as a new object: redraw only when the content changes
   const json = JSON.stringify(graph)
@@ -230,6 +341,8 @@ export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
           canvasClass="h-72"
           layout={layout}
           onLayout={setLayout}
+          mode={mode}
+          onMode={setMode}
           zoomGestures="modifier"
         />
       </details>
@@ -246,6 +359,8 @@ export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
               canvasClass="min-h-0 flex-1"
               layout={layout}
               onLayout={setLayout}
+              mode={mode}
+              onMode={setMode}
               zoomGestures
             />
           )}
