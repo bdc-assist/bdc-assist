@@ -1,0 +1,840 @@
+[
+    {
+        "args": {
+            "concept_id": "MONDO:0004979",
+            "expand_depth": 2,
+            "limit": 50
+        },
+        "result": {
+            "concept_id": "MONDO:0004979",
+            "expand_depth": 2,
+            "total_results": 50,
+            "graph": [
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "KIDASTHM",
+                    "variable_id": "phv00123418.v1.p1",
+                    "study_name": "NHLBI Cleveland Family Study (CFS) Candidate Gene Association Resource (CARe)",
+                    "study_id": "phs000284.v2.p1",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "D360",
+                    "variable_id": "phv00009088.v9.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "K1420",
+                    "variable_id": "phv00545640.v1.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 34
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "ASTHMA",
+                    "variable_id": "phv00424036.v1.p1",
+                    "study_name": "NHLBI TOPMed: Pulmonary Hypertension and the Hypoxic Response in SCD (PUSH)",
+                    "study_id": "phs001682.v3.p1",
+                    "related_concepts_count": 19
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "oaia5c",
+                    "variable_id": "phv00175381.v1.p3",
+                    "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+                    "study_id": "phs000209.v13.p3",
+                    "related_concepts_count": 34
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "ASTHMA",
+                    "variable_id": "phv00105885.v1.p1",
+                    "study_name": "Cardiovascular Health Study (CHS) Cohort: an NHLBI-funded observational study of risk factors for cardiovascular disease in adults 65 years or older",
+                    "study_id": "phs000287.v7.p1",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "g3a540",
+                    "variable_id": "phv00461208.v2.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "AsthmaStillHave",
+                    "variable_id": "phv00159705.v4.p2",
+                    "study_name": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
+                    "study_id": "phs000179.v6.p2",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "qastha4",
+                    "variable_id": "phv00087756.v1.p3",
+                    "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+                    "study_id": "phs000209.v13.p3",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "j421",
+                    "variable_id": "phv00254260.v2.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "RSE14a",
+                    "variable_id": "phv00298008.v2.p2",
+                    "study_name": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+                    "study_id": "phs000280.v8.p2",
+                    "related_concepts_count": 10
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "B12ASTHM",
+                    "variable_id": "phv00114600.v2.p2",
+                    "study_name": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+                    "study_id": "phs000285.v3.p2",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "H359",
+                    "variable_id": "phv00072313.v5.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "ASTHCUR",
+                    "variable_id": "phv00106407.v1.p1",
+                    "study_name": "Cardiovascular Health Study (CHS) Cohort: an NHLBI-funded observational study of risk factors for cardiovascular disease in adults 65 years or older",
+                    "study_id": "phs000287.v7.p1",
+                    "related_concepts_count": 19
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FS525",
+                    "variable_id": "phv00007085.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 12
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "oaia1c",
+                    "variable_id": "phv00083134.v1.p3",
+                    "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+                    "study_id": "phs000209.v13.p3",
+                    "related_concepts_count": 34
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FR425",
+                    "variable_id": "phv00006650.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "D09ASNM",
+                    "variable_id": "phv00117450.v2.p2",
+                    "study_name": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+                    "study_id": "phs000285.v3.p2",
+                    "related_concepts_count": 22
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "G418",
+                    "variable_id": "phv00010489.v9.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "D08ASTH",
+                    "variable_id": "phv00117045.v2.p2",
+                    "study_name": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+                    "study_id": "phs000285.v3.p2",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "steroids_yes12mo",
+                    "variable_id": "phv00435946.v1.p1",
+                    "study_name": "NHLBI TOPMed: Genetic Causes of Complex Pediatric Disorders - Asthma (GCPD-A)",
+                    "study_id": "phs001661.v3.p1",
+                    "related_concepts_count": 42
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "qasnsaa4",
+                    "variable_id": "phv00083536.v1.p3",
+                    "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+                    "study_id": "phs000209.v13.p3",
+                    "related_concepts_count": 20
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "ATH37",
+                    "variable_id": "phv00104144.v1.p1",
+                    "study_name": "Cardiovascular Health Study (CHS) Cohort: an NHLBI-funded observational study of risk factors for cardiovascular disease in adults 65 years or older",
+                    "study_id": "phs000287.v7.p1",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "H652",
+                    "variable_id": "phv00072491.v5.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 21
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "e340",
+                    "variable_id": "phv00461499.v2.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 27
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "asthma_hospital_Yes12mo",
+                    "variable_id": "phv00430345.v1.p1",
+                    "study_name": "NHLBI TOPMed: TReating Children to Prevent EXacerbations of Asthma (TREXA)",
+                    "study_id": "phs001732.v2.p1",
+                    "related_concepts_count": 24
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "OAIA2",
+                    "variable_id": "phv00056977.v2.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 24
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "RSEA34",
+                    "variable_id": "phv00226388.v1.p1",
+                    "study_name": "Hispanic Community Health Study /Study of Latinos (HCHS/SOL)",
+                    "study_id": "phs000810.v1.p1",
+                    "related_concepts_count": 13
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "g3a544",
+                    "variable_id": "phv00274124.v1.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 21
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "E340",
+                    "variable_id": "phv00009293.v6.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 18
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "PHXB6E",
+                    "variable_id": "phv00209067.v2.p2",
+                    "study_name": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+                    "study_id": "phs000280.v8.p2",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "G3C0835",
+                    "variable_id": "phv00462115.v2.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 19
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "RSEA36",
+                    "variable_id": "phv00526878.v1.p2",
+                    "study_name": "Hispanic Community Health Study /Study of Latinos (HCHS/SOL)",
+                    "study_id": "phs000810.v2.p2",
+                    "related_concepts_count": 23
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "RSEA32",
+                    "variable_id": "phv00226387.v2.p2",
+                    "study_name": "Hispanic Community Health Study /Study of Latinos (HCHS/SOL)",
+                    "study_id": "phs000810.v2.p2",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "Affection_Status",
+                    "variable_id": "phv00430220.v1.p1",
+                    "study_name": "NHLBI TOPMed: Best ADd-on Therapy Giving Effective Response (BADGER)",
+                    "study_id": "phs001728.v3.p1",
+                    "related_concepts_count": 17
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "C95",
+                    "variable_id": "phv00008470.v6.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 20
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "hi201e",
+                    "variable_id": "phv00056804.v2.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "PMH_ASTHMA_MD",
+                    "variable_id": "phv00429126.v1.p1",
+                    "study_name": "NHLBI TOPMed: Lung Tissue Research Consortium (LTRC)",
+                    "study_id": "phs001662.v2.p1",
+                    "related_concepts_count": 14
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "B12ASDOC",
+                    "variable_id": "phv00114602.v2.p2",
+                    "study_name": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+                    "study_id": "phs000285.v3.p2",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "ASLAST56",
+                    "variable_id": "phv00107852.v1.p1",
+                    "study_name": "Cardiovascular Health Study (CHS) Cohort: an NHLBI-funded observational study of risk factors for cardiovascular disease in adults 65 years or older",
+                    "study_id": "phs000287.v7.p1",
+                    "related_concepts_count": 19
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "istrd5c",
+                    "variable_id": "phv00175368.v1.p3",
+                    "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+                    "study_id": "phs000209.v13.p3",
+                    "related_concepts_count": 14
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "RPAA16",
+                    "variable_id": "phv00128346.v2.p2",
+                    "study_name": "Jackson Heart Study (JHS) Cohort",
+                    "study_id": "phs000286.v7.p2",
+                    "related_concepts_count": 19
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "Affection_Status",
+                    "variable_id": "phv00427613.v1.p1",
+                    "study_name": "NHLBI TOPMed: Children's Health Study (CHS) Effects of Air Pollution on the Development of Obesity in Children (Meta-AIR)",
+                    "study_id": "phs001604.v2.p1",
+                    "related_concepts_count": 19
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "N_ICUAsthLstYear",
+                    "variable_id": "phv00420871.v2.p2",
+                    "study_name": "NHLBI TOPMed: Severe Asthma Research Program (SARP)",
+                    "study_id": "phs001446.v3.p2",
+                    "related_concepts_count": 16
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "Asthma\u0442\u0080",
+                    "variable_id": "phs003708_MHASTH.v1.p1",
+                    "study_name": "CONNECTS Master Protocol for Clinical Trials targeting Macro- and Micro-Immuno-Thrombosis, Vascular Hyperinflammation, and Hypercoagulability and Renin-Angiotensin-Aldosterone System (RAAS) in Hospitalized Patients with COVID-19 (ACTIV-4 Host Tissue)",
+                    "study_id": "phs003708.v1.p1",
+                    "related_concepts_count": 10
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "ATS5G4N",
+                    "variable_id": "phv00293273.v1.p1",
+                    "study_name": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
+                    "study_id": "phs001252.v1.p1",
+                    "related_concepts_count": 18
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FO489",
+                    "variable_id": "phv00005285.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "Y01ASTMD",
+                    "variable_id": "phv00121585.v2.p2",
+                    "study_name": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+                    "study_id": "phs000285.v3.p2",
+                    "related_concepts_count": 10
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "g3a540",
+                    "variable_id": "phv00274120.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "asthma",
+                    "concept_id": "MONDO:0004979",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "recuryr5",
+                    "variable_id": "phv00176725.v1.p3",
+                    "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+                    "study_id": "phs000209.v13.p3",
+                    "related_concepts_count": 38
+                }
+            ]
+        }
+    },
+    {
+        "args": {
+            "concept_id": "MONDO:0005002",
+            "expand_depth": 2,
+            "limit": 50
+        },
+        "result": {
+            "concept_id": "MONDO:0005002",
+            "expand_depth": 2,
+            "total_results": 31,
+            "graph": [
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FI217",
+                    "variable_id": "phv00002837.v1.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "h663",
+                    "variable_id": "phv00251719.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 26
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FK444",
+                    "variable_id": "phv00003655.v1.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "h662",
+                    "variable_id": "phv00251718.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 10
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FDI33",
+                    "variable_id": "phv00515927.v1.p2",
+                    "study_name": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+                    "study_id": "phs000280.v8.p2",
+                    "related_concepts_count": 27
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FG287",
+                    "variable_id": "phv00002393.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "g3b0600",
+                    "variable_id": "phv00177574.v4.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 17
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "h662",
+                    "variable_id": "phv00251718.v2.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 10
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "RSE11",
+                    "variable_id": "phv00298000.v2.p2",
+                    "study_name": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+                    "study_id": "phs000280.v8.p2",
+                    "related_concepts_count": 24
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "h661",
+                    "variable_id": "phv00251717.v2.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 15
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "fy602",
+                    "variable_id": "phv00275389.v1.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 16
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "hi201c",
+                    "variable_id": "phv00056802.v4.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 5
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "COPD",
+                    "variable_id": "phv00492692.v1.p2",
+                    "study_name": "NHLBI TOPMed - NHGRI CCDG: The BioMe Biobank at Mount Sinai (BioMe_HMB-NPU)",
+                    "study_id": "phs001644.v3.p2",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FX602",
+                    "variable_id": "phv00275055.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 16
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "g3b0600",
+                    "variable_id": "phv00177574.v6.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 17
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FK444",
+                    "variable_id": "phv00003655.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "h663",
+                    "variable_id": "phv00251719.v2.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 26
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FH306",
+                    "variable_id": "phv00002631.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "h661",
+                    "variable_id": "phv00251717.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 15
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "B325",
+                    "variable_id": "phv00007944.v6.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "fy602",
+                    "variable_id": "phv00275389.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 16
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FI217",
+                    "variable_id": "phv00002837.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "hi201c",
+                    "variable_id": "phv00056802.v2.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 5
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FJ348",
+                    "variable_id": "phv00003236.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 14
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "fw602",
+                    "variable_id": "phv00255330.v1.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 26
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FG287",
+                    "variable_id": "phv00002393.v1.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FX602",
+                    "variable_id": "phv00275055.v1.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 16
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "fw602",
+                    "variable_id": "phv00255330.v1.p12",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v31.p12",
+                    "related_concepts_count": 26
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FH306",
+                    "variable_id": "phv00002631.v1.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 11
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "B325",
+                    "variable_id": "phv00007944.v9.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 9
+                },
+                {
+                    "concept": "chronic obstructive pulmonary disease",
+                    "concept_id": "MONDO:0005002",
+                    "concept_type": "biolink.NamedThing",
+                    "variable_name": "FJ348",
+                    "variable_id": "phv00003236.v1.p15",
+                    "study_name": "Framingham Cohort",
+                    "study_id": "phs000007.v34.p15",
+                    "related_concepts_count": 14
+                }
+            ]
+        }
+    }
+]

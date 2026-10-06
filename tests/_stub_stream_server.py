@@ -13,6 +13,8 @@ A keyword anywhere in the question picks the path (otherwise a normal answer):
   crash      the agent fails mid-answer: the stream breaks off without "done"
   kg         the agent also calls Dug's get_concept_graph: a real result for congenital
              heart disease (fixtures/dug_concept_graph_chd.json)
+  kg2        the same, for two concepts: asthma and COPD, two real get_concept_graph calls
+             that share studies (fixtures/dug_concept_graph_asthma_copd.json)
 """
 
 import asyncio
@@ -29,7 +31,11 @@ from bdc_assist import prompts
 from bdc_assist.graph import build_graph
 
 
-DUG_CHD = json.loads((Path(__file__).parent / "fixtures" / "dug_concept_graph_chd.json").read_text())
+_FIXTURES = Path(__file__).parent / "fixtures"
+# each: get_concept_graph (args, result) calls the stub agent replays
+DUG_CHD = [{"args": {"concept_id": "MONDO:0005453", "expand_depth": 2, "limit": 50},
+            "result": json.loads((_FIXTURES / "dug_concept_graph_chd.json").read_text())}]
+DUG_ASTHMA_COPD = json.loads((_FIXTURES / "dug_concept_graph_asthma_copd.json").read_text())
 
 
 def _has(text: str, word: str) -> bool:
@@ -47,11 +53,11 @@ class SlowAgent:
             content="Let me look that up. ", id="m1",
             tool_call_chunks=[{"name": "search_docs", "args": "", "id": "t1", "index": 0}]), {})
         await asyncio.sleep(1.5)
-        kg = _has(question, "kg")
-        if kg:
+        kg = DUG_ASTHMA_COPD if _has(question, "kg2") else DUG_CHD if _has(question, "kg") else []
+        for i, _ in enumerate(kg):
             yield "messages", (AIMessageChunk(
-                content="", id="m1b",
-                tool_call_chunks=[{"name": "get_concept_graph", "args": "", "id": "t2", "index": 0}]), {})
+                content="", id=f"m1k{i}",
+                tool_call_chunks=[{"name": "get_concept_graph", "args": "", "id": f"k{i}", "index": 0}]), {})
             await asyncio.sleep(1.5)
         words = ("**BDC** (BioData Catalyst) is NHLBI's cloud platform for heart, lung, blood, and sleep "
                  "research data. See the [overview](https://biodatacatalyst.nhlbi.nih.gov/about/overview).").split()
@@ -73,11 +79,10 @@ class SlowAgent:
             AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": question}, "id": "t1"}]),
             ToolMessage(content=[{"type": "text", "text": json.dumps(c)} for c in chunks], tool_call_id="t1"),
         ]
-        if kg:
+        for i, call in enumerate(kg):
             messages += [
-                AIMessage(content="", tool_calls=[{"name": "get_concept_graph", "id": "t2",
-                                                   "args": {"concept_id": "MONDO:0005453", "expand_depth": 2, "limit": 50}}]),
-                ToolMessage(content=[{"type": "text", "text": json.dumps(DUG_CHD)}], tool_call_id="t2"),
+                AIMessage(content="", tool_calls=[{"name": "get_concept_graph", "id": f"k{i}", "args": call["args"]}]),
+                ToolMessage(content=[{"type": "text", "text": json.dumps(call["result"])}], tool_call_id=f"k{i}"),
             ]
         yield "values", {"messages": [*messages, AIMessage(content=" ".join(words))]}
 

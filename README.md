@@ -113,7 +113,7 @@ back behind placeholder bars until the output guardrail has passed it, instead o
 Without real services, run the stub (`uv run python tests/_stub_stream_server.py`) and put a
 keyword in the question to pick a path: `block` (input guardrail refuses), `reject` (output
 guardrail replaces the draft), `canned` (predefined reply), `covid` (disclaimer appended),
-`nosources`, `crash` (stream breaks off mid-answer), or `kg` (adds a real Dug `get_concept_graph` result, so a graph).
+`nosources`, `crash` (stream breaks off mid-answer), or `kg` (adds a real Dug `get_concept_graph` result, so a graph), or `kg2` (two concepts, asthma and COPD).
 
 ## Test / demo
 

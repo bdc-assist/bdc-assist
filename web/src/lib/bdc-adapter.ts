@@ -23,7 +23,8 @@ type StreamEvent =
       sources: Sources
       sources_md: string
       graph?: KgGraph | Record<string, never> // {} when there is none
-    } // tool_results is also sent; deliberately not kept
+      tool_results?: { tool: string; args: unknown; result: unknown }[]
+    } // tool_results: logged for now (TEMP), deliberately not kept
 
 /** What we keep on each assistant message as metadata.custom. Plain JSON,
  * so a thread can be persisted later as-is. */
@@ -199,6 +200,9 @@ export function createBdcAdapter(
             case 'done':
               // authoritative: rejects, disclaimers and canned replies replace
               // the streamed text, and a rejected answer has no sources or graph
+              // TEMP: print non-doc tool calls (Dug) to grab real KG examples
+              for (const tr of ev.tool_results ?? [])
+                if (tr.tool !== 'search_docs') console.log(`[bdc tool] ${tr.tool}`, tr)
               meta.rejected = !ev.blocked && replacedDraft(state.text, ev.answer)
               state.text = ev.answer
               meta.sources = ev.sources

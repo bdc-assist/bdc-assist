@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { baseId, collapseVersions } from './collapse'
+import asthmaCopd from './fixtures/asthma-copd-graph.json'
 import chd from './fixtures/chd-graph.json'
 import type { KgGraph } from './types'
 
@@ -78,6 +79,23 @@ describe('collapseVersions', () => {
       { source: 'phv1', target: 'C' },
       { source: 'phv1', target: 'phs1' },
     ])
+  })
+
+  it('joins two concepts through their shared studies (real asthma + COPD graph)', () => {
+    // two get_concept_graph calls, merged by the server: no variable is on both concepts,
+    // but Framingham and ARIC have variables on each
+    const g = collapseVersions(asthmaCopd as KgGraph)
+    expect([count(g, 'concept'), count(g, 'variable'), count(g, 'study')]).toEqual([2, 67, 19])
+    const type = new Map(g.nodes.map((n) => [n.id, n.type]))
+    const conceptsOf = new Map<string, Set<string>>() // study → concepts its variables are on
+    const studyOf = new Map(g.edges.filter((e) => type.get(e.target) === 'study').map((e) => [e.source, e.target]))
+    for (const e of g.edges) {
+      if (type.get(e.target) !== 'concept') continue
+      const study = studyOf.get(e.source)!
+      conceptsOf.set(study, (conceptsOf.get(study) ?? new Set()).add(e.target))
+    }
+    const shared = [...conceptsOf].filter(([, c]) => c.size === 2).map(([s]) => s)
+    expect(shared.sort()).toEqual(['phs000007', 'phs000280'])
   })
 
   it('does not modify its input', () => {
