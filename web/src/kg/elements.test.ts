@@ -31,6 +31,32 @@ describe('toElements', () => {
     expect(sorted.slice(0, 2).every((o) => o.startsWith('phs000007 '))).toBe(true)
   })
 
+  it('weights variables by related_concepts_count, highest 1, lowest 0', () => {
+    const weights = toElements(CHD)
+      .filter((e) => e.data.type === 'variable')
+      .map((e) => [e.data.label, e.data.weight])
+    const w = Object.fromEntries(weights)
+    expect(w['F33ANGHRTHSPDY']).toBe(1) // 35, the most
+    expect(w['HEARTDIS']).toBe(0) // 9, the fewest
+    expect(w['FC219']).toBeCloseTo((12 - 9) / (35 - 9))
+    expect(toElements(CHD).find((e) => e.data.type === 'study')?.data.weight).toBeUndefined()
+  })
+
+  it('weights every variable 1 when the counts are equal or missing', () => {
+    const g: KgGraph = {
+      nodes: [
+        { id: 'a', label: 'a', type: 'variable', related_concepts_count: 5 },
+        { id: 'b', label: 'b', type: 'variable', related_concepts_count: 5 },
+        { id: 'c', label: 'c', type: 'variable' },
+      ],
+      edges: [],
+    }
+    expect(toElements(g).map((e) => e.data.weight)).toEqual([1, 1, 1])
+    // one missing count doesn't flatten the others
+    g.nodes[1].related_concepts_count = 9
+    expect(toElements(g).map((e) => e.data.weight)).toEqual([0, 1, 1])
+  })
+
   it('gives edges stable ids', () => {
     const edge = toElements(CHD).find((e) => e.group === 'edges')!
     expect(edge.data.id).toBe(`${edge.data.source}->${edge.data.target}`)

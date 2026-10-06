@@ -1,12 +1,23 @@
-import cytoscape, { type BreadthFirstLayoutOptions, type StylesheetJson } from 'cytoscape'
+import cytoscape, { type LayoutOptions, type StylesheetJson } from 'cytoscape'
 
 import { collapseVersions } from './collapse'
+import { columnPositions } from './columns'
 import { toElements } from './elements'
 import type { KgGraph, KgNode } from './types'
+
+/**
+ * - radial: concepts in the middle, their variables around them, studies outside
+ * - columns: a left-to-right flow, concepts | variables | studies
+ * - force: a force-directed layout (Cytoscape's cose); clusters form on their own
+ */
+export const KG_LAYOUTS = ['radial', 'columns', 'force'] as const
+export type KgLayout = (typeof KG_LAYOUTS)[number]
 
 export type GraphOptions = {
   /** Merge the releases of a study or variable into one node (default true). */
   collapseVersions?: boolean
+  /** How to arrange the nodes (default 'radial'). */
+  layout?: KgLayout
   /** A node was clicked (null: the background). The host decides what to show. */
   onSelect?: (node: KgNode | null) => void
 }
@@ -14,6 +25,8 @@ export type GraphOptions = {
 export type GraphView = {
   /** Draw another graph, or the same with changed options. */
   update(graph: KgGraph, options?: Partial<GraphOptions>): void
+  /** Change options for the current graph: a new layout only rearranges the nodes. */
+  setOptions(options: Partial<GraphOptions>): void
   /** Call after the container changed size (e.g. was hidden, then shown). */
   resize(): void
   /** Re-read the --kg-* colours (e.g. after a theme change). */
@@ -36,12 +49,13 @@ const COLORS = {
 const PADDING = 16
 
 /**
- * Draw `graph` into `container` (which needs a height), laid out radially:
- * concepts in the middle, their variables around them, studies on the outside.
+ * Draw `graph` into `container` (which needs a height). Variables are drawn more
+ * opaque the more other concepts they link to (related_concepts_count).
  * No framework required; React, Vue or plain HTML hosts all call this the same way.
  */
 export function mountGraph(container: HTMLElement, graph: KgGraph, options: GraphOptions = {}): GraphView {
-  let opts: GraphOptions = { collapseVersions: true, ...options }
+  let opts: GraphOptions = { collapseVersions: true, layout: 'radial', ...options }
+  let current = graph
   let shown = new Map<string, KgNode>() // id → node as drawn (collapsed or not)
 
   const cy = cytoscape({
@@ -66,14 +80,32 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
     container.style.cursor = ''
   })
 
-  function draw(g: KgGraph) {
-    const drawn = opts.collapseVersions ? collapseVersions(g) : g
+  let drawn: KgGraph = graph
+  function draw() {
+    drawn = opts.collapseVersions ? collapseVersions(current) : current
     shown = new Map(drawn.nodes.map((n) => [n.id, n]))
     cy.batch(() => {
       cy.elements().remove()
       cy.add(toElements(drawn))
     })
-    const layout: BreadthFirstLayoutOptions = {
+    arrange()
+  }
+
+  function arrange() {
+    // labels sit beside the nodes in columns (concepts' on the left), below otherwise
+    cy.nodes().toggleClass('columns', opts.layout === 'columns')
+    cy.layout(layoutOptions(opts.layout ?? 'radial')).run()
+  }
+
+  function layoutOptions(layout: KgLayout): LayoutOptions {
+    if (layout === 'columns') {
+      const pos = columnPositions(drawn)
+      return { name: 'preset', positions: Object.fromEntries(pos), padding: PADDING, animate: false }
+    }
+    if (layout === 'force') {
+      return { name: 'cose', padding: PADDING, animate: false, randomize: true, nodeDimensionsIncludeLabels: true }
+    }
+    return {
       name: 'breadthfirst',
       roots: cy.nodes('[type = "concept"]').map((n) => n.id()),
       circle: true,
@@ -81,15 +113,24 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
       padding: PADDING,
       animate: false,
     }
-    cy.layout(layout).run()
   }
-  draw(graph)
+  draw()
 
   return {
     update(g, o) {
       if (o) opts = { ...opts, ...o }
+      current = g
       opts.onSelect?.(null) // the selected node may be gone or renamed
-      draw(g)
+      draw()
+    },
+    setOptions(o) {
+      const redraw = o.collapseVersions !== undefined && o.collapseVersions !== opts.collapseVersions
+      const relayout = o.layout !== undefined && o.layout !== opts.layout
+      opts = { ...opts, ...o }
+      if (redraw) {
+        opts.onSelect?.(null)
+        draw()
+      } else if (relayout) arrange()
     },
     resize() {
       cy.resize()
@@ -138,11 +179,19 @@ function styleFor(el: HTMLElement): StylesheetJson {
         'text-max-width': '200px',
       },
     },
-    { selector: 'node[type = "variable"]', style: { 'background-color': color('variable') } },
+    {
+      selector: 'node[type = "variable"]',
+      style: { 'background-color': color('variable'), 'background-opacity': (n) => 0.25 + 0.75 * (n.data('weight') ?? 1) },
+    },
     {
       selector: 'node[type = "study"]',
       style: { 'background-color': color('study'), shape: 'round-rectangle', width: 16, height: 16 },
     },
+    {
+      selector: 'node.columns',
+      style: { 'text-valign': 'center', 'text-halign': 'right', 'text-margin-x': 5, 'text-margin-y': 0, 'text-max-width': '200px' },
+    },
+    { selector: 'node.columns[type = "concept"]', style: { 'text-halign': 'left', 'text-margin-x': -5 } },
     { selector: 'edge', style: { width: 1, 'line-color': color('edge'), 'curve-style': 'straight' } },
     { selector: 'node:selected', style: { 'border-width': 3, 'border-color': color('selected') } },
   ]

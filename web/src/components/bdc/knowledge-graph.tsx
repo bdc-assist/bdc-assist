@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { collapseVersions } from '@/kg/collapse'
 import { nodeLinks, type KgLink } from '@/kg/links'
-import { mountGraph } from '@/kg/mount'
+import { KG_LAYOUTS, mountGraph, type GraphView, type KgLayout } from '@/kg/mount'
 import type { KgGraph, KgNode } from '@/kg/types'
 import { GRAPH_PART } from '@/lib/bdc-adapter'
 
@@ -38,14 +38,36 @@ const LEGEND: { type: KgNode['type']; shape: string }[] = [
 
 function Legend() {
   return (
-    <ul aria-label="Legend" className="text-muted-foreground flex items-center gap-3 border-t px-3 py-1.5">
+    <ul aria-label="Legend" className="flex flex-wrap items-center gap-x-3 gap-y-1">
       {LEGEND.map(({ type, shape }) => (
         <li key={type} className="flex items-center gap-1.5">
           <span className={shape} style={{ background: `var(--kg-${type})` }} />
           {TYPE_LABELS[type]}
+          {type === 'variable' && <span className="opacity-70">(darker: links more concepts)</span>}
         </li>
       ))}
     </ul>
+  )
+}
+
+const LAYOUT_LABELS: Record<KgLayout, string> = { radial: 'Radial', columns: 'Columns', force: 'Force' }
+
+function LayoutPicker({ layout, onLayout }: { layout: KgLayout; onLayout: (l: KgLayout) => void }) {
+  return (
+    <label className="ml-auto flex items-center gap-1.5">
+      Layout
+      <select
+        value={layout}
+        onChange={(e) => onLayout(e.target.value as KgLayout)}
+        className="bg-background text-foreground rounded-md border px-1 py-0.5"
+      >
+        {KG_LAYOUTS.map((l) => (
+          <option key={l} value={l}>
+            {LAYOUT_LABELS[l]}
+          </option>
+        ))}
+      </select>
+    </label>
   )
 }
 
@@ -89,26 +111,43 @@ function NodeDetails({ node, graph }: { node: KgNode | null; graph: KgGraph }) {
 /** Legend, graph and the clicked node's details: one mountGraph view. Rendered
  * inline and, separately, in the maximized dialog. Carries the --kg-* colours
  * (index.css), so they apply in the dialog's portal too. */
-function GraphBody({ json, shown, canvasClass }: { json: string; shown: KgGraph; canvasClass: string }) {
+type GraphBodyProps = {
+  json: string
+  shown: KgGraph
+  canvasClass: string
+  layout: KgLayout
+  onLayout: (l: KgLayout) => void
+}
+
+function GraphBody({ json, shown, canvasClass, layout, onLayout }: GraphBodyProps) {
   const container = useRef<HTMLDivElement>(null)
+  const view = useRef<GraphView | null>(null)
   const [selected, setSelected] = useState<KgNode | null>(null)
 
+  // mounts with the layout of the moment; later changes go through setOptions below
   useEffect(() => {
-    const view = mountGraph(container.current!, JSON.parse(json) as KgGraph, { onSelect: setSelected })
+    const v = mountGraph(container.current!, JSON.parse(json) as KgGraph, { layout, onSelect: setSelected })
+    view.current = v
     // the container's size can change without the window's (details reopened,
     // dialog opening animation): keep the graph fitted to it
-    const observer = new ResizeObserver(() => view.resize())
+    const observer = new ResizeObserver(() => v.resize())
     observer.observe(container.current!)
     return () => {
       observer.disconnect()
-      view.destroy()
+      v.destroy()
+      view.current = null
       setSelected(null)
     }
-  }, [json])
+  }, [json]) // eslint-disable-line react-hooks/exhaustive-deps -- layout: see below
+
+  useEffect(() => view.current?.setOptions({ layout }), [layout])
 
   return (
     <div data-slot="bdc-graph" className="flex min-h-0 flex-1 flex-col text-xs">
-      <Legend />
+      <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-3 py-1.5">
+        <Legend />
+        <LayoutPicker layout={layout} onLayout={onLayout} />
+      </div>
       <div ref={container} className={`border-t ${canvasClass}`} aria-label="Knowledge graph" role="img" />
       <div className="border-t px-3 py-2">
         <NodeDetails node={selected} graph={shown} />
@@ -119,6 +158,7 @@ function GraphBody({ json, shown, canvasClass }: { json: string; shown: KgGraph;
 
 export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
   const [maximized, setMaximized] = useState(false)
+  const [layout, setLayout] = useState<KgLayout>('radial') // shared by the panel and the dialog
   // the message is re-rendered on every stream event, and done delivers the same
   // graph again as a new object: redraw only when the content changes
   const json = JSON.stringify(graph)
@@ -147,7 +187,7 @@ export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
             <Maximize2Icon />
           </Button>
         </summary>
-        <GraphBody json={json} shown={shown} canvasClass="h-72" />
+        <GraphBody json={json} shown={shown} canvasClass="h-72" layout={layout} onLayout={setLayout} />
       </details>
       <Dialog open={maximized} onOpenChange={setMaximized}>
         <DialogContent
@@ -155,7 +195,9 @@ export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
           className="flex h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-none flex-col gap-0 p-0 sm:max-w-none"
         >
           <DialogTitle className="text-muted-foreground px-3 py-2.5 pr-12 text-xs font-normal">{title}</DialogTitle>
-          {maximized && <GraphBody json={json} shown={shown} canvasClass="min-h-0 flex-1" />}
+          {maximized && (
+            <GraphBody json={json} shown={shown} canvasClass="min-h-0 flex-1" layout={layout} onLayout={setLayout} />
+          )}
         </DialogContent>
       </Dialog>
     </>
