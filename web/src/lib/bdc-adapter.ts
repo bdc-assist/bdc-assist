@@ -49,6 +49,7 @@ export const SOURCES_PART = 'bdc-sources'
 export const BLOCKED_PART = 'bdc-blocked'
 export const DRAFT_PART = 'bdc-draft'
 export const REJECTED_PART = 'bdc-rejected'
+export const GRAPH_PART = 'bdc-graph' // data: KgGraph
 
 export type StatusPartData = { node: string | null; status: string | null }
 export type DraftPartData = { words: number }
@@ -71,6 +72,8 @@ export function toContent({ text, streaming, meta }: StreamState, reveal: Reveal
   if (hold && text) {
     parts.push(data(DRAFT_PART, { words: text.split(/\s+/).filter(Boolean).length } satisfies DraftPartData))
   }
+  // before the status line, so the status stays at the bottom while later nodes run
+  if (!hold && meta.graph) parts.push(data(GRAPH_PART, meta.graph))
   // streamed tokens are the progress, so the node label steps aside for them;
   // with the text held back, the label stays
   if (meta.status || (meta.node && (hold || !streaming))) {

@@ -14,6 +14,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import { KnowledgeGraphUI } from '@/components/bdc/knowledge-graph'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -174,6 +175,7 @@ export function BdcMessageParts() {
       <BlockedUI />
       <DraftUI />
       <RejectedUI />
+      <KnowledgeGraphUI />
     </>
   )
 }

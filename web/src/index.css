@@ -204,3 +204,11 @@
 .aui-thread-followup-suggestion:hover::before {
   background: var(--color-foreground);
 }
+
+/* Knowledge graph colours: src/kg reads these from the graph's container (any CSS
+   colour; unset ones fall back to its defaults). Labels and edges follow the theme. */
+[data-slot="bdc-graph"] {
+  --kg-label: var(--color-muted-foreground);
+  --kg-edge: var(--color-ring);
+  --kg-selected: var(--color-foreground);
+}

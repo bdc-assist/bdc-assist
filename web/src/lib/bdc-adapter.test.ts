@@ -6,6 +6,7 @@ import {
   bdcSuggestionAdapter,
   createBdcAdapter,
   DRAFT_PART,
+  GRAPH_PART,
   REJECTED_PART,
   SOURCES_PART,
   STATUS_PART,
@@ -241,6 +242,18 @@ describe('data parts', () => {
     expect(names(empty.yields[0])).toEqual([])
     const emptyList = await run(sse(done({ sources: { 'bdc-doc': [] } })))
     expect(names(emptyList.yields[0])).toEqual([])
+  })
+
+  it('adds the graph once known, before the status line, and holds it back in after-check', async () => {
+    const graph = { nodes: [{ id: 'C', label: 'c', type: 'concept' }], edges: [] }
+    const events = sse({ type: 'graph', graph }, { type: 'node', node: 'output_guardrail' }, done({ graph }))
+    const stream = await run(events)
+    expect(names(stream.yields[0])).toContain(GRAPH_PART)
+    const running = names(stream.yields[1])
+    expect(running.indexOf(GRAPH_PART)).toBeLessThan(running.indexOf(STATUS_PART))
+    const held = await run(events, { reveal: 'after-check' })
+    expect(names(held.yields[1])).not.toContain(GRAPH_PART)
+    expect(names(held.yields.at(-1)!)).toContain(GRAPH_PART)
   })
 
   it('adds the blocked notice', async () => {
