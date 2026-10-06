@@ -98,6 +98,7 @@ describe('createBdcAdapter', () => {
       node: null,
       status: null,
       sources: { 'bdc-doc': [{ title: 'Overview', link: 'https://x/overview', type: 'page' }] },
+      graph: null,
       followups: ['What is dbGaP?'],
       blocked: false,
       rejected: false,
@@ -138,6 +139,27 @@ describe('createBdcAdapter', () => {
     expect(textOf(last)).toBe('Sorry, I can only help with BDC.')
     expect(metaOf(last).sources).toEqual({})
     expect(metaOf(last).rejected).toBe(true)
+  })
+
+  it('keeps the graph from its event, and lets done override it', async () => {
+    const graph = {
+      nodes: [
+        { id: 'MONDO:1', label: 'chd', type: 'concept', concept_type: 'biolink.NamedThing' },
+        { id: 'phv1', label: 'FC219', type: 'variable', related_concepts_count: 12 },
+      ],
+      edges: [{ source: 'phv1', target: 'MONDO:1' }],
+    }
+    const kept = await run(sse({ type: 'graph', graph }, done({ graph })))
+    expect(metaOf(kept.yields[0])).toMatchObject({ graph, done: false })
+    expect(metaOf(kept.yields.at(-1)!).graph).toEqual(graph)
+    // rejected answer: done sends {} — the streamed graph goes too
+    const rejected = await run(sse({ type: 'graph', graph }, done({ graph: {} })))
+    expect(metaOf(rejected.yields.at(-1)!).graph).toBeNull()
+  })
+
+  it('has no graph without one (older servers send no graph field)', async () => {
+    const { yields } = await run(sse(done()))
+    expect(metaOf(yields[0]).graph).toBeNull()
   })
 
   it('marks blocked replies', async () => {

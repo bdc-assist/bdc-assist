@@ -1,5 +1,6 @@
 import type { ChatModelAdapter, SuggestionAdapter, ThreadMessage } from '@assistant-ui/react'
 
+import { asGraph, type KgGraph } from '@/kg/types'
 import { readSSE } from '@/lib/sse'
 
 // Wire format of POST /chat/stream (see stream_chat in bdc_assist/api.py).
@@ -12,6 +13,7 @@ type StreamEvent =
   | { type: 'token'; text: string }
   | { type: 'reset' }
   | { type: 'sources'; sources: Sources; sources_md: string }
+  | { type: 'graph'; graph: KgGraph }
   | {
       type: 'done'
       answer: string
@@ -20,8 +22,8 @@ type StreamEvent =
       followups: string[]
       sources: Sources
       sources_md: string
-      tool_results?: { tool: string; args: unknown; result: unknown }[]
-    } // tool_results: logged for now (TEMP), deliberately not kept
+      graph?: KgGraph | Record<string, never> // {} when there is none
+    } // tool_results is also sent; deliberately not kept
 
 /** What we keep on each assistant message as metadata.custom. Plain JSON,
  * so a thread can be persisted later as-is. */
@@ -29,6 +31,7 @@ export type BdcMessageMeta = {
   node: string | null // graph node currently running; null once done
   status: string | null // latest tool-call status; cleared by reset and new nodes
   sources: Sources | null // null until the agent reports them
+  graph: KgGraph | null // Dug concept graph; null when there is none (yet)
   followups: string[]
   blocked: boolean // input guardrail refused the question
   rejected: boolean // output guardrail replaced the streamed draft
@@ -126,6 +129,7 @@ export function createBdcAdapter(
           node: null,
           status: null,
           sources: null,
+          graph: null,
           followups: [],
           blocked: false,
           rejected: false,
@@ -183,15 +187,16 @@ export function createBdcAdapter(
             case 'sources':
               meta.sources = ev.sources // agent finished: sources are final
               break
+            case 'graph':
+              meta.graph = asGraph(ev.graph) // agent finished: the graph is final
+              break
             case 'done':
               // authoritative: rejects, disclaimers and canned replies replace
-              // the streamed text, and a rejected answer has no sources
-              // TEMP: print non-doc tool calls (Dug) to grab a real KG example
-              for (const tr of ev.tool_results ?? [])
-                if (tr.tool !== 'search_docs') console.log(`[bdc tool] ${tr.tool}`, tr)
+              // the streamed text, and a rejected answer has no sources or graph
               meta.rejected = !ev.blocked && replacedDraft(state.text, ev.answer)
               state.text = ev.answer
               meta.sources = ev.sources
+              meta.graph = asGraph(ev.graph)
               meta.followups = ev.followups
               meta.blocked = ev.blocked
               meta.node = null

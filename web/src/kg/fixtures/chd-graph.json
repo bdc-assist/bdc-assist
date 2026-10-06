@@ -1,0 +1,290 @@
+{
+  "nodes": [
+    {
+      "id": "MONDO:0005453",
+      "label": "congenital heart disease",
+      "type": "concept",
+      "concept_type": "biolink.NamedThing"
+    },
+    {
+      "id": "phv00202373.v3.p3",
+      "label": "F33ANGHRTHSP",
+      "type": "variable",
+      "related_concepts_count": 25
+    },
+    {
+      "id": "phs000200.v12.p3",
+      "label": "Women's Health Initiative Clinical Trial and Observational Study",
+      "type": "study"
+    },
+    {
+      "id": "phv00001546.v1.p15",
+      "label": "FC219",
+      "type": "variable",
+      "related_concepts_count": 12
+    },
+    {
+      "id": "phs000007.v34.p15",
+      "label": "Framingham Cohort",
+      "type": "study"
+    },
+    {
+      "id": "phv00124261.v1.p1",
+      "label": "ANGDIADAY",
+      "type": "variable",
+      "related_concepts_count": 32
+    },
+    {
+      "id": "phs000284.v2.p1",
+      "label": "NHLBI Cleveland Family Study (CFS) Candidate Gene Association Resource (CARe)",
+      "type": "study"
+    },
+    {
+      "id": "phv00001350.v1.p12",
+      "label": "FB230",
+      "type": "variable",
+      "related_concepts_count": 12
+    },
+    {
+      "id": "phs000007.v31.p12",
+      "label": "Framingham Cohort",
+      "type": "study"
+    },
+    {
+      "id": "phv00202361.v3.p3",
+      "label": "F33ANGHRTHSP",
+      "type": "variable",
+      "related_concepts_count": 25
+    },
+    {
+      "id": "phv00206800.v6.p2",
+      "label": "HFAA11F",
+      "type": "variable",
+      "related_concepts_count": 19
+    },
+    {
+      "id": "phs000280.v8.p2",
+      "label": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+      "type": "study"
+    },
+    {
+      "id": "phv00122460.v1.p1",
+      "label": "HEARTDIS",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phv00407048.v1.p1",
+      "label": "AFFECTION_STATUS",
+      "type": "variable",
+      "related_concepts_count": 26
+    },
+    {
+      "id": "phs001814.v1.p1",
+      "label": "Molecular Genetics of Heterotaxy and Related Congenital Heart Defects",
+      "type": "study"
+    },
+    {
+      "id": "phv00001546.v1.p12",
+      "label": "FC219",
+      "type": "variable",
+      "related_concepts_count": 12
+    },
+    {
+      "id": "phv00202374.v3.p3",
+      "label": "F33ANGHRTHSPDY",
+      "type": "variable",
+      "related_concepts_count": 35
+    },
+    {
+      "id": "phv00114408.v2.p2",
+      "label": "B09CHD",
+      "type": "variable",
+      "related_concepts_count": 10
+    },
+    {
+      "id": "phs000285.v3.p2",
+      "label": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+      "type": "study"
+    },
+    {
+      "id": "phv00113042.v2.p2",
+      "label": "A09CHD",
+      "type": "variable",
+      "related_concepts_count": 10
+    },
+    {
+      "id": "phv00113013.v2.p2",
+      "label": "A08HRMED",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phv00266817.v1.p2",
+      "label": "AFFECTION_STATUS",
+      "type": "variable",
+      "related_concepts_count": 10
+    },
+    {
+      "id": "phs001194.v2.p2",
+      "label": "National Heart, Lung, and Blood Institute (NHLBI) Bench to Bassinet Program: The Pediatric Cardiac Genetics Consortium (PCGC) Study",
+      "type": "study"
+    },
+    {
+      "id": "phv00001350.v1.p15",
+      "label": "FB230",
+      "type": "variable",
+      "related_concepts_count": 12
+    },
+    {
+      "id": "phv00205042.v2.p2",
+      "label": "DSRA4",
+      "type": "variable",
+      "related_concepts_count": 20
+    },
+    {
+      "id": "phv00202362.v3.p3",
+      "label": "F33ANGHRTHSPDY",
+      "type": "variable",
+      "related_concepts_count": 35
+    }
+  ],
+  "edges": [
+    {
+      "source": "phv00202373.v3.p3",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00202373.v3.p3",
+      "target": "phs000200.v12.p3"
+    },
+    {
+      "source": "phv00001546.v1.p15",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00001546.v1.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00124261.v1.p1",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00124261.v1.p1",
+      "target": "phs000284.v2.p1"
+    },
+    {
+      "source": "phv00001350.v1.p12",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00001350.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00202361.v3.p3",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00202361.v3.p3",
+      "target": "phs000200.v12.p3"
+    },
+    {
+      "source": "phv00206800.v6.p2",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00206800.v6.p2",
+      "target": "phs000280.v8.p2"
+    },
+    {
+      "source": "phv00122460.v1.p1",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00122460.v1.p1",
+      "target": "phs000284.v2.p1"
+    },
+    {
+      "source": "phv00407048.v1.p1",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00407048.v1.p1",
+      "target": "phs001814.v1.p1"
+    },
+    {
+      "source": "phv00001546.v1.p12",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00001546.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00202374.v3.p3",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00202374.v3.p3",
+      "target": "phs000200.v12.p3"
+    },
+    {
+      "source": "phv00114408.v2.p2",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00114408.v2.p2",
+      "target": "phs000285.v3.p2"
+    },
+    {
+      "source": "phv00113042.v2.p2",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00113042.v2.p2",
+      "target": "phs000285.v3.p2"
+    },
+    {
+      "source": "phv00113013.v2.p2",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00113013.v2.p2",
+      "target": "phs000285.v3.p2"
+    },
+    {
+      "source": "phv00266817.v1.p2",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00266817.v1.p2",
+      "target": "phs001194.v2.p2"
+    },
+    {
+      "source": "phv00001350.v1.p15",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00001350.v1.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00205042.v2.p2",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00205042.v2.p2",
+      "target": "phs000280.v8.p2"
+    },
+    {
+      "source": "phv00202362.v3.p3",
+      "target": "MONDO:0005453"
+    },
+    {
+      "source": "phv00202362.v3.p3",
+      "target": "phs000200.v12.p3"
+    }
+  ]
+}
