@@ -1,4 +1,3 @@
-import { makeAssistantDataUI } from '@assistant-ui/react'
 import { ExternalLinkIcon, Maximize2Icon, MinusIcon, PlusIcon, ScanIcon } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -8,9 +7,8 @@ import { collapseVersions } from '@/kg/collapse'
 import { nodeLinks, type KgLink } from '@/kg/links'
 import { KG_LAYOUTS, mountGraph, type GraphView, type KgLayout } from '@/kg/mount'
 import type { KgGraph, KgNode } from '@/kg/types'
-import { GRAPH_PART } from '@/lib/bdc-adapter'
 
-// The demo's wrapper around src/kg: a collapsible panel under the answer with the
+// The demo's wrapper around src/kg (loaded on demand: see GraphUI in message-parts.tsx): a collapsible panel under the answer with the
 // graph and the clicked node's details, and a button to show it all in a large
 // dialog. Another host would write its own wrapper
 // around mountGraph; nothing in src/kg depends on this file.
@@ -256,8 +254,3 @@ export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
     </>
   )
 }
-
-export const KnowledgeGraphUI = makeAssistantDataUI<KgGraph>({
-  name: GRAPH_PART,
-  render: ({ data }) => <KnowledgeGraph graph={data} />,
-})

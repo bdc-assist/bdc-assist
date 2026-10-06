@@ -1,4 +1,5 @@
 import { makeAssistantDataUI, useAui, useAuiState } from '@assistant-ui/react'
+import { lazy, Suspense } from 'react'
 import {
   BookOpenIcon,
   CalendarDaysIcon,
@@ -15,14 +16,15 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-import { KnowledgeGraphUI } from '@/components/bdc/knowledge-graph'
 import { Skeleton } from '@/components/ui/skeleton'
+import type { KgGraph } from '@/kg/types'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 import {
   BLOCKED_PART,
   DRAFT_PART,
   FOLLOWUPS_PART,
+  GRAPH_PART,
   REJECTED_PART,
   SOURCES_PART,
   STATUS_PART,
@@ -200,6 +202,19 @@ const FollowupsUI = makeAssistantDataUI<string[]>({
   },
 })
 
+// The graph panel, and with it Cytoscape (~430 kB), loads the first time an answer
+// has a graph, not with the page; a placeholder the panel's height stands in.
+const KnowledgeGraph = lazy(() => import('@/components/bdc/knowledge-graph').then((m) => ({ default: m.KnowledgeGraph })))
+
+const GraphUI = makeAssistantDataUI<KgGraph>({
+  name: GRAPH_PART,
+  render: ({ data }) => (
+    <Suspense fallback={<Skeleton className="my-3 h-[23rem] w-full rounded-lg" aria-label="Loading the knowledge graph" />}>
+      <KnowledgeGraph graph={data} />
+    </Suspense>
+  ),
+})
+
 /** Mount once inside the runtime provider. */
 export function BdcMessageParts() {
   return (
@@ -209,7 +224,7 @@ export function BdcMessageParts() {
       <BlockedUI />
       <DraftUI />
       <RejectedUI />
-      <KnowledgeGraphUI />
+      <GraphUI />
       <FollowupsUI />
     </>
   )
