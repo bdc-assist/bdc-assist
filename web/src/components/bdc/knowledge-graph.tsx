@@ -1,15 +1,18 @@
 import { makeAssistantDataUI } from '@assistant-ui/react'
-import { ExternalLinkIcon } from 'lucide-react'
+import { ExternalLinkIcon, Maximize2Icon } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { collapseVersions } from '@/kg/collapse'
 import { nodeLinks, type KgLink } from '@/kg/links'
-import { mountGraph, type GraphView } from '@/kg/mount'
+import { mountGraph } from '@/kg/mount'
 import type { KgGraph, KgNode } from '@/kg/types'
 import { GRAPH_PART } from '@/lib/bdc-adapter'
 
 // The demo's wrapper around src/kg: a collapsible panel under the answer with the
-// graph and the clicked node's details. Another host would write its own wrapper
+// graph and the clicked node's details, and a button to show it all in a large
+// dialog. Another host would write its own wrapper
 // around mountGraph; nothing in src/kg depends on this file.
 
 const TYPE_LABELS: Record<KgNode['type'], string> = { concept: 'Concept', variable: 'Variable', study: 'Study' }
@@ -83,41 +86,79 @@ function NodeDetails({ node, graph }: { node: KgNode | null; graph: KgGraph }) {
   )
 }
 
-export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
+/** Legend, graph and the clicked node's details: one mountGraph view. Rendered
+ * inline and, separately, in the maximized dialog. Carries the --kg-* colours
+ * (index.css), so they apply in the dialog's portal too. */
+function GraphBody({ json, shown, canvasClass }: { json: string; shown: KgGraph; canvasClass: string }) {
   const container = useRef<HTMLDivElement>(null)
-  const view = useRef<GraphView | null>(null)
   const [selected, setSelected] = useState<KgNode | null>(null)
-  // the message is re-rendered on every stream event, and done delivers the same
-  // graph again as a new object: redraw only when the content changes
-  const json = JSON.stringify(graph)
-  const shown = useMemo(() => collapseVersions(JSON.parse(json) as KgGraph), [json])
 
   useEffect(() => {
-    const v = mountGraph(container.current!, JSON.parse(json) as KgGraph, { onSelect: setSelected })
-    view.current = v
+    const view = mountGraph(container.current!, JSON.parse(json) as KgGraph, { onSelect: setSelected })
+    // the container's size can change without the window's (details reopened,
+    // dialog opening animation): keep the graph fitted to it
+    const observer = new ResizeObserver(() => view.resize())
+    observer.observe(container.current!)
     return () => {
-      v.destroy()
-      view.current = null
+      observer.disconnect()
+      view.destroy()
       setSelected(null)
     }
   }, [json])
 
   return (
-    <details
-      open
-      data-slot="bdc-graph"
-      className="my-3 rounded-lg border text-xs"
-      onToggle={(e) => e.currentTarget.open && view.current?.resize()}
-    >
-      <summary className="text-muted-foreground cursor-pointer px-3 py-2 select-none">
-        <span className="text-foreground font-medium">Knowledge graph</span> · {summary(shown)}
-      </summary>
+    <div data-slot="bdc-graph" className="flex min-h-0 flex-1 flex-col text-xs">
       <Legend />
-      <div ref={container} className="h-72 border-t" aria-label="Knowledge graph" role="img" />
+      <div ref={container} className={`border-t ${canvasClass}`} aria-label="Knowledge graph" role="img" />
       <div className="border-t px-3 py-2">
         <NodeDetails node={selected} graph={shown} />
       </div>
-    </details>
+    </div>
+  )
+}
+
+export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
+  const [maximized, setMaximized] = useState(false)
+  // the message is re-rendered on every stream event, and done delivers the same
+  // graph again as a new object: redraw only when the content changes
+  const json = JSON.stringify(graph)
+  const shown = useMemo(() => collapseVersions(JSON.parse(json) as KgGraph), [json])
+  const title = (
+    <>
+      <span className="text-foreground font-medium">Knowledge graph</span> · {summary(shown)}
+    </>
+  )
+
+  return (
+    <>
+      <details open className="my-3 rounded-lg border text-xs">
+        <summary className="text-muted-foreground flex cursor-pointer items-center gap-2 px-3 py-1.5 select-none">
+          <span className="flex-1">{title}</span>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Maximize knowledge graph"
+            title="Maximize"
+            onClick={(e) => {
+              e.preventDefault() // a click in <summary> would also fold the panel
+              setMaximized(true)
+            }}
+          >
+            <Maximize2Icon />
+          </Button>
+        </summary>
+        <GraphBody json={json} shown={shown} canvasClass="h-72" />
+      </details>
+      <Dialog open={maximized} onOpenChange={setMaximized}>
+        <DialogContent
+          aria-describedby={undefined}
+          className="flex h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-none flex-col gap-0 p-0 sm:max-w-none"
+        >
+          <DialogTitle className="text-muted-foreground px-3 py-2.5 pr-12 text-xs font-normal">{title}</DialogTitle>
+          {maximized && <GraphBody json={json} shown={shown} canvasClass="min-h-0 flex-1" />}
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
