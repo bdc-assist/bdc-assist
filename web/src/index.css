@@ -174,5 +174,4 @@
   --kg-label: var(--color-muted-foreground);
   --kg-edge: var(--color-ring);
   --kg-selected: var(--color-foreground);
-  --kg-background: var(--color-background);
 }

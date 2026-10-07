@@ -9,6 +9,7 @@ import { collapseVersions } from '@/kg/collapse'
 import { connections } from '@/kg/connections'
 import { nodeLinks, type KgLink } from '@/kg/links'
 import { studyList } from '@/kg/list'
+import { mountFlow, type FlowView } from '@/kg/flow'
 import { KG_LAYOUTS, mountGraph, type GraphView, type KgLayout } from '@/kg/mount'
 import type { KgGraph, KgNode } from '@/kg/types'
 
@@ -61,26 +62,37 @@ function Legend() {
   )
 }
 
-type ViewMode = 'graph' | 'list'
+type ViewMode = 'graph' | 'flow' | 'list'
+type ViewChoice = KgLayout | 'flow' | 'list'
 
-const VIEW_LABELS: Record<KgLayout | 'list', string> = { radial: 'Radial', columns: 'Columns', force: 'Force', list: 'List' }
+const VIEW_LABELS: Record<ViewChoice, string> = {
+  radial: 'Radial',
+  columns: 'Columns',
+  force: 'Force',
+  flow: 'Flow',
+  list: 'List',
+}
 
-/** One dropdown for the graph's layouts and the list: a layout is a mountGraph option,
- * the list is this wrapper's own, but to the user they're all ways to view it. */
+/** One dropdown for the graph's layouts, the flow (Sankey) and the list: a layout is a
+ * mountGraph option, flow is mountFlow, the list is this wrapper's own, but to the
+ * user they're all ways to view it. */
 function ViewPicker({ layout, mode, onLayout, onMode }: Pick<GraphBodyProps, 'layout' | 'mode' | 'onLayout' | 'onMode'>) {
   return (
     <label className="flex items-center gap-1.5">
       View
       <select
-        value={mode === 'list' ? 'list' : layout}
+        value={mode === 'graph' ? layout : mode}
         onChange={(e) => {
-          const v = e.target.value as KgLayout | 'list'
-          onMode(v === 'list' ? 'list' : 'graph')
-          if (v !== 'list') onLayout(v)
+          const v = e.target.value as ViewChoice
+          if (v === 'flow' || v === 'list') onMode(v)
+          else {
+            onMode('graph')
+            onLayout(v)
+          }
         }}
         className="bg-background text-foreground rounded-md border px-1 py-0.5"
       >
-        {[...KG_LAYOUTS, 'list' as const].map((v) => (
+        {[...KG_LAYOUTS, 'flow' as const, 'list' as const].map((v) => (
           <option key={v} value={v}>
             {VIEW_LABELS[v]}
           </option>
@@ -246,6 +258,8 @@ function GraphBody(props: GraphBodyProps) {
   const { json, shown, canvasClass, layout, onLayout, mode, onMode, sharedOnly, onSharedOnly, canShare, zoomGestures } = props
   const container = useRef<HTMLDivElement>(null)
   const view = useRef<GraphView | null>(null)
+  const flowContainer = useRef<HTMLDivElement>(null)
+  const flowView = useRef<FlowView | null>(null)
   const [selected, setSelected] = useState<KgNode | null>(null)
   const [zoomHint, setZoomHint] = useState(false)
   const hintTimer = useRef<number | undefined>(undefined)
@@ -262,7 +276,10 @@ function GraphBody(props: GraphBodyProps) {
       sharedOnly,
       zoomGestures,
       onZoomHint: showZoomHint,
-      onSelect: setSelected,
+      onSelect: (n) => {
+        setSelected(n)
+        flowView.current?.select(n?.id ?? null) // the other view follows
+      },
     })
     view.current = v
     // the container's size can change without the window's (details reopened,
@@ -278,15 +295,38 @@ function GraphBody(props: GraphBodyProps) {
     }
   }, [json]) // eslint-disable-line react-hooks/exhaustive-deps -- layout: see below
 
-  useEffect(() => view.current?.setOptions({ layout }), [layout])
-  useEffect(() => view.current?.setOptions({ sharedOnly }), [sharedOnly])
+  // the flow (Sankey): its own view of the same graph, kept mounted like the graph
+  useEffect(() => {
+    const v = mountFlow(flowContainer.current!, JSON.parse(json) as KgGraph, {
+      sharedOnly,
+      onSelect: (n) => {
+        setSelected(n)
+        view.current?.select(n?.id ?? null)
+      },
+    })
+    flowView.current = v
+    const observer = new ResizeObserver(() => v.resize()) // laid out for its size
+    observer.observe(flowContainer.current!)
+    return () => {
+      observer.disconnect()
+      v.destroy()
+      flowView.current = null
+    }
+  }, [json]) // eslint-disable-line react-hooks/exhaustive-deps -- sharedOnly: see below
 
-  // picked in the list: the graph shows it selected too, for when it's switched back
+  useEffect(() => view.current?.setOptions({ layout }), [layout])
+  useEffect(() => {
+    view.current?.setOptions({ sharedOnly })
+    flowView.current?.setOptions({ sharedOnly })
+  }, [sharedOnly])
+
+  // picked in the list: both views show it selected too, for when they're switched to
   // (clicking the selected row again clears it, like the graph's background)
   const selectFromList = (node: KgNode) => {
     const next = selected?.id === node.id ? null : node
     setSelected(next)
     view.current?.select(next?.id ?? null)
+    flowView.current?.select(next?.id ?? null)
   }
 
   return (
@@ -313,8 +353,13 @@ function GraphBody(props: GraphBodyProps) {
           <StudyList graph={shown} selected={selected} onSelect={selectFromList} />
         </div>
       )}
-      {/* kept mounted while the list shows, so the graph keeps its layout and zoom */}
-      <div className={`relative border-t ${canvasClass} ${mode === 'list' ? 'hidden' : ''}`}>
+      <div
+        ref={flowContainer}
+        className={`border-t ${canvasClass} ${mode === 'flow' ? '' : 'hidden'}`}
+        aria-label="Knowledge graph as flows from concepts to studies. The List view shows the same as text."
+      />
+      {/* kept mounted while another view shows, so the graph keeps its layout and zoom */}
+      <div className={`relative border-t ${canvasClass} ${mode === 'graph' ? '' : 'hidden'}`}>
         {/* sized by height, not `absolute inset-0`: Cytoscape gives its container
             `position: relative` from an unlayered style sheet, which beats Tailwind's
             layered utilities, so `absolute` would be dropped and the box collapse */}

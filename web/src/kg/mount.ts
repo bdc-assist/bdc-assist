@@ -7,6 +7,7 @@ import { connections } from './connections'
 import { toElements } from './elements'
 import { orient } from './orient'
 import type { KgGraph, KgNode } from './types'
+import type { KgView, KgViewOptions } from './view'
 
 /**
  * - radial: concepts in the middle, their variables around them, studies outside
@@ -16,13 +17,10 @@ import type { KgGraph, KgNode } from './types'
 export const KG_LAYOUTS = ['radial', 'columns', 'force'] as const
 export type KgLayout = (typeof KG_LAYOUTS)[number]
 
-export type GraphOptions = {
-  /** Merge the releases of a study or variable into one node (default true). */
-  collapseVersions?: boolean
+/** mountGraph's options: the common view options (KgViewOptions), plus: */
+export type GraphOptions = KgViewOptions & {
   /** How to arrange the nodes (default 'radial'). */
   layout?: KgLayout
-  /** Show only what two or more concepts share (see bridges/sharedOnly; default false). */
-  sharedOnly?: boolean
   /** Zoom with the mouse wheel and pinch. false (default): no, the wheel scrolls
    * the page. 'modifier': only with Ctrl/⌘ held (trackpad pinch counts: browsers
    * send it as Ctrl + wheel), so a plain wheel still scrolls the page around the
@@ -31,28 +29,15 @@ export type GraphOptions = {
   /** 'modifier' mode: the wheel turned over the graph without Ctrl/⌘ held, so the
    * host can say how to zoom. */
   onZoomHint?: () => void
-  /** A node was clicked (null: the background). The host decides what to show. */
-  onSelect?: (node: KgNode | null) => void
 }
 
-export type GraphView = {
-  /** Draw another graph, or the same with changed options. */
-  update(graph: KgGraph, options?: Partial<GraphOptions>): void
-  /** Change options for the current graph: a new layout only rearranges the nodes;
-   * collapseVersions and sharedOnly redraw it (and clear the selection). */
-  setOptions(options: Partial<GraphOptions>): void
-  /** Mark a node selected (null: none), e.g. one picked in a list next to the graph.
-   * Ids are as drawn (collapsed or not). Doesn't call onSelect. */
-  select(id: string | null): void
+/** The common view interface (KgView; setOptions: a new layout only rearranges the
+ * nodes, collapseVersions and sharedOnly redraw and clear the selection), plus: */
+export type GraphView = KgView<GraphOptions> & {
   /** Zoom in (factor > 1) or out (< 1) around the middle of the view. */
   zoomBy(factor: number): void
   /** Show the whole graph. */
   fit(): void
-  /** Call after the container changed size (e.g. was hidden, then shown). */
-  resize(): void
-  /** Re-read the --kg-* colours (e.g. after a theme change). */
-  refreshStyle(): void
-  destroy(): void
 }
 
 // Colours come from CSS custom properties on the container (or any ancestor), so
@@ -67,7 +52,6 @@ const COLORS = {
   edge: ['--kg-edge', '#cbd5e1'],
   label: ['--kg-label', '#475569'],
   selected: ['--kg-selected', '#0f172a'],
-  background: ['--kg-background', '#ffffff'], // behind highlighted nodes' labels
 } as const
 
 const PADDING = 16
@@ -144,16 +128,16 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
     arrange()
   }
 
-  // the node's connections get `focus`, everything else `faded`; null clears both
+  // everything not connected to the node gets `faded`; null clears it
   function highlight(id: string | null) {
     const c = id ? connections(drawn, id) : null
     cy.batch(() => {
-      cy.elements().removeClass('focus faded')
+      cy.elements().removeClass('faded')
       if (!c?.nodes.size) return
       cy.elements().forEach((el) => {
         const elId = el.id()
         const on = el.isNode() ? c.nodes.has(elId) : c.edges.has(elId)
-        el.addClass(on ? 'focus' : 'faded')
+        if (!on) el.addClass('faded')
       })
     })
   }
@@ -309,19 +293,6 @@ function styleFor(el: HTMLElement): StylesheetJson {
     },
     { selector: 'node.bridge[type = "study"]', style: { 'underlay-shape': 'round-rectangle' } },
     { selector: '.faded', style: { opacity: 0.15 } },
-    {
-      // highlighted: whole labels (no "…"), on a backing so they stay readable over edges
-      selector: 'node.focus',
-      style: {
-        'text-wrap': 'none',
-        'z-index': 10,
-        'text-background-color': color('background'),
-        'text-background-opacity': 0.85,
-        'text-background-padding': '2px',
-        'text-background-shape': 'roundrectangle',
-      },
-    },
-    { selector: 'edge.focus', style: { 'line-color': color('label'), width: 1.5, 'z-index': 9 } },
     { selector: 'node:selected', style: { 'border-width': 3, 'border-color': color('selected') } },
   ]
 }
