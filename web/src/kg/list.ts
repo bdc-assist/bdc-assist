@@ -22,9 +22,10 @@ export type ListStudy = {
 
 /**
  * The graph as a list, grouped by study: each study with the concepts it covers
- * and its variables, also grouped by concept (study → concept → variables). Studies covering more concepts come first, then by name, so
- * with several concepts the shared studies lead. For a list or table view, or a
- * text alternative to the graph.
+ * and its variables, also grouped by concept (study → concept → variables).
+ * Studies covering more concepts come first, then by name, so with several
+ * concepts the shared studies lead. For a list or table view, or a text
+ * alternative to the graph.
  */
 export function studyList(graph: KgGraph): ListStudy[] {
   const byId = new Map(graph.nodes.map((n) => [n.id, n]))
