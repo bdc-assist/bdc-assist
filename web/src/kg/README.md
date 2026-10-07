@@ -145,7 +145,7 @@ used) first, so ids match what the views draw.
 | `collapseVersions(graph)`, `baseId(id)` | `collapse.ts` | merge dbGaP releases (`phs000007.v34.p15` + `.v31.p12` → `phs000007`, with `versions`) |
 | `bridges(graph)`, `sharedOnly(graph)` | `bridges.ts` | the nodes connecting two or more concepts; the graph reduced to them |
 | `studyList(graph)` | `list.ts` | studies → concepts → variables, shared studies first: for a list or table view, or a text alternative to the graph |
-| `nodeLinks(node, graph)`, `conceptLink(id)` | `links.ts` | pages for a node: dbGaP study and variable pages (one per release); concepts by CURIE prefix (MONDO, EFO, UMLS, GTOPDB, otherwise bioregistry.io), marked "(login)" where an account is needed |
+| `nodeLinks(node, graph)`, `conceptLink(id)` | `links.ts` | pages for a node: dbGaP study and variable pages (one per release; a variable without an accession gets its study, with a `note`); concepts by CURIE prefix (MONDO, EFO, UMLS, GTOPDB, otherwise bioregistry.io), marked "(login)" where an account is needed |
 | `focusConnections(graph, focus)`, `pairVariables(graph, concept, study)` | `focus.ts` | what a focus lights up; a pair's variables |
 | `flowData(graph)` | `flow.ts` | the flow's concept → study links with their variables, for your own chart |
 | `variableWeights(graph)` | `elements.ts` | `related_concepts_count` scaled to 0..1 within the graph |
@@ -158,7 +158,10 @@ used) first, so ids match what the views draw.
   inside a positioned wrapper instead.
 - **Hidden containers:** a view mounted in a hidden container lays out for a fallback
   size; call `resize()` once it's shown.
-- **Variable IDs that aren't `phv` accessions** (e.g. `phs003708_MHASTH.v1.p1`) get no
-  dbGaP link: dbGaP's variable page needs a `phv` number.
+- **Variable IDs that aren't `phv` accessions** (e.g. `phs003708_MHASTH.v1.p1`, study +
+  variable name): dbGaP lists only a few variables for some studies, so Dug takes their
+  data dictionary from PIC-SURE, and there's no dbGaP variable page. `nodeLinks` gives
+  their study's page instead, with `note: NO_VARIABLE_ACCESSION` ("No dbGaP variable
+  accession available") so you can say why.
 - **The force layout is recomputed** on every redraw, so it differs from one draw to
   the next.

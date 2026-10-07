@@ -39,6 +39,23 @@ describe('nodeLinks', () => {
     ])
   })
 
+  it('links a variable without a phv accession to its study, with a note', () => {
+    const g: KgGraph = {
+      nodes: [
+        { id: 'phs003708_MHASTH.v1.p1', label: 'Asthma', type: 'variable' },
+        { id: 'phs003708.v1.p1', label: 'ACTIV-4 Host Tissue', type: 'study' },
+      ],
+      edges: [{ source: 'phs003708_MHASTH.v1.p1', target: 'phs003708.v1.p1' }],
+    }
+    expect(nodeLinks(g.nodes[0], g)).toEqual([
+      {
+        label: 'phs003708.v1.p1',
+        url: `${DBGAP}/study.cgi?study_id=phs003708.v1.p1`,
+        note: 'No dbGaP variable accession available',
+      },
+    ])
+  })
+
   it('links a concept to its ontology page', () => {
     expect(nodeLinks(node(RAW, 'MONDO:0005453'), RAW)).toEqual([
       { label: 'MONDO:0005453', url: 'https://purl.obolibrary.org/obo/MONDO_0005453' },

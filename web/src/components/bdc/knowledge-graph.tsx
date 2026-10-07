@@ -119,7 +119,9 @@ function ExternalLink({ link }: { link: KgLink }) {
 // The ID is shown as its link(s): a concept's ontology page, or one dbGaP page per
 // release of a study or variable (merged releases list each versioned ID).
 function NodeDetails({ node, graph }: { node: KgNode; graph: KgGraph }) {
-  const links = nodeLinks(node, graph)
+  const all = nodeLinks(node, graph)
+  const links = all.filter((l) => !l.note) // the node's own pages
+  const standIns = all.filter((l) => l.note) // e.g. a variable without a dbGaP accession: its study
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
       <dt className="text-muted-foreground">{TYPE_LABELS[node.type]}</dt>
@@ -128,6 +130,17 @@ function NodeDetails({ node, graph }: { node: KgNode; graph: KgGraph }) {
       <dd className="flex flex-wrap gap-x-3 font-mono">
         {links.length ? links.map((l) => <ExternalLink key={l.url} link={l} />) : node.id}
       </dd>
+      {standIns.length > 0 && (
+        <>
+          <dt className="text-muted-foreground">dbGaP</dt>
+          <dd className="flex flex-wrap items-baseline gap-x-3">
+            <span className="text-muted-foreground">{standIns[0].note} ·</span>
+            {standIns.map((l) => (
+              <ExternalLink key={l.url} link={{ ...l, label: `study ${l.label}` }} />
+            ))}
+          </dd>
+        </>
+      )}
       {node.related_concepts_count !== undefined && (
         <>
           <dt className="text-muted-foreground">Other concepts</dt>
@@ -151,7 +164,8 @@ function PairDetails({ concept, study, graph }: { concept: KgNode; study: KgNode
       <dt className="text-muted-foreground">Variables</dt>
       <dd className="flex max-h-24 flex-wrap gap-x-3 overflow-y-auto font-mono">
         {variables.map((v) => {
-          const [link] = nodeLinks(v, graph)
+          // only a variable's own page; one without a dbGaP accession stays plain text
+          const link = nodeLinks(v, graph).find((l) => !l.note)
           return link ? <ExternalLink key={v.id} link={{ ...link, label: v.label }} /> : <span key={v.id}>{v.label}</span>
         })}
       </dd>
