@@ -187,6 +187,11 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
     }
     return {
       name: 'breadthfirst',
+      // without a box, breadthfirst spreads over cy.extent(): the visible area at the
+      // current zoom. Zoomed out to fit, that's bigger than the container, so every
+      // redraw (e.g. toggling sharedOnly) would spread wider and fit smaller. Use the
+      // container's own size (a fallback while it's hidden, e.g. in the list view).
+      boundingBox: { x1: 0, y1: 0, w: container.clientWidth || 600, h: container.clientHeight || 300 },
       roots: cy.nodes('[type = "concept"]').map((n) => n.id()),
       circle: true,
       depthSort: (a, b) => String(a.data('order')).localeCompare(String(b.data('order'))),
