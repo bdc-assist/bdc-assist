@@ -109,6 +109,10 @@ VITE_API_URL=http://127.0.0.1:8011 npm --prefix web run dev   # against the stub
 npm --prefix web test                                     # unit tests, no server needed
 ```
 
+Answers with a knowledge graph show it in a panel under the answer (graph, flow, or list
+view). The drawing code in `web/src/kg/` has no framework or app dependencies, so another system
+can embed it: see [web/src/kg/README.md](web/src/kg/README.md).
+
 Add `?reveal=after-check` to the page URL (or set `VITE_REVEAL=after-check`) to hold each answer
 back behind placeholder bars until the output guardrail has passed it, instead of streaming it.
 
