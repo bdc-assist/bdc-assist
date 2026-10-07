@@ -3,18 +3,18 @@ import cytoscape, { type LayoutOptions, type StylesheetJson } from 'cytoscape'
 import { bridges, sharedOnly } from './bridges'
 import { collapseVersions } from './collapse'
 import { columnPositions } from './columns'
-import { connections } from './connections'
 import { toElements } from './elements'
+import { focusConnections, isPair, type KgFocus } from './focus'
 import { orient } from './orient'
-import type { KgGraph, KgNode } from './types'
+import type { KgGraph } from './types'
 import type { KgView, KgViewOptions } from './view'
 
 /**
  * - radial: concepts in the middle, their variables around them, studies outside
- * - columns: a left-to-right flow, concepts | variables | studies
  * - force: a force-directed layout (Cytoscape's cose); clusters form on their own
+ * - columns: a left-to-right flow, concepts | variables | studies
  */
-export const KG_LAYOUTS = ['radial', 'columns', 'force'] as const
+export const KG_LAYOUTS = ['radial', 'force', 'columns'] as const
 export type KgLayout = (typeof KG_LAYOUTS)[number]
 
 /** mountGraph's options: the common view options (KgViewOptions), plus: */
@@ -60,15 +60,14 @@ const PADDING = 16
  * Draw `graph` into `container` (which needs a height). Variables are coloured from
  * --kg-variable-low to --kg-variable-high the more other concepts they link to
  * (related_concepts_count); nodes connecting two or more concepts get an amber halo.
- * Clicking a
- * node (or select()) highlights what it's connected to (see connections) and fades
- * the rest; clicking the background clears it.
+ * Clicking a node (or focus() from elsewhere, also for a concept × study pair)
+ * highlights what it's connected to (see focusConnections) and fades the rest;
+ * clicking the background clears it.
  * No framework required; React, Vue or plain HTML hosts all call this the same way.
  */
 export function mountGraph(container: HTMLElement, graph: KgGraph, options: GraphOptions = {}): GraphView {
   let opts: GraphOptions = { collapseVersions: true, layout: 'radial', ...options }
   let current = graph
-  let shown = new Map<string, KgNode>() // id → node as drawn (collapsed or not)
 
   const cy = cytoscape({
     container,
@@ -79,13 +78,14 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
     boxSelectionEnabled: false,
   })
   cy.on('tap', 'node', (e) => {
-    highlight(e.target.id())
-    opts.onSelect?.(shown.get(e.target.id()) ?? null)
+    const f = { node: e.target.id() as string }
+    highlight(f)
+    opts.onFocus?.(f)
   })
   cy.on('tap', (e) => {
     if (e.target !== cy) return
     highlight(null)
-    opts.onSelect?.(null)
+    opts.onFocus?.(null)
   })
   // labels on the canvas are cut short ("…"): show the whole one as the browser's
   // own tooltip, and a pointer, since nodes are clickable
@@ -117,7 +117,6 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
   function draw() {
     drawn = opts.collapseVersions ? collapseVersions(current) : current
     if (opts.sharedOnly) drawn = sharedOnly(drawn) // after merging: it can create bridges
-    shown = new Map(drawn.nodes.map((n) => [n.id, n]))
     const shared = bridges(drawn)
     cy.batch(() => {
       cy.elements().remove()
@@ -128,9 +127,9 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
     arrange()
   }
 
-  // everything not connected to the node gets `faded`; null clears it
-  function highlight(id: string | null) {
-    const c = id ? connections(drawn, id) : null
+  // everything not connected to the focus gets `faded`; null clears it
+  function highlight(focus: KgFocus | null) {
+    const c = focus ? focusConnections(drawn, focus) : null
     cy.batch(() => {
       cy.elements().removeClass('faded')
       if (!c?.nodes.size) return
@@ -189,7 +188,7 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
     update(g, o) {
       if (o) opts = { ...opts, ...o }
       current = g
-      opts.onSelect?.(null) // the selected node may be gone or renamed
+      opts.onFocus?.(null) // the focused node may be gone or renamed
       draw()
     },
     setOptions(o) {
@@ -199,16 +198,16 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
       opts = { ...opts, ...o }
       cy.userZoomingEnabled(opts.zoomGestures === true)
       if (redraw) {
-        opts.onSelect?.(null)
+        opts.onFocus?.(null)
         draw()
       } else if (relayout) arrange()
     },
-    select(id) {
+    focus(f) {
       cy.batch(() => {
         cy.$(':selected').unselect()
-        if (id) cy.getElementById(id).select()
+        if (f && !isPair(f)) cy.getElementById(f.node).select() // a pair has no single node to outline
       })
-      highlight(id)
+      highlight(f)
     },
     zoomBy(factor) {
       cy.zoom({

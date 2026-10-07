@@ -31,6 +31,33 @@ describe('studyList', () => {
     expect(list.slice(2).every((s) => s.concepts.length === 1)).toBe(true)
   })
 
+  it('groups each study\'s variables by concept', () => {
+    const fhs = studyList(TWO).find((s) => s.study?.id === 'phs000007')!
+    expect(fhs.byConcept.map((g) => g.concept?.id)).toEqual(['MONDO:0004979', 'MONDO:0005002'])
+    expect(fhs.byConcept.reduce((a, g) => a + g.variables.length, 0)).toBe(fhs.variables.length) // none on both here
+    for (const g of fhs.byConcept) expect(g.variables.every((v) => v.concepts.includes(g.concept!))).toBe(true)
+    // one concept: one group per study, holding all its variables
+    for (const s of studyList(CHD)) expect(s.byConcept.map((g) => g.variables.length)).toEqual([s.variables.length])
+  })
+
+  it('puts a variable on two concepts in both groups', () => {
+    const [s] = studyList({
+      nodes: [
+        { id: 'A', label: 'a', type: 'concept' },
+        { id: 'B', label: 'b', type: 'concept' },
+        { id: 'v', label: 'copd or asthma', type: 'variable' },
+        { id: 'S', label: 's', type: 'study' },
+      ],
+      edges: [
+        { source: 'v', target: 'A' },
+        { source: 'v', target: 'B' },
+        { source: 'v', target: 'S' },
+      ],
+    })
+    expect(s.variables).toHaveLength(1)
+    expect(s.byConcept.map((g) => [g.concept?.id, g.variables.length])).toEqual([['A', 1], ['B', 1]])
+  })
+
   it("carries each variable's concepts and weight", () => {
     const hd = studyList(CHD).flatMap((s) => s.variables).find((v) => v.variable.label === 'HEARTDIS')!
     expect(hd.concepts.map((c) => c.id)).toEqual(['MONDO:0005453'])

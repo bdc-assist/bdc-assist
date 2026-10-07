@@ -6,10 +6,10 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { bridges, sharedOnly as onlyShared } from '@/kg/bridges'
 import { collapseVersions } from '@/kg/collapse'
-import { connections } from '@/kg/connections'
 import { nodeLinks, type KgLink } from '@/kg/links'
 import { studyList } from '@/kg/list'
 import { mountFlow, type FlowView } from '@/kg/flow'
+import { focusConnections, isPair, pairVariables, sameFocus, type KgFocus } from '@/kg/focus'
 import { KG_LAYOUTS, mountGraph, type GraphView, type KgLayout } from '@/kg/mount'
 import type { KgGraph, KgNode } from '@/kg/types'
 
@@ -118,8 +118,7 @@ function ExternalLink({ link }: { link: KgLink }) {
 
 // The ID is shown as its link(s): a concept's ontology page, or one dbGaP page per
 // release of a study or variable (merged releases list each versioned ID).
-function NodeDetails({ node, graph }: { node: KgNode | null; graph: KgGraph }) {
-  if (!node) return <p className="text-muted-foreground">Click a node for details.</p>
+function NodeDetails({ node, graph }: { node: KgNode; graph: KgGraph }) {
   const links = nodeLinks(node, graph)
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
@@ -139,31 +138,53 @@ function NodeDetails({ node, graph }: { node: KgNode | null; graph: KgGraph }) {
   )
 }
 
-function ConceptTags({ concepts }: { concepts: KgNode[] }) {
+/** A concept × study pair: both, and the study's variables on the concept, each
+ * linking to its dbGaP page. */
+function PairDetails({ concept, study, graph }: { concept: KgNode; study: KgNode; graph: KgGraph }) {
+  const variables = pairVariables(graph, concept.id, study.id)
   return (
-    <span className="flex shrink-0 gap-1">
-      {concepts.map((c) => (
-        <span key={c.id} className="bg-muted text-muted-foreground rounded px-1">
-          {c.label}
-        </span>
-      ))}
-    </span>
+    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+      <dt className="text-muted-foreground">Concept</dt>
+      <dd className="font-medium">{concept.label}</dd>
+      <dt className="text-muted-foreground">Study</dt>
+      <dd className="font-medium">{study.label}</dd>
+      <dt className="text-muted-foreground">Variables</dt>
+      <dd className="flex max-h-24 flex-wrap gap-x-3 overflow-y-auto font-mono">
+        {variables.map((v) => {
+          const [link] = nodeLinks(v, graph)
+          return link ? <ExternalLink key={v.id} link={{ ...link, label: v.label }} /> : <span key={v.id}>{v.label}</span>
+        })}
+      </dd>
+    </dl>
   )
+}
+
+function FocusDetails({ focus, graph }: { focus: KgFocus | null; graph: KgGraph }) {
+  const byId = (id: string) => graph.nodes.find((n) => n.id === id)
+  if (focus && isPair(focus)) {
+    const [concept, study] = [byId(focus.concept), byId(focus.study)]
+    if (concept && study) return <PairDetails concept={concept} study={study} graph={graph} />
+  }
+  const node = focus && !isPair(focus) ? byId(focus.node) : undefined
+  if (node) return <NodeDetails node={node} graph={graph} />
+  return <p className="text-muted-foreground">Click a node for details.</p>
 }
 
 // selected: shaded; outside the selection's connections: dimmed, as in the graph
 const rowClass = (selected: boolean, dimmed: boolean) =>
   `flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-1.5 py-1 text-start transition-opacity ${selected ? 'bg-muted' : 'hover:bg-muted/60'} ${dimmed ? 'opacity-35' : ''}`
 
-/** The graph as text: studies (foldable) with their variables (studyList). Rows
- * select like nodes in the graph (clicking the selected one again clears it), and
- * dim like them too when not connected to the selection. Concept tags only when
- * there are several. */
-function StudyList({ graph, selected, onSelect }: { graph: KgGraph; selected: KgNode | null; onSelect: (n: KgNode) => void }) {
+/** The graph as text: studies (foldable), each with a row per concept (that
+ * concept × study pair) and the variables under it (studyList). Study and variable
+ * rows focus like nodes in the graph, concept rows focus their pair; picking the
+ * focused row again clears it. Rows dim like the graph when not connected to the focus. */
+function StudyList({ graph, focus, onPick }: { graph: KgGraph; focus: KgFocus | null; onPick: (f: KgFocus) => void }) {
   const groups = useMemo(() => studyList(graph), [graph])
-  const linked = useMemo(() => (selected ? connections(graph, selected.id).nodes : null), [graph, selected])
+  const linked = useMemo(() => (focus ? focusConnections(graph, focus).nodes : null), [graph, focus])
   const dimmed = (id: string) => linked !== null && !linked.has(id)
-  const several = graph.nodes.filter((n) => n.type === 'concept').length > 1
+  const isNode = (id: string) => !!focus && !isPair(focus) && focus.node === id
+  const isPairOf = (concept: string, study: string) =>
+    !!focus && isPair(focus) && focus.concept === concept && focus.study === study
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
   const toggle = (id: string) =>
     setFolded((f) => {
@@ -172,8 +193,8 @@ function StudyList({ graph, selected, onSelect }: { graph: KgGraph; selected: Kg
       return next
     })
   return (
-    <ul aria-label="Studies and their variables" className="divide-y">
-      {groups.map(({ study, concepts, variables }) => {
+    <ul aria-label="Studies, their concepts and variables" className="divide-y">
+      {groups.map(({ study, variables, byConcept }) => {
         const key = study?.id ?? '(no study)'
         const open = !folded.has(key)
         return (
@@ -191,14 +212,13 @@ function StudyList({ graph, selected, onSelect }: { graph: KgGraph; selected: Kg
               {study ? (
                 <button
                   type="button"
-                  onClick={() => onSelect(study)}
-                  className={rowClass(selected?.id === study.id, dimmed(study.id))}
+                  onClick={() => onPick({ node: study.id })}
+                  className={rowClass(isNode(study.id), dimmed(study.id))}
                 >
                   <span className="size-2 shrink-0 self-center rounded-[2px]" style={{ background: 'var(--kg-study)' }} />
                   <span className="truncate font-medium">{study.label}</span>
                   <span className="text-muted-foreground shrink-0 font-mono">{study.id}</span>
                   <span className="text-muted-foreground shrink-0">· {variables.length}</span>
-                  {several && <ConceptTags concepts={concepts} />}
                 </button>
               ) : (
                 <span className="text-muted-foreground px-1.5 py-1">Variables without a study</span>
@@ -206,23 +226,45 @@ function StudyList({ graph, selected, onSelect }: { graph: KgGraph; selected: Kg
             </div>
             {open && (
               <ul className="pl-6">
-                {variables.map(({ variable, concepts: vc, weight }) => (
-                  <li key={variable.id} className="flex">
-                    <button
-                      type="button"
-                      onClick={() => onSelect(variable)}
-                      className={rowClass(selected?.id === variable.id, dimmed(variable.id))}
-                    >
-                      <span
-                        className="size-2 shrink-0 self-center rounded-full"
-                        style={{
-                          background: `color-mix(in srgb, var(--kg-variable-high) ${Math.round(weight * 100)}%, var(--kg-variable-low))`,
-                        }}
-                      />
-                      <span className="font-mono">{variable.label}</span>
-                      <span className="text-muted-foreground truncate font-mono">{variable.id}</span>
-                      {several && <ConceptTags concepts={vc} />}
-                    </button>
+                {byConcept.map(({ concept, variables: vs }) => (
+                  <li key={concept?.id ?? '(no concept)'}>
+                    <div className="flex">
+                      {concept && study ? (
+                        <button
+                          type="button"
+                          title={`What this study has on ${concept.label}`}
+                          onClick={() => onPick({ concept: concept.id, study: study.id })}
+                          // a pair row: lit only when both its concept and its study are
+                          className={rowClass(isPairOf(concept.id, study.id), dimmed(concept.id) || dimmed(study.id))}
+                        >
+                          <span className="size-2 shrink-0 self-center rounded-full" style={{ background: 'var(--kg-concept)' }} />
+                          <span>{concept.label}</span>
+                          <span className="text-muted-foreground shrink-0">· {vs.length}</span>
+                        </button>
+                      ) : (
+                        <span className="text-muted-foreground px-1.5 py-1">{concept?.label ?? 'No concept'}</span>
+                      )}
+                    </div>
+                    <ul className="pl-6">
+                      {vs.map(({ variable, weight }) => (
+                        <li key={variable.id} className="flex">
+                          <button
+                            type="button"
+                            onClick={() => onPick({ node: variable.id })}
+                            className={rowClass(isNode(variable.id), dimmed(variable.id))}
+                          >
+                            <span
+                              className="size-2 shrink-0 self-center rounded-full"
+                              style={{
+                                background: `color-mix(in srgb, var(--kg-variable-high) ${Math.round(weight * 100)}%, var(--kg-variable-low))`,
+                              }}
+                            />
+                            <span className="font-mono">{variable.label}</span>
+                            <span className="text-muted-foreground truncate font-mono">{variable.id}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
                   </li>
                 ))}
               </ul>
@@ -260,7 +302,8 @@ function GraphBody(props: GraphBodyProps) {
   const view = useRef<GraphView | null>(null)
   const flowContainer = useRef<HTMLDivElement>(null)
   const flowView = useRef<FlowView | null>(null)
-  const [selected, setSelected] = useState<KgNode | null>(null)
+  // what's picked, the same in every view: a node or a concept × study pair
+  const [focus, setFocus] = useState<KgFocus | null>(null)
   const [zoomHint, setZoomHint] = useState(false)
   const hintTimer = useRef<number | undefined>(undefined)
   const showZoomHint = () => {
@@ -276,9 +319,9 @@ function GraphBody(props: GraphBodyProps) {
       sharedOnly,
       zoomGestures,
       onZoomHint: showZoomHint,
-      onSelect: (n) => {
-        setSelected(n)
-        flowView.current?.select(n?.id ?? null) // the other view follows
+      onFocus: (f) => {
+        setFocus(f)
+        flowView.current?.focus(f) // the other view follows
       },
     })
     view.current = v
@@ -290,7 +333,7 @@ function GraphBody(props: GraphBodyProps) {
       observer.disconnect()
       v.destroy()
       view.current = null
-      setSelected(null)
+      setFocus(null)
       clearTimeout(hintTimer.current)
     }
   }, [json]) // eslint-disable-line react-hooks/exhaustive-deps -- layout: see below
@@ -299,9 +342,9 @@ function GraphBody(props: GraphBodyProps) {
   useEffect(() => {
     const v = mountFlow(flowContainer.current!, JSON.parse(json) as KgGraph, {
       sharedOnly,
-      onSelect: (n) => {
-        setSelected(n)
-        view.current?.select(n?.id ?? null)
+      onFocus: (f) => {
+        setFocus(f)
+        view.current?.focus(f)
       },
     })
     flowView.current = v
@@ -320,13 +363,13 @@ function GraphBody(props: GraphBodyProps) {
     flowView.current?.setOptions({ sharedOnly })
   }, [sharedOnly])
 
-  // picked in the list: both views show it selected too, for when they're switched to
-  // (clicking the selected row again clears it, like the graph's background)
-  const selectFromList = (node: KgNode) => {
-    const next = selected?.id === node.id ? null : node
-    setSelected(next)
-    view.current?.select(next?.id ?? null)
-    flowView.current?.select(next?.id ?? null)
+  // picked in the list: both views show it too, for when they're switched to
+  // (picking the focused row or tag again clears it, like the graph's background)
+  const pickFromList = (f: KgFocus) => {
+    const next = sameFocus(focus, f) ? null : f
+    setFocus(next)
+    view.current?.focus(next)
+    flowView.current?.focus(next)
   }
 
   return (
@@ -350,7 +393,7 @@ function GraphBody(props: GraphBodyProps) {
       </div>
       {mode === 'list' && (
         <div className={`overflow-y-auto border-t ${canvasClass}`}>
-          <StudyList graph={shown} selected={selected} onSelect={selectFromList} />
+          <StudyList graph={shown} focus={focus} onPick={pickFromList} />
         </div>
       )}
       <div
@@ -388,7 +431,7 @@ function GraphBody(props: GraphBodyProps) {
         </div>
       </div>
       <div className="border-t px-3 py-2">
-        <NodeDetails node={selected} graph={shown} />
+        <FocusDetails focus={focus} graph={shown} />
       </div>
     </div>
   )
