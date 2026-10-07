@@ -4,9 +4,12 @@
                 │ ok
             contextualize → classify ──"r" topic matched───→ END (canned answer)
                                 │ regular
-                              agent → output_guardrail ──rejected──→ output_reject ─→ END (REJECT)
+                              agent → output_guardrail ──blocked──────────────→ END (REJECT)
                                             │ disclaimers queued └──done──────┐
                                       append_disclaimer ─────→ suggest_followups ─→ END
+
+Both guardrails are hard blocks: the agent's tokens stream as a provisional answer, but a
+blocked answer ends the run with the canned reply and blocked=True in the final state.
 """
 
 import json
@@ -32,8 +35,7 @@ class BotState(TypedDict, total=False):
     sources: dict           # {sources_key: [{title, link, type}]} — distinct documents behind doc_search_tool
     sources_md: str         # the same as a markdown list, ready to show under the answer
     kg: list                # knowledge graphs attached to tool results, one per tool call
-    blocked: bool           # input_guardrail verdict
-    rejected: bool          # output_guardrail rejected the agent answer
+    blocked: bool           # an input or output guardrail blocked the run
 
 
 def _parse_tool_content(content):
@@ -115,7 +117,7 @@ def build_graph(llm, agent, predefined: dict):
                 ("system", prompts.INPUT_GUARDRAIL_SYSTEM),
                 ("human", prompts.INPUT_GUARDRAIL_HUMAN.format(input=state["input"])),
             ])
-            blocked = resp.content.strip().lower().startswith("yes")
+            blocked = resp.text.strip().lower().startswith("yes")
         except Exception as e:
             # provider-side content filter (e.g. Azure jailbreak detection) rejects the
             # check request itself — that upstream verdict IS a block
@@ -138,7 +140,7 @@ def build_graph(llm, agent, predefined: dict):
             *history,
             ("human", state["input"]),
         ])
-        return {"question": resp.content.strip()}
+        return {"question": resp.text.strip()}
 
     async def classify(state: BotState):
         """
@@ -150,7 +152,7 @@ def build_graph(llm, agent, predefined: dict):
             ("system", prompts.topic_classifier_system(topic_names)),
             ("human", state["question"]),
         ])
-        parsed = [t.strip().lower() for t in MarkdownListOutputParser().parse(resp.content)]
+        parsed = [t.strip().lower() for t in MarkdownListOutputParser().parse(resp.text)]
         matched = [t for t in parsed if t in predefined]
         update: BotState = {"topics": matched}
         if any(predefined[t]["flag"] == "r" for t in matched):
@@ -188,37 +190,41 @@ def build_graph(llm, agent, predefined: dict):
             for tc in msg.tool_call_chunks or []:
                 if tc.get("name"):
                     writer({"type": "status", "text": f"calling {tc['name']}"})
-            if isinstance(msg.content, str) and msg.content:
+            # .text, not .content: on the Responses API (COMPLETION_REASONING_EFFORT above none) content
+            # is a list of reasoning/text/function_call blocks; .text is the text blocks either way
+            if msg.text:
                 if last_id is not None and msg.id != last_id:
                     writer({"type": "reset"})
                 last_id = msg.id
-                writer({"type": "token", "text": msg.content})
+                writer({"type": "token", "text": msg.text})
         docs = _doc_sources(result["messages"])
         sources, sources_md = ({prompts.SOURCES_KEY: docs} if docs else {}), _sources_md(docs)
         kg = _kgs(result["messages"])
         # sources are known once the agent is done: send them now rather than with "done",
-        # which waits for the guardrail and follow-up nodes (a reject clears them in "done")
+        # which waits for the guardrail and follow-up nodes (a block clears them in "done")
         writer({"type": "sources", "sources": sources, "sources_md": sources_md, "kg": kg})
-        return {"answer": result["messages"][-1].content, "sources": sources, "sources_md": sources_md, "kg": kg}
+        return {"answer": result["messages"][-1].text, "sources": sources, "sources_md": sources_md, "kg": kg}
 
     async def output_guardrail(state: BotState):
         """
-        LLM self-check that the answer addresses the question; "no" → REJECT.
+        LLM self-check that the answer addresses the question; anything but "yes"
+        → replace the streamed answer with REJECT (its sources and kg go with it)
+        and end the run.
         """
         # no deterministic name-normalising pass — the agent prompt already enforces the short name
-        answer = state["answer"]
-        resp = await llm.ainvoke([
-            ("human", prompts.OUTPUT_GUARDRAIL_HUMAN.format(input=state["question"], answer=answer)),
-        ])
-        if not resp.content.strip().lower().startswith("yes"):
-            return {"rejected": True}
-        return {"answer": answer}
-
-    async def output_reject(state: BotState):
-        """
-        Replace a rejected answer with the canned REJECT reply; its sources and kg go with it.
-        """
-        return {"answer": REJECT, "sources": {}, "sources_md": "", "kg": []}
+        try:
+            resp = await llm.ainvoke([
+                ("human", prompts.OUTPUT_GUARDRAIL_HUMAN.format(input=state["question"], answer=state["answer"])),
+            ])
+            blocked = not resp.text.strip().lower().startswith("yes")
+        except Exception as e:
+            # provider-side content filter rejects the check request (i.e. the answer) — a block
+            if "content_filter" not in repr(e):
+                raise
+            blocked = True
+        if blocked:
+            return {"blocked": True, "answer": REJECT, "sources": {}, "sources_md": "", "kg": []}
+        return {"blocked": False}
 
     async def append_disclaimer(state: BotState):
         """
@@ -237,7 +243,7 @@ def build_graph(llm, agent, predefined: dict):
                 ("human", prompts.SUGGEST_FOLLOWUPS_HUMAN.format(
                     input=state["question"], answer=state["answer"])),
             ])
-            parsed = [q.strip() for q in MarkdownListOutputParser().parse(resp.content)]
+            parsed = [q.strip() for q in MarkdownListOutputParser().parse(resp.text)]
         except Exception:
             # followups are decorative — never lose a good answer over them
             parsed = []
@@ -255,8 +261,7 @@ def build_graph(llm, agent, predefined: dict):
     g = StateGraph(BotState)
     for name, fn in [("input_guardrail", input_guardrail), ("contextualize", contextualize),
                      ("classify", classify), ("agent", run_agent),
-                     ("output_guardrail", output_guardrail), ("output_reject", output_reject),
-                     ("append_disclaimer", append_disclaimer),
+                     ("output_guardrail", output_guardrail), ("append_disclaimer", append_disclaimer),
                      ("suggest_followups", suggest_followups)]:
         g.add_node(name, announce(name, fn))
 
@@ -271,13 +276,12 @@ def build_graph(llm, agent, predefined: dict):
                             lambda s: "predefined" if s.get("answer") else "regular",
                             {"predefined": END, "regular": "agent"})
     g.add_edge("agent", "output_guardrail")
-    # rejected goes to output_reject then END: no point appending disclaimers to "I couldn't answer"
+    # blocked ends the run: no point appending disclaimers to "I couldn't answer"
     g.add_conditional_edges("output_guardrail",
-                            lambda s: "rejected" if s.get("rejected")
+                            lambda s: "blocked" if s["blocked"]
                             else "disclaimer" if s.get("disclaimers") else "done",
-                            {"rejected": "output_reject", "disclaimer": "append_disclaimer",
+                            {"blocked": END, "disclaimer": "append_disclaimer",
                              "done": "suggest_followups"})
-    g.add_edge("output_reject", END)
     g.add_edge("append_disclaimer", "suggest_followups")
     g.add_edge("suggest_followups", END)
     return g.compile()

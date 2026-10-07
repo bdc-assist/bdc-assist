@@ -56,8 +56,9 @@ def to_kg(tool: str, data: dict) -> dict | None:
     elif tool in ("picsure_search", "find_cohort_variables"):  # study - variable - matched concepts
         studies = data.get("feasible_studies", []) + data.get("partial_studies", [])
         for v in data.get("variables") or [v for s in studies for v in s.get("variables", [])]:
-            var = node(v.get("phv_id"), v.get("variable_name"), "StudyVariable")
-            edge(var, node(v.get("study"), category="Study"))
+            # picsure_search rows say phv_id/study, find_cohort_variables rows variable_id/study_id/study_name
+            var = node(v.get("phv_id") or v.get("variable_id"), v.get("variable_name"), "StudyVariable")
+            edge(var, node(v.get("study") or v.get("study_id"), v.get("study_name"), "Study"))
             for c in v.get("matched_concepts", []):
                 if isinstance(c, str):  # find_cohort_variables lists the searched term, not a concept ID
                     c = {"concept_id": c}

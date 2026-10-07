@@ -69,6 +69,25 @@ def test_dug_results_get_a_trimmed_kg():
                            {"subject": "phv002", "object": "MONDO:0005068"}]
 
 
+# made-up rows in each tool's shape (dug-mcp redismcp_server.py): find_cohort_variables nests them
+# under studies keyed variable_id/study_id, picsure_search lists them flat keyed phv_id/study
+COHORT = {"feasible_studies": [{"study_id": "s1", "variables": [
+    {"variable_id": "v1", "study_id": "s1", "matched_concepts": ["c1"]}]}]}
+PICSURE = {"variables": [{"phv_id": "v1", "study": "s1", "matched_concepts": [{"concept_id": "c1"}]}]}
+# get_concept_graph at expand_depth 1 and get_concept_connections: neighbour rows keyed connected_*
+NEIGHBOURS = {"concept_id": "c1", "graph": [{"connected_id": "c2", "connected_type": "biolink.Disease"}]}
+CONNECTIONS = {"concept_id": "c1", "connections": [{"connected_id": "c2", "relationship": "biolink:related_to"}]}
+
+
+def test_each_graph_tool_gets_a_kg():
+    """Each call's graph comes back labelled with the tool that was called. find_cohort_variables
+    rows drew nothing while the interceptor read only picsure_search's field names."""
+    for tool, reply in [("find_cohort_variables", COHORT), ("picsure_search", PICSURE),
+                        ("get_concept_graph", NEIGHBOURS), ("get_concept_connections", CONNECTIONS)]:
+        kg = call(tool, reply)
+        assert kg and kg["tool"] == tool and kg["edges"], tool
+
+
 def test_no_kg_when_nothing_to_draw():
     assert call("search_concepts", SEARCH_CONCEPTS, server="r_doc_mcp") is None  # yaml scopes dug_kg to dug_mcp
     assert call("list_graph_schema", {"schema": [{"node_type": "biolink.Disease", "count": 9}]}) is None  # no edges

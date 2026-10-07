@@ -1,8 +1,9 @@
 # Sample MCP responses (BDC example)
 
 What the BDC bot's two MCP servers return to the agent, captured 2026-10-04 by calling them directly
-(MCP `tools/call`, no r-assist in between). These are the raw tool results the agent reads before it
-writes an answer; the API responses built from them are in [sample_responses.md](sample_responses.md).
+(MCP `tools/call`, no r-assist in between); the keyword search and the unreachable-server errors were
+recaptured 2026-10-07. These are the raw tool results the agent reads before it writes an answer; the
+API responses built from them are in [sample_responses.md](sample_responses.md).
 
 Shortened to stay readable: lists keep a few of their items and a `// … N more` comment, and long text
 and URLs are cut with `…`. The `//` comments are explanations, not part of the JSON.
@@ -76,22 +77,25 @@ r-assist builds the response's `sources` from this metadata: one entry per `page
 ### Keyword search
 
 `{"query": "picsure open access authorized access", "mode": "keyword", "k": 3}`: same block shape.
-"picsure" matches "PIC-SURE" because keyword mode ignores case and punctuation.
+"picsure" matches "PIC-SURE" because keyword mode ignores case and punctuation. Recaptured 2026-10-07:
+keyword mode now counts whole words only, so "access" no longer scores inside "accessing" and the
+scores dropped (they were 33, 32 and 28).
 
 ```jsonc
 {
-  "content": "**Authentication through the NIH Researcher Authentication Service:** The BioData Catalyst ecosystem updated the authentication mechanism …",
-                                      // 10,938 characters: chunk size depends on the source document
+  "content": "**Maintaining and Versioning CWL on External Tool Repositories:** [This tutorial](https://sb-biodatacatalyst.readme.io/docs/maintaining-and-versioning-cwl-on-external-tool-repositories) presents best practices …",
+                                      // 2,857 characters: chunk size depends on the source document
   "metadata": {
     "doc_type": "docs",
-    "hierarchy": "2021-07-09 BioData Catalyst Ecosystem Release Notes, **Introduction**, **Significant new features**",
+    "hierarchy": "2021-07-09 BioData Catalyst Ecosystem Release Notes, **Introduction**, **New user support materials and documentation**",
     "source": "written-documentation/release-notes/2021-07-09-biodata-catalyst-ecosystem-release-notes.md",
     "page_url": "https://github.com/stagecc/bdc-gitbook/blob/HEAD/written-documentation/release-notes/2021-07-09-biodata-catalyst-ecosystem-release-notes.md",
     "contextualized_chunk": "…"
   },
-  "score": 33.0                       // keyword mode: how often the query terms occur, higher = better
+  "score": 28.0                       // keyword mode: how often the query's words occur as whole words
+                                      // (close misspellings count too), higher = better
 }
-// … 2 more chunks, scores 32.0 and 28.0
+// … 2 more chunks, scores 24.0 and 12.0
 ```
 
 ### Date-filtered search over events
@@ -122,7 +126,8 @@ and fellows are searched only when `doc_type` names them; dated chunks carry the
 ## dug_mcp: the knowledge graph
 
 Each Dug tool returns its own JSON shape in a single block. The two below are the calls the agent made
-for "studies on heart attack" (example 10 in [sample_responses.md](sample_responses.md)).
+for "studies on heart attack" on 2026-10-04; example 10 in [sample_responses.md](sample_responses.md),
+captured later, made the same two calls (its `search_concepts` added `node_type` and `limit`).
 
 ### search_concepts
 
@@ -207,7 +212,8 @@ passes `structuredContent` to LangChain as the tool message's artifact, which is
 
 ## Errors
 
-Two kinds, and r-assist logs both with the tool name and arguments:
+Three kinds, and r-assist logs each with the tool name and arguments. The first two come from a
+server that answered:
 
 ```jsonc
 // soft failure: a normal result whose JSON holds "error" (dug_mcp catches its own exceptions)
@@ -227,6 +233,24 @@ Two kinds, and r-assist logs both with the tool name and arguments:
 }
 ```
 
-In both cases the agent sees the error text. `prompts.yaml` tells it to say the service is unavailable
-and not guess, but it doesn't always comply: with `search_docs` failing as above, it still added a
-general description of BDC to its "I can't access the documentation" answer.
+The third is a server that doesn't answer at all, so there is no MCP result: r-assist writes the tool
+result itself (captured 2026-10-07).
+
+```jsonc
+// unreachable mid-session: dug_mcp went down after r-assist loaded its tools. The call fails twice
+// (r-assist retries once), then the agent gets this as the tool result instead of the request failing,
+// and r-assist re-checks the servers at once
+"Error: search_concepts failed (ConnectError: All connection attempts failed); its server may be down."
+```
+
+```jsonc
+// unreachable at startup or at a re-check: dug_mcp's tools aren't loaded. Each name in its stand_ins
+// (mcp_servers.yaml) is a tool that returns only this, so a question the prompt routes to Dug gets an
+// error to follow instead of an answer improvised from the docs
+"Error: the dug_mcp service is unavailable right now. Tell the user; do not fill in its part of the answer from other tools."
+```
+
+In every case the agent sees the error text. `prompts.yaml` tells it to say the service is unavailable
+and not guess. It doesn't always comply: on 2026-10-04, with `search_docs` failing as
+above, it still added a general description of BDC to its "I can't access the documentation" answer.
+For the unreachable cases, see example 12 in [sample_responses.md](sample_responses.md).

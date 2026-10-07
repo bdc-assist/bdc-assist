@@ -11,6 +11,9 @@
   body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg);
          display:flex; flex-direction:column; height:100vh; }
   header { padding:.7rem 1rem; background:#fff; border-bottom:1px solid #ddd; font-weight:600; }
+  #mcp-errors { padding:.5rem 1rem; background:#fff4e5; color:#8a5300; border-bottom:1px solid #f0c36d;
+                font-size:13px; white-space:pre-line; }
+  #mcp-errors:empty { display:none; }
   form { display:flex; gap:.5rem; padding:.8rem 1rem; background:#fff; border-bottom:1px solid #ddd; }
   input { flex:1; padding:.55rem .8rem; border:1px solid #ccc; border-radius:.5rem; font:inherit; }
   form button { padding:.55rem 1.1rem; border:0; border-radius:.5rem; background:var(--accent);
@@ -40,6 +43,7 @@
 </head>
 <body>
 <header>r-assist — knowledge graph demo</header>
+<div id="mcp-errors" role="status"></div>
 <form id="form">
   <input id="input" placeholder="e.g. studies on heart attack" autocomplete="off" autofocus>
   <button id="send">Ask</button>
@@ -59,6 +63,11 @@ let network = null, shown = "[]";
 
 const color = cat => colors[cat] ??= PALETTE[Object.keys(colors).length % PALETTE.length];
 const short = (s, n = 24) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+
+function showMcpErrors(errs) {  // MCP servers down: the bot answers without their tools
+  $("mcp-errors").textContent = errs?.length ? "Some tools are unavailable:\n" + errs.join("\n") : "";
+}
+fetch(API + "/health").then(r => r.json()).then(h => showMcpErrors(h.mcp_errors)).catch(() => {});
 
 function renderMd(el, md) {
   if (typeof marked === "undefined") { el.textContent = md; return; }  // CDN unreachable: plain text
@@ -143,9 +152,15 @@ $("form").onsubmit = async (e) => {
         else if (ev.type === "reset") $("text").textContent = "";  // new model turn: only the last counts
         else if (ev.type === "token") $("text").textContent += ev.text;
         else if (ev.type === "sources") showKg(ev.kg || []);  // the agent finished: graphs are known
-        else if (ev.type === "done") {  // authoritative: a rejected answer clears the graphs
+        else if (ev.type === "error") {  // the run failed server-side: drop the partial answer
+          $("text").classList.remove("md");
+          $("text").textContent = "Sorry, something went wrong while answering. Please try again.";
+          showKg([]);
+        }
+        else if (ev.type === "done") {  // authoritative: a blocked answer clears the graphs
           renderMd($("text"), ev.answer);
           showKg(ev.kg || []);
+          showMcpErrors(ev.mcp_errors);  // servers come and go: refresh each answer
         }
       }
     }

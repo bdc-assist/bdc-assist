@@ -10,3 +10,7 @@ dug_mcp:
   transport: sse
   url: https://dug-mcp.apps.renci.org/sse
   interceptors: [dug_kg]  # functions in interceptors.py, run on this server's tool calls only
+  # the tools prompts.yaml names: while dug is down (e.g. off the RENCI VPN) each answers with an
+  # error, so a study/variable question gets "service unavailable" instead of doc-search guesses
+  stand_ins: [search_concepts, find_cohort_variables, get_concept_graph, get_concept_connections,
+              picsure_search, search_variables_by_name]

@@ -17,8 +17,9 @@ Sibling repos: **r-doc-mcp** (the doc search MCP server) and **r-doc-builder** (
 - `contextualize` rewrites follow-ups into standalone questions using `chat_history`
 - `classify` sends flag-r topics straight to a canned response; flag-a topics get a disclaimer appended after the answer
 - `agent` calls tools on the doc MCP server (MCP over HTTP)
-- `output_guardrail` self-checks the answer against the question; rejected → canned reject
-  reply (no disclaimers appended)
+- `output_guardrail` self-checks the answer against the question; a hard block like the input
+  guardrail (a "No" or a provider content filter → canned reject reply, `blocked: true`, run ends,
+  no disclaimers appended)
 - `suggest_followups` decides if follow-up questions would help and suggests as many as
   `followups` in `config/project.yaml` (default 3; list of strings in the `followups` response
   field; skipped on refusals/rejects/canned answers)
@@ -51,7 +52,11 @@ cp .env.example .env    # fill the completion provider + key
 ```
 
 Optional: CORS_ORIGINS (comma-separated browser origins, default *) and API_PORT (default 8010, read by the demo scripts and notebook).
-Also optional: COMPLETION_TEMPERATURE (default 0), LOG_LEVEL (default WARNING), and — for the demo scripts — DOC_MCP_DIR (default ../r-doc-mcp) and START_TIMEOUT (default 30 seconds per service).
+Also optional: COMPLETION_TEMPERATURE (default 0), COMPLETION_REASONING_EFFORT (unset for
+non-reasoning models like gpt-4o-mini, which reject it; `none`/`low`/`medium`/`high` for reasoning models like
+gpt-6-luna; above `none` the temperature is not sent and calls go through the Responses API, the only one where
+gpt-6-luna calls tools while reasoning), LOG_LEVEL (default WARNING), MCP_RETRY_SECONDS (default 300: how often
+unavailable MCP servers are retried and live ones re-checked), and — for the demo scripts — DOC_MCP_DIR (default ../r-doc-mcp) and START_TIMEOUT (default 30 seconds per service).
 
 ## Run
 
@@ -76,9 +81,9 @@ cd ../r-doc-mcp && uv run python -m r_doc_mcp.mcp_server --http
 uv run uvicorn r_assist.api:app --port "${API_PORT:-8010}"
 ```
 
-Minimal browser UI for `/chat/stream` (see [API](#api)), rendering the answer and sources as markdown: open `tests/ui/demo.html` (point it at another server
+Minimal browser UI for `/chat/stream` (see [API](#api)), rendering the answer and sources as markdown and warning about unavailable MCP servers: open `tests/ui/demo.html` (point it at another server
 with `?api=http://host:port`). `tests/ui/kg_demo.html` asks one question and draws the answer's `kg` graphs, a tab per
-tool call, coloured by category (hover a node for its details). To try it without any real services:
+tool call, coloured by category (hover a node for its details), with the same MCP warning. To try it without any real services:
 `uv run python tests/_stub_stream_server.py` serves a fake slow agent on :8011.
 
 ## Configure for your project
@@ -95,6 +100,11 @@ tool call, coloured by category (hover a node for its details). To try it withou
    server's tool calls, so a project can reshape a server's results without changing the server
    or r-assist. `examples/bdc` sets `interceptors: [dug_kg]` on `dug_mcp` to turn its rows into
    the `kg` graphs. A name missing from `interceptors.py` fails at startup.
+   Optional `stand_ins: [tool, ...]`: while that server is unreachable, each named tool answers with
+   an error, so the agent prompt's "if a tool returns an error" rule applies. Without them the
+   agent just has fewer tools, and when the prompt names the missing ones it answers from the rest
+   (BDC with dug down: release-note study lists presented as catalog results); a system-prompt
+   note did not stop that with gpt-4o-mini. List the server's tools your prompt names.
 5. Declare the doc types in r-doc-mcp's `config/doc_types.yaml` and list the sources in
    r-doc-builder's `config/sources.yaml`.
 
@@ -134,7 +144,11 @@ edit each repo's `config/*.yaml` for your own project.
    ```
    This starts r-doc-mcp's MCP server on `MCP_PORT` (8001) and the r-assist API on `API_PORT`
    (8010), reuses either if already up, and stops what it started on Ctrl-C. The bot connects to
-   every server listed in `<CONFIG_DIR>/mcp_servers.yaml` at startup, so each must be reachable.
+   every server listed in `<CONFIG_DIR>/mcp_servers.yaml` at startup; one that is unreachable is
+   logged as a warning and skipped (its `stand_ins` take its place), then retried every
+   `MCP_RETRY_SECONDS` until its tools load. One that goes down mid-session is dropped the same way:
+   the tool call that hits it hands the agent an error instead of failing the request, and triggers an
+   immediate re-check. See `mcp_errors` below.
 6. **Chat.** Open `tests/ui/demo.html` in a browser (it talks to `http://localhost:8010`;
    append `?api=http://host:port` for another address), run `demo.ipynb`, or:
    ```bash
@@ -154,14 +168,16 @@ requires restarting the MCP server (rerun `demo_services`).
 ## API
 
 `POST /chat` with `{"input": "...", "chat_history": [{"role": "user|assistant", "content": "..."}]}`
-returns `{"answer", "blocked", "topics", "followups", "sources", "sources_md", "kg"}`. The server is stateless —
+returns `{"answer", "blocked", "topics", "followups", "sources", "sources_md", "kg", "mcp_errors"}`. The server is stateless —
 the client keeps history. `sources` is the distinct documents behind the agent's `search_docs` chunks,
 `{"r-doc": [{title, link, type}]}`, deduplicated on link and in relevance order (empty for canned,
-blocked and rejected replies); `sources_md` is the same list as markdown, worded by
+blocked replies); `sources_md` is the same list as markdown, worded by
 `sources`/`sources_item` in prompts.yaml. `kg` lists the knowledge graphs attached to the agent's
 tool results, one per tool call: `[{tool, args, nodes: [{id, name, category?, description?}],
 edges: [{subject, object, predicate?}]}]` (empty unless a server or interceptor attaches them, and
-for rejected replies). A tool result carries one as its structured content `"kg"`; the LLM never sees it.
+for blocked replies). A tool result carries one as its structured content `"kg"`; the LLM never sees it.
+`mcp_errors` lists the MCP servers currently unavailable (re-checked every `MCP_RETRY_SECONDS`), `"name: error"` each (e.g.
+`"dug_mcp: HTTPStatusError: Client error '403 Forbidden' ..."`); the agent answers without their tools.
 
 `POST /chat/stream` takes the same body and answers as SSE, one JSON object per event:
 
@@ -170,12 +186,15 @@ for rejected replies). A tool result carries one as its structured content `"kg"
 - `{"type": "token", "text"}` — one token of the agent's provisional answer
 - `{"type": "reset"}` — new model turn: discard the tokens streamed so far
 - `{"type": "sources", sources, sources_md, kg}` — the agent finished; its documentation sources and graphs
-  (same values as in `done` unless the answer is rejected, sent early so a UI can show them
+  (same values as in `done` unless the answer is blocked, sent early so a UI can show them
   while the guardrail and follow-up steps still run)
-- `{"type": "done", answer, blocked, topics, followups, sources, sources_md, kg}` — final state; the done answer is
-  authoritative (rejects, disclaimers, canned replies may replace the streamed text)
+- `{"type": "done", answer, blocked, topics, followups, sources, sources_md, kg, mcp_errors}` — final state; the done answer is
+  authoritative (an output-guardrail block, disclaimers, canned replies may replace the streamed text;
+  `blocked: true` means the streamed text was blocked and replaced)
+- `{"type": "error"}` — the run failed (an LLM or gateway error mid-answer); the last event, no `done`
+  follows, the server log has the details. Discard the streamed text and say so.
 
-`GET /health` returns `{"status": "ok"}`.
+`GET /health` returns `{"status": "ok", "mcp_errors"}`, so a UI can warn before the first question.
 
 ## Test / demo
 
