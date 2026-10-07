@@ -1,12 +1,14 @@
 import { makeAssistantDataUI, useAui, useAuiState } from '@assistant-ui/react'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import {
   BookOpenIcon,
   CalendarDaysIcon,
   CircleHelpIcon,
   CirclePlayIcon,
+  ChevronDownIcon,
   CornerDownRightIcon,
   DatabaseIcon,
+  ExternalLinkIcon,
   FileTextIcon,
   GlobeIcon,
   LoaderCircleIcon,
@@ -17,6 +19,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import { Popover, PopoverContent, PopoverHeader, PopoverTitle, PopoverTrigger } from '@/components/ui/popover'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { KgGraph } from '@/kg/types'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -82,35 +85,47 @@ const SOURCE_TYPES: Record<string, { label: string; Icon: LucideIcon }> = {
 const OTHER_SOURCE = { label: 'Source', Icon: FileTextIcon }
 
 // Dug cites every study behind a graph (often 10–20): one icon for them all,
-// listing the studies on hover, instead of a row of identical icons
+// opening a list of the studies on click (a popover: the list holds links, which a
+// tooltip shouldn't), instead of a row of identical icons. The chevron says it opens.
 const STUDY_TYPE = 'dbgap-study'
 
-function StudiesSource({ studies }: { studies: Source[] }) {
+type StudiesSourceProps = { studies: Source[]; open: boolean; onOpenChange: (open: boolean) => void }
+
+function StudiesSource({ studies, open, onOpenChange }: StudiesSourceProps) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
         <button
           type="button"
           aria-label={`dbGaP studies (${studies.length})`}
-          className="text-muted-foreground hover:text-foreground hover:bg-muted flex h-6 items-center gap-0.5 rounded-md px-1 text-xs transition-colors"
+          className="text-muted-foreground hover:text-foreground hover:bg-muted data-[state=open]:bg-muted data-[state=open]:text-foreground flex h-6 items-center gap-0.5 rounded-md px-1 text-xs transition-colors"
         >
           <DatabaseIcon className="size-4" />
           {studies.length}
+          <ChevronDownIcon className="size-3" />
         </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" className="max-h-72 flex-col items-start gap-1 overflow-y-auto">
-        <span className="font-medium">dbGaP studies ({studies.length})</span>
-        <ul className="flex flex-col gap-0.5">
+      </PopoverTrigger>
+      <PopoverContent side="bottom" align="end" className="w-80 gap-0 p-0">
+        <PopoverHeader className="border-b px-3 py-2">
+          <PopoverTitle className="text-sm">dbGaP studies ({studies.length})</PopoverTitle>
+        </PopoverHeader>
+        <ul className="max-h-72 overflow-y-auto p-1 text-sm">
           {studies.map((s) => (
             <li key={s.link}>
-              <a href={s.link} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
-                {s.title}
+              <a
+                href={s.link}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:bg-muted flex items-start gap-2 rounded-md px-2 py-1.5"
+              >
+                <span className="flex-1">{s.title}</span>
+                <ExternalLinkIcon className="text-muted-foreground mt-1 size-3 shrink-0" />
               </a>
             </li>
           ))}
         </ul>
-      </TooltipContent>
-    </Tooltip>
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -129,7 +144,10 @@ const SourcesUI = makeAssistantDataUI<Sources>({
   name: SOURCES_PART,
   render: function SourcesRow({ data }) {
     const visible = useToolbarVisible()
-    if (!visible) return null
+    // the studies popover renders outside the message, so moving the pointer into
+    // it ends the message's hover: keep the row (and the popover) while it's open
+    const [studiesOpen, setStudiesOpen] = useState(false)
+    if (!visible && !studiesOpen) return null
     const all: Source[] = Object.values(data as Sources).flat()
     const sources = all.filter((s) => s.type !== STUDY_TYPE)
     const studies = all.filter((s) => s.type === STUDY_TYPE)
@@ -165,7 +183,7 @@ const SourcesUI = makeAssistantDataUI<Sources>({
         })}
         {studies.length > 0 && (
           <li>
-            <StudiesSource studies={studies} />
+            <StudiesSource studies={studies} open={studiesOpen} onOpenChange={setStudiesOpen} />
           </li>
         )}
       </ul>

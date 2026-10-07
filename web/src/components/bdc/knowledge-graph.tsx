@@ -1,8 +1,9 @@
 import { ChevronRightIcon, ExternalLinkIcon, Maximize2Icon, MinusIcon, PlusIcon, ScanIcon } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
+import { TooltipIconButton } from '@/components/assistant-ui/elements/tooltip-icon-button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { bridges, sharedOnly as onlyShared } from '@/kg/bridges'
 import { collapseVersions } from '@/kg/collapse'
 import { connections } from '@/kg/connections'
@@ -294,10 +295,15 @@ function GraphBody(props: GraphBodyProps) {
         <Legend />
         <div className="ml-auto flex items-center gap-3">
           {canShare && (
-            <label className="flex items-center gap-1.5" title="Only the studies with variables on two or more concepts">
-              <input type="checkbox" checked={sharedOnly} onChange={(e) => onSharedOnly(e.target.checked)} />
-              Shared only
-            </label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <label className="flex items-center gap-1.5">
+                  <input type="checkbox" checked={sharedOnly} onChange={(e) => onSharedOnly(e.target.checked)} />
+                  Shared only
+                </label>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Only the studies with variables on two or more concepts</TooltipContent>
+            </Tooltip>
           )}
           <ViewPicker layout={layout} mode={mode} onLayout={onLayout} onMode={onMode} />
         </div>
@@ -325,15 +331,15 @@ function GraphBody(props: GraphBodyProps) {
           Hold {ZOOM_KEY} and scroll to zoom
         </p>
         <div className="bg-background/80 absolute right-1.5 bottom-1.5 flex rounded-md border">
-          <Button variant="ghost" size="icon-xs" aria-label="Zoom in" title="Zoom in" onClick={() => view.current?.zoomBy(ZOOM_STEP)}>
+          <TooltipIconButton tooltip="Zoom in" side="top" onClick={() => view.current?.zoomBy(ZOOM_STEP)}>
             <PlusIcon />
-          </Button>
-          <Button variant="ghost" size="icon-xs" aria-label="Zoom out" title="Zoom out" onClick={() => view.current?.zoomBy(1 / ZOOM_STEP)}>
+          </TooltipIconButton>
+          <TooltipIconButton tooltip="Zoom out" side="top" onClick={() => view.current?.zoomBy(1 / ZOOM_STEP)}>
             <MinusIcon />
-          </Button>
-          <Button variant="ghost" size="icon-xs" aria-label="Show all" title="Show all" onClick={() => view.current?.fit()}>
+          </TooltipIconButton>
+          <TooltipIconButton tooltip="Show all" side="top" onClick={() => view.current?.fit()}>
             <ScanIcon />
-          </Button>
+          </TooltipIconButton>
         </div>
       </div>
       <div className="border-t px-3 py-2">
@@ -372,18 +378,17 @@ export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
       <details open className="my-3 rounded-lg border text-xs">
         <summary className="text-muted-foreground flex cursor-pointer items-center gap-2 px-3 py-1.5 select-none">
           <span className="flex-1">{title}</span>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Maximize knowledge graph"
-            title="Maximize"
+          <TooltipIconButton
+            tooltip="Maximize"
+            side="left"
+            className="size-7 p-1.5"
             onClick={(e) => {
               e.preventDefault() // a click in <summary> would also fold the panel
               setMaximized(true)
             }}
           >
             <Maximize2Icon />
-          </Button>
+          </TooltipIconButton>
         </summary>
         <GraphBody
           json={json}
