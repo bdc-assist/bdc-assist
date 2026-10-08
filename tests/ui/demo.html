@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>BDC Assist — streaming demo</title>
+<title>r-assist — streaming demo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
@@ -10,6 +10,9 @@
   body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg);
          display:flex; flex-direction:column; height:100vh; }
   header { padding:.7rem 1rem; background:#fff; border-bottom:1px solid #ddd; font-weight:600; }
+  #mcp-errors { padding:.5rem 1rem; background:#fff4e5; color:#8a5300; border-bottom:1px solid #f0c36d;
+                font-size:13px; white-space:pre-line; }
+  #mcp-errors:empty { display:none; }
   #log { flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:.6rem; }
   .msg { max-width:75%; padding:.55rem .8rem; border-radius:.8rem; white-space:pre-wrap; }
   .user { align-self:flex-end; background:var(--accent); color:#fff; }
@@ -35,11 +38,12 @@
 </style>
 </head>
 <body>
-<header>BDC Assist — demo</header>
+<header>r-assist — demo</header>
+<div id="mcp-errors" role="status"></div>
 <div id="log"></div>
 <div id="followups"></div>
 <form id="form">
-  <input id="input" placeholder="Ask about BioData Catalyst…" autocomplete="off" autofocus>
+  <input id="input" placeholder="Ask a question…" autocomplete="off" autofocus>
   <button id="send">Send</button>
 </form>
 <script>
@@ -51,13 +55,17 @@ const NODE_LABELS = {
   classify: "checking known topics…",
   agent: "thinking…",
   output_guardrail: "reviewing the answer…",
-  output_reject: "answer rejected…",
   append_disclaimer: "adding disclaimers…",
   suggest_followups: "suggesting follow-ups…",
 };
 const log = document.getElementById("log"), followups = document.getElementById("followups"),
       form = document.getElementById("form"), input = document.getElementById("input"),
-      send = document.getElementById("send");
+      send = document.getElementById("send"), mcpErrors = document.getElementById("mcp-errors");
+
+function showMcpErrors(errs) {  // MCP servers down: the bot answers without their tools
+  mcpErrors.textContent = errs?.length ? "Some tools are unavailable:\n" + errs.join("\n") : "";
+}
+fetch(API + "/health").then(r => r.json()).then(h => showMcpErrors(h.mcp_errors)).catch(() => {});
 
 function bubble(cls, text) {
   const d = document.createElement("div");
@@ -122,15 +130,20 @@ form.onsubmit = async (e) => {
         } else if (ev.type === "status") {
           bot.status.textContent = ev.text;
         } else if (ev.type === "sources") {
-          renderMd(bot.sources, ev.sources_md || "");  // agent finished: sources are final
+          renderMd(bot.sources, ev.sources_md || "");  // agent finished: sources are known
         } else if (ev.type === "reset") {
           bot.text.textContent = "";  // new model turn: only the last response counts
         } else if (ev.type === "token") {
           bot.status.textContent = "";  // flowing tokens ARE the status
           bot.text.textContent += ev.text;
+        } else if (ev.type === "error") {  // the run failed server-side: drop the partial answer
+          bot.text.classList.remove("md");
+          bot.text.textContent = "Sorry, something went wrong while answering. Please try again.";
+          bot.sources.replaceChildren();
         } else if (ev.type === "done") {
           bot.status.textContent = "";
-          renderMd(bot.text, ev.answer);  // authoritative: rejects, disclaimers, canned replies
+          renderMd(bot.text, ev.answer);  // authoritative: blocks, disclaimers, canned replies
+          showMcpErrors(ev.mcp_errors);  // servers come back on their own: refresh each answer
           renderMd(bot.sources, ev.sources_md || "");  // doc sources, under the answer
           history.push({ role: "user", content: q }, { role: "assistant", content: ev.answer });
           for (const f of ev.followups) {
@@ -144,7 +157,7 @@ form.onsubmit = async (e) => {
       log.scrollTop = log.scrollHeight;
     }
   } catch (err) {
-    bot.text.textContent = "Error: " + err.message + " — is bdc-assist running at " + API + "?";
+    bot.text.textContent = "Error: " + err.message + " — is r-assist running at " + API + "?";
   } finally {
     bot.d.classList.remove("busy");
     bot.status.textContent = "";

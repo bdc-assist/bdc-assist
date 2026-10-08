@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>r-assist — knowledge graph demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vis-network/standalone/umd/vis-network.min.js"></script>
+<style>
+  :root { --bg:#f5f6f8; --accent:#1a5dab; }
+  body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg);
+         display:flex; flex-direction:column; height:100vh; }
+  header { padding:.7rem 1rem; background:#fff; border-bottom:1px solid #ddd; font-weight:600; }
+  #mcp-errors { padding:.5rem 1rem; background:#fff4e5; color:#8a5300; border-bottom:1px solid #f0c36d;
+                font-size:13px; white-space:pre-line; }
+  #mcp-errors:empty { display:none; }
+  form { display:flex; gap:.5rem; padding:.8rem 1rem; background:#fff; border-bottom:1px solid #ddd; }
+  input { flex:1; padding:.55rem .8rem; border:1px solid #ccc; border-radius:.5rem; font:inherit; }
+  form button { padding:.55rem 1.1rem; border:0; border-radius:.5rem; background:var(--accent);
+                color:#fff; font:inherit; cursor:pointer; }
+  form button:disabled { opacity:.5; }
+  main { flex:1; display:flex; gap:1rem; padding:1rem; min-height:0; }
+  .card { background:#fff; border:1px solid #ddd; border-radius:.8rem; }
+  #answer { width:36%; overflow-y:auto; padding:.8rem 1rem; }
+  #status { font-size:12px; font-style:italic; color:#888; }
+  #status:empty { display:none; }
+  #text { white-space:pre-wrap; }
+  #text.md { white-space:normal; }  /* rendered markdown: block layout instead of pre-wrap */
+  .md > :first-child { margin-top:0; }
+  .md a { color:var(--accent); }
+  #panel { flex:1; display:flex; flex-direction:column; min-width:0; }
+  #tabs { display:flex; gap:.3rem; flex-wrap:wrap; padding:.5rem; border-bottom:1px solid #eee; }
+  #tabs:empty::after { content:"No knowledge graph for this answer."; color:#888; font-size:13px; padding:.2rem; }
+  #tabs button { border:1px solid #ccc; background:#fff; border-radius:1rem; padding:.2rem .7rem;
+                 font:inherit; font-size:13px; cursor:pointer; }
+  #tabs button.on { border-color:var(--accent); background:var(--accent); color:#fff; }
+  #graph { flex:1; min-height:0; }
+  #legend { display:flex; gap:.4rem; flex-wrap:wrap; padding:.5rem; border-top:1px solid #eee; }
+  #legend:empty { display:none; }
+  #legend span { border-radius:1em; padding:.1em .7em; font-size:12px; font-weight:600; color:#fff; }
+  div.vis-tooltip { white-space:pre-wrap; max-width:320px; font:12px/1.4 system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<header>r-assist — knowledge graph demo</header>
+<div id="mcp-errors" role="status"></div>
+<form id="form">
+  <input id="input" placeholder="e.g. studies on heart attack" autocomplete="off" autofocus>
+  <button id="send">Ask</button>
+</form>
+<main>
+  <div id="answer" class="card"><div id="status"></div><div id="text"></div></div>
+  <div id="panel" class="card"><div id="tabs"></div><div id="graph"></div><div id="legend"></div></div>
+</main>
+<script>
+// One question at a time (no history): the answer streams on the left, and the response's
+// "kg" list (one graph per tool call) is drawn on the right, a tab per graph.
+const API = new URLSearchParams(location.search).get("api") || "http://localhost:8010";
+const PALETTE = ["#377eb8", "#e41a1c", "#4daf4a", "#984ea3", "#ff7f00", "#a65628", "#f781bf", "#999999"];
+const colors = {};  // category -> colour in first-seen order, shared by all tabs so they match
+const $ = id => document.getElementById(id);
+let network = null, shown = "[]";
+
+const color = cat => colors[cat] ??= PALETTE[Object.keys(colors).length % PALETTE.length];
+const short = (s, n = 24) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+
+function showMcpErrors(errs) {  // MCP servers down: the bot answers without their tools
+  $("mcp-errors").textContent = errs?.length ? "Some tools are unavailable:\n" + errs.join("\n") : "";
+}
+fetch(API + "/health").then(r => r.json()).then(h => showMcpErrors(h.mcp_errors)).catch(() => {});
+
+function renderMd(el, md) {
+  if (typeof marked === "undefined") { el.textContent = md; return; }  // CDN unreachable: plain text
+  el.innerHTML = marked.parse(md.replace(/</g, "&lt;"));  // neutralise raw HTML in model output
+  el.classList.add("md");
+  el.querySelectorAll("a").forEach(a => { a.target = "_blank"; a.rel = "noopener"; });
+}
+
+function draw(kg) {  // one {tool, args, nodes, edges} entry
+  if (network) network.destroy();
+  network = null;
+  const cats = [...new Set(kg.nodes.map(n => n.category || "Unknown"))];
+  $("legend").replaceChildren(...cats.map(c => {
+    const chip = document.createElement("span");
+    chip.textContent = c;
+    chip.style.background = color(c);
+    return chip;
+  }));
+  if (typeof vis === "undefined") {  // CDN unreachable
+    $("graph").textContent = `${kg.nodes.length} nodes, ${kg.edges.length} edges (graph library did not load)`;
+    return;
+  }
+  const nodes = kg.nodes.map(n => ({
+    id: n.id, label: short(n.name || n.id), color: color(n.category || "Unknown"),
+    // a string title is shown as plain text, so names and descriptions can't inject HTML
+    title: [n.name, "Category: " + (n.category || "Unknown"),
+            n.description && "Description: " + n.description, "ID: " + n.id].filter(Boolean).join("\n"),
+  }));
+  const edges = kg.edges.map(e => ({ from: e.subject, to: e.object, title: e.predicate }));
+  network = new vis.Network($("graph"), { nodes, edges }, {
+    nodes: { shape: "dot", size: 10, font: { size: 11 } },
+    edges: { color: "#bbb", width: 1 },
+    interaction: { hover: true, tooltipDelay: 100 },
+  });
+}
+
+function showKg(list) {
+  const key = JSON.stringify(list);
+  if (key === shown) return;  // "done" repeats what "sources" already drew; keep the layout
+  shown = key;
+  if (network) network.destroy();
+  network = null;
+  $("graph").replaceChildren(); $("legend").replaceChildren(); $("tabs").replaceChildren();
+  for (const kg of list) {
+    const b = document.createElement("button");
+    const what = Object.values(kg.args || {}).filter(v => typeof v === "string").join(", ");
+    b.textContent = `${kg.tool}${what ? " · " + what : ""} — ${kg.nodes.length} nodes, ${kg.edges.length} edges`;
+    b.onclick = () => {
+      for (const t of $("tabs").children) t.classList.toggle("on", t === b);
+      draw(kg);
+    };
+    $("tabs").appendChild(b);
+  }
+  if (list.length) $("tabs").firstChild.click();
+}
+
+$("form").onsubmit = async (e) => {
+  e.preventDefault();
+  const q = $("input").value.trim();
+  if (!q || $("send").disabled) return;
+  $("send").disabled = true;
+  $("text").textContent = ""; $("text").classList.remove("md");
+  showKg([]);
+  try {
+    const resp = await fetch(API + "/chat/stream", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ input: q, chat_history: [] }),
+    });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const reader = resp.body.getReader(), decoder = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const parts = buf.split("\n\n"); buf = parts.pop();
+      for (const part of parts) {
+        if (!part.startsWith("data: ")) continue;
+        const ev = JSON.parse(part.slice(6));
+        if (ev.type === "node") $("status").textContent = ev.node.replace(/_/g, " ") + "…";
+        else if (ev.type === "status") $("status").textContent = ev.text;
+        else if (ev.type === "reset") $("text").textContent = "";  // new model turn: only the last counts
+        else if (ev.type === "token") $("text").textContent += ev.text;
+        else if (ev.type === "sources") showKg(ev.kg || []);  // the agent finished: graphs are known
+        else if (ev.type === "error") {  // the run failed server-side: drop the partial answer
+          $("text").classList.remove("md");
+          $("text").textContent = "Sorry, something went wrong while answering. Please try again.";
+          showKg([]);
+        }
+        else if (ev.type === "done") {  // authoritative: a blocked answer clears the graphs
+          renderMd($("text"), ev.answer);
+          showKg(ev.kg || []);
+          showMcpErrors(ev.mcp_errors);  // servers come and go: refresh each answer
+        }
+      }
+    }
+  } catch (err) {
+    $("text").textContent = "Error: " + err.message + " — is r-assist running at " + API + "?";
+  } finally {
+    $("status").textContent = "";
+    $("send").disabled = false;
+  }
+};
+</script>
+</body>
+</html>

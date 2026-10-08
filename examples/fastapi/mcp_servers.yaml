@@ -1,0 +1,6 @@
+# The FastAPI bot's only server: the doc search server (examples/fastapi in r-doc-mcp).
+# Loaded instead of config/mcp_servers.yaml when CONFIG_DIR=examples/fastapi. No interceptors.
+
+r_doc_mcp:
+  transport: streamable_http
+  url: http://127.0.0.1:8001/mcp

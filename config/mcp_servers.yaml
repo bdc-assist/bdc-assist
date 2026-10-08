@@ -1,0 +1,18 @@
+# MCP servers the agent can call. Every tool each server exposes is handed to the agent.
+# Add a server = add a block here; no code change needed.
+#
+# Shapes (see langchain-mcp-adapters MultiServerMCPClient):
+#   remote:  transport: streamable_http   url: http://host:port/mcp
+#   remote:  transport: sse               url: http://host:port/sse
+#   local:   transport: stdio             command: uv   args: [run, python, -m, some.server]
+# Optional on any server: interceptors: [fn, ...] — functions in interceptors.py (this folder)
+# run around that server's tool calls, e.g. examples/bdc attaches knowledge graphs to dug_mcp's.
+# Optional: stand_ins: [tool, ...] — while the server is unreachable, these tool names answer with
+# an error, so the agent's "if a tool returns an error" rule applies instead of it answering from
+# the other tools. List the server's tools that prompts.yaml names (see examples/bdc).
+#
+# demo_services.sh/.ps1 health-check the r_doc_mcp url below, so keep the key name.
+
+r_doc_mcp:
+  transport: streamable_http
+  url: http://127.0.0.1:8001/mcp

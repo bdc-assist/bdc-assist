@@ -1,0 +1,13 @@
+# flags: r = replace the answer (skip the agent), a = append as disclaimer after the agent answer.
+# Facts from the FastAPI repo (LICENSE, how-to/migrate-from-pydantic-v1-to-pydantic-v2.md, deployment/fastapicloud.md).
+License:
+  response: "${short_name} is open source under the [MIT license](https://github.com/fastapi/fastapi/blob/master/LICENSE)."
+  flag: "r"
+
+Pydantic v1:
+  response: "Note: the latest ${short_name} versions require Pydantic v2. ${short_name} 0.126.0 dropped support for Pydantic v1, and 0.128.0 dropped `pydantic.v1` as well. See [Migrate from Pydantic v1 to Pydantic v2](https://fastapi.tiangolo.com/how-to/migrate-from-pydantic-v1-to-pydantic-v2/)."
+  flag: "a"
+
+FastAPI Cloud:
+  response: "[FastAPI Cloud](https://fastapicloud.com) is a hosted service built by the team behind ${short_name}. ${assistant_name} answers from the open-source documentation and cannot help with FastAPI Cloud accounts or billing."
+  flag: "a"
