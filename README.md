@@ -175,13 +175,15 @@ blocked replies), plus any sources an interceptor attaches to tool results (stru
 `"sources"`, `{key: [{title, link, type}]}`; BDC: the studies Dug cites, under `"dug"`), listed under
 their key and deduplicated on link; `sources_md` is all of them as one markdown list, worded by
 `sources`/`sources_item` in prompts.yaml. `kg` lists the knowledge graphs attached to the agent's
-tool results, one per tool call: `[{tool, args, label, nodes: [{id, name, type, category?, description?, attributes?}],
+tool results, one per tool call: `[{tool, args, label, seeds?, nodes: [{id, name, type, category?, description?, attributes?}],
 edges: [{subject, object, predicate?}]}]` (empty unless a server or interceptor attaches them, and
 for blocked replies). A tool result carries one as its structured content `"kg"`; the LLM never sees it.
 A node's `type` is its role, set by the interceptor (BDC: `concept`, `variable`, `study`, or `term` for a
 search word standing in for a concept); `category` is the source's own, verbatim, where it gives one;
 `attributes` holds other fields worth keeping (BDC: a variable's `related_concepts_count`).
 `label` names the graph in the user's terms ("asthma concept graph"), for a UI to show instead of a tool name.
+`seeds` (optional) lists the ids of the nodes the call asked about, for a view to centre on (BDC: the concept
+of `get_concept_graph` / `get_concept_connections`, the search words of `find_cohort_variables`; none for searches).
 `mcp_errors` lists the MCP servers currently unavailable (re-checked every `MCP_RETRY_SECONDS`), `"name: error"` each (e.g.
 `"dug_mcp: HTTPStatusError: Client error '403 Forbidden' ..."`); the agent answers without their tools.
 
@@ -214,7 +216,8 @@ port 8011) and start the client with `VITE_API_URL=http://127.0.0.1:8011`. A key
 question picks a path: `block` (input guardrail refuses), `reject` (output guardrail replaces the
 draft), `canned` (predefined reply), `nosources`, `crash` (the stream ends with an error), `kg` or
 `kg2` (a real Dug graph for one concept, or for asthma and COPD), `related` (asthma's graph plus
-its related concepts); anything else gets a docs answer with a small graph. The client's test
+its related concepts), `cohort` (find_cohort_variables for asthma + COPD), `mesh` (search_concepts
+for body mass index); anything else gets a docs answer with a small graph. The client's test
 fixtures are made from the Dug results in `tests/fixtures/` (its README says how).
 
 ## Test / demo

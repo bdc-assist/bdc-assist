@@ -106,6 +106,24 @@ def label(tool: str, args: dict, kg: dict) -> str:
     return text if text.split(" ", 1)[0] else tool.replace("_", " ")  # nothing to name it by: the tool
 
 
+def seeds(tool: str, data: dict, kg: dict) -> list[str]:
+    """The nodes a call asked about, for a view to centre on, as dug-mcp echoes them in its
+    result: the concept of get_concept_graph / get_concept_connections, the search words of
+    find_cohort_variables (verbatim, as their term nodes are). Searches have none. Only ids
+    that are nodes: a search word nothing matched isn't one."""
+    asked = {"get_concept_graph": [data.get("concept_id")],
+             "get_concept_connections": [data.get("concept_id")],
+             "find_cohort_variables": data.get("concepts_searched") or []}.get(tool, [])
+    ids = {n["id"] for n in kg["nodes"]}
+    return [a for a in asked if a in ids]
+
+
+def entry(tool: str, args: dict, data: dict, kg: dict) -> dict:
+    """The kg as attached: which call made it, its label, its seeds (when it has any), its graph."""
+    asked = seeds(tool, data, kg)
+    return {"tool": tool, "args": args, "label": label(tool, args or {}, kg), **({"seeds": asked} if asked else {}), **kg}
+
+
 async def dug_kg(request, handler):
     result = await handler(request)
     if not isinstance(result, CallToolResult) or result.isError:
@@ -122,8 +140,7 @@ async def dug_kg(request, handler):
         return result
     structured = dict(result.structuredContent or {})
     if kg:
-        structured["kg"] = {"tool": request.name, "args": request.args,
-                            "label": label(request.name, request.args or {}, kg), **kg}
+        structured["kg"] = entry(request.name, request.args, data, kg)
     if cited:  # {title, link, type: "dbgap-study"}, one per study; r-assist lists them under sources
         structured["sources"] = {"dug": [{"title": s.get("title"), "link": s["link"], "type": s.get("type", "")}
                                          for s in cited]}
