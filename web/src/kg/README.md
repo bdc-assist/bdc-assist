@@ -19,10 +19,23 @@ is a working example of everything below (React, but only as glue).
 
 ## The data
 
-The API sends the graph three ways: the `graph` SSE event of `POST /chat/stream`
-(as soon as the agent is done), the `graph` field of its `done` event, and the
-`graph` field of `POST /chat`. It's `{}` when there is none; `asGraph(value)` turns
-that into `null`.
+The API sends the agent's knowledge graphs as `kg`: in the `sources` event of
+`POST /chat/stream` (as soon as the agent is done), in its `done` event, and in
+`POST /chat`. It's a list, one graph per tool call, attached by the Dug interceptor
+(`examples/bdc/interceptors.py`):
+
+```ts
+type KgWireEntry = {
+  tool: string; args?: object; label?: string
+  nodes: { id: string; name?: string; type?: string; category?: string;
+           description?: string; attributes?: { related_concepts_count?: number } }[]
+  edges: { subject: string; object: string; predicate?: string }[]
+}
+```
+
+`fromKgList(kg)` (`wire.ts`) merges them into the one graph the views draw, or `null`
+when there's nothing to draw. A node's role comes from `type` if it names one, else
+from `category` (`"Study"`, `"StudyVariable"`; anything else is a concept):
 
 ```ts
 type KgGraph = { nodes: KgNode[]; edges: KgEdge[] }
@@ -36,19 +49,17 @@ type KgNode = {
   versions?: string[]              // after collapseVersions: the versioned ids merged into this node
 }
 
-type KgEdge = { source: string; target: string }  // untyped: variable → concept, variable → study
+type KgEdge = { source: string; target: string; predicate?: string }
+// variable → concept, variable → study; concept → concept with Dug's predicate
 ```
-
-The server builds it from Dug's `get_concept_graph` results (`_knowledge_graph` in
-`bdc_assist/graph.py`). Several calls (several concepts) merge into one graph.
 
 ## Quick start
 
 ```ts
 import { mountGraph } from './kg/mount'
-import { asGraph } from './kg/types'
+import { fromKgList } from './kg/wire'
 
-const graph = asGraph(doneEvent.graph)
+const graph = fromKgList(doneEvent.kg)
 if (graph) {
   const view = mountGraph(document.querySelector('#kg')!, graph, {
     layout: 'radial',
@@ -148,6 +159,7 @@ used) first, so ids match what the views draw.
 | `nodeLinks(node, graph)`, `conceptLink(id)` | `links.ts` | pages for a node: dbGaP study and variable pages (one per release; a variable without an accession gets its study, with a `note`); concepts by CURIE prefix (MONDO, EFO, UMLS, GTOPDB, otherwise bioregistry.io), marked "(login)" where an account is needed |
 | `focusConnections(graph, focus)`, `pairVariables(graph, concept, study)` | `focus.ts` | what a focus lights up; a pair's variables |
 | `flowData(graph)` | `flow.ts` | the flow's concept → study links with their variables, for your own chart |
+| `fromKgList(kg)` | `wire.ts` | the API's per-call graphs merged into one |
 | `variableWeights(graph)` | `elements.ts` | `related_concepts_count` scaled to 0..1 within the graph |
 
 ## Things to know

@@ -12,7 +12,8 @@ export function bridges(graph: KgGraph): Set<string> {
   const studyOf = new Map<string, string>()
   const add = (id: string, concept: string) => conceptsOf.set(id, (conceptsOf.get(id) ?? new Set()).add(concept))
   for (const e of graph.edges) {
-    if (type.get(e.target) === 'concept') add(e.source, e.target)
+    // variables only: a concept related to other concepts isn't a bridge between them
+    if (type.get(e.target) === 'concept' && type.get(e.source) === 'variable') add(e.source, e.target)
     if (type.get(e.target) === 'study') studyOf.set(e.source, e.target)
   }
   for (const [variable, study] of studyOf) for (const c of conceptsOf.get(variable) ?? []) add(study, c)

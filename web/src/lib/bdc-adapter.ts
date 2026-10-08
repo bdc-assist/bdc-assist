@@ -1,9 +1,10 @@
 import type { ChatModelAdapter, ThreadMessage } from '@assistant-ui/react'
 
-import { asGraph, type KgGraph } from '@/kg/types'
+import type { KgGraph } from '@/kg/types'
+import { fromKgList } from '@/kg/wire'
 import { readSSE } from '@/lib/sse'
 
-// Wire format of POST /chat/stream (see stream_chat in bdc_assist/api.py).
+// Wire format of POST /chat/stream (see stream_chat in r_assist/api.py).
 export type Source = { title: string; link: string; type: string }
 export type Sources = Record<string, Source[]> // {"bdc-doc": [...]}, deduplicated
 
@@ -12,19 +13,19 @@ type StreamEvent =
   | { type: 'status'; text: string }
   | { type: 'token'; text: string }
   | { type: 'reset' }
-  | { type: 'sources'; sources: Sources; sources_md: string }
-  | { type: 'graph'; graph: KgGraph }
+  | { type: 'sources'; sources: Sources; sources_md: string; kg?: unknown } // kg: see fromKgList
   | {
       type: 'done'
       answer: string
-      blocked: boolean
+      blocked: boolean // the input was refused, or the answer was (output guardrail)
       topics: string[]
       followups: string[]
       sources: Sources
       sources_md: string
-      graph?: KgGraph | Record<string, never> // {} when there is none
-      tool_results?: { tool: string; args: unknown; result: unknown }[]
-    } // tool_results: logged for now (TEMP), deliberately not kept
+      kg?: unknown
+      mcp_errors?: string[] // "server: error" per MCP server currently unavailable
+    }
+  | { type: 'error' } // the run failed; last event, no done
 
 /** What we keep on each assistant message as metadata.custom. Plain JSON,
  * so a thread can be persisted later as-is. */
@@ -32,7 +33,8 @@ export type BdcMessageMeta = {
   node: string | null // graph node currently running; null once done
   status: string | null // latest tool-call status; cleared by reset and new nodes
   sources: Sources | null // null until the agent reports them
-  graph: KgGraph | null // Dug concept graph; null when there is none (yet)
+  graph: KgGraph | null // the knowledge graph (kg) merged; null when there is none (yet)
+  unavailable: string[] // MCP servers that were down, by name (from mcp_errors)
   followups: string[]
   blocked: boolean // input guardrail refused the question
   rejected: boolean // output guardrail replaced the streamed draft
@@ -52,6 +54,7 @@ export const DRAFT_PART = 'bdc-draft'
 export const REJECTED_PART = 'bdc-rejected'
 export const GRAPH_PART = 'bdc-graph' // data: KgGraph
 export const FOLLOWUPS_PART = 'bdc-followups' // data: string[]
+export const UNAVAILABLE_PART = 'bdc-unavailable' // data: string[] (MCP server names)
 
 export type StatusPartData = { node: string | null; status: string | null }
 export type DraftPartData = { words: number }
@@ -87,6 +90,7 @@ export function toContent({ text, streaming, meta }: StreamState, reveal: Reveal
   // only worth saying if the user watched the draft stream in
   if (reveal === 'stream' && meta.rejected) parts.push(data(REJECTED_PART, {}))
   if (meta.blocked) parts.push(data(BLOCKED_PART, {}))
+  if (meta.done && meta.unavailable.length) parts.push(data(UNAVAILABLE_PART, meta.unavailable))
   // the server sends none for a blocked question; checked anyway, they'd make no sense there
   if (meta.done && !meta.blocked && meta.followups.length) parts.push(data(FOLLOWUPS_PART, meta.followups))
   return parts
@@ -137,6 +141,7 @@ export function createBdcAdapter(
           status: null,
           sources: null,
           graph: null,
+          unavailable: [],
           followups: [],
           blocked: false,
           rejected: false,
@@ -144,6 +149,7 @@ export function createBdcAdapter(
         },
       }
       const { meta } = state
+      let failed = false // the server sent {"type": "error"}
       // the runtime replaces the message with each yield, so always send it all
       const snapshot = () => ({
         content: toContent(state, reveal),
@@ -192,30 +198,35 @@ export function createBdcAdapter(
               meta.status = null // the tool finished
               break
             case 'sources':
-              meta.sources = ev.sources // agent finished: sources are final
+              // agent finished: sources and graphs are final
+              meta.sources = ev.sources
+              meta.graph = fromKgList(ev.kg)
               break
-            case 'graph':
-              meta.graph = asGraph(ev.graph) // agent finished: the graph is final
-              break
-            case 'done':
+            case 'done': {
               // authoritative: rejects, disclaimers and canned replies replace
-              // the streamed text, and a rejected answer has no sources or graph
-              // TEMP: print non-doc tool calls (Dug) to grab real KG examples
-              for (const tr of ev.tool_results ?? [])
-                if (tr.tool !== 'search_docs') console.log(`[bdc tool] ${tr.tool}`, tr)
-              meta.rejected = !ev.blocked && replacedDraft(state.text, ev.answer)
+              // the streamed text, and a rejected answer has no sources or graph.
+              // blocked covers both guardrails; a streamed draft that was replaced
+              // means the output one (a reject), none means the input was refused.
+              const replaced = replacedDraft(state.text, ev.answer)
+              meta.rejected = replaced
+              meta.blocked = ev.blocked && !replaced
               state.text = ev.answer
               meta.sources = ev.sources
-              meta.graph = asGraph(ev.graph)
+              meta.graph = fromKgList(ev.kg)
+              meta.unavailable = [...new Set((ev.mcp_errors ?? []).map((e) => e.split(':')[0].trim()))]
               meta.followups = ev.followups
-              meta.blocked = ev.blocked
               meta.node = null
               meta.status = null
               meta.done = true
               break
+            }
+            case 'error':
+              failed = true
+              break
             default:
               continue // unknown event type: ignore, don't re-render
           }
+          if (failed) break
           yield snapshot()
         }
       } catch (err) {
@@ -223,6 +234,7 @@ export function createBdcAdapter(
         console.error('bdc-assist stream failed', err)
         throw new Error('Lost the connection to BDC Assist mid-answer. Please try again.')
       }
+      if (failed) throw new Error('BDC Assist ran into a problem answering. Please try again.')
       if (!meta.done) throw new Error('BDC Assist stopped before finishing the answer. Please try again.')
     },
   }

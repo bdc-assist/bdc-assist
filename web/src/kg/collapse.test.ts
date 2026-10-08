@@ -6,7 +6,7 @@ import chd from './fixtures/chd-graph.json'
 import type { KgGraph } from './types'
 
 // real server output for Dug get_concept_graph on congenital heart disease (MONDO:0005453),
-// made from tests/fixtures/dug_concept_graph_chd.json by _knowledge_graph in bdc_assist/graph.py
+// made from tests/fixtures/dug_concept_graph_chd.json; the same graph fromKgList makes of chd-kg.json
 const CHD = chd as KgGraph
 
 const count = (g: KgGraph, type: string) => g.nodes.filter((n) => n.type === type).length

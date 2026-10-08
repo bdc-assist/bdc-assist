@@ -11,6 +11,7 @@ import {
   SOURCES_PART,
   STATUS_PART,
   toRequest,
+  UNAVAILABLE_PART,
   type BdcMessageMeta,
   type Reveal,
 } from '@/lib/bdc-adapter'
@@ -100,6 +101,7 @@ describe('createBdcAdapter', () => {
       status: null,
       sources: { 'bdc-doc': [{ title: 'Overview', link: 'https://x/overview', type: 'page' }] },
       graph: null,
+      unavailable: [],
       followups: ['What is dbGaP?'],
       blocked: false,
       rejected: false,
@@ -142,25 +144,51 @@ describe('createBdcAdapter', () => {
     expect(metaOf(last).rejected).toBe(true)
   })
 
-  it('keeps the graph from its event, and lets done override it', async () => {
-    const graph = {
+  // the API's kg: one graph per tool call (merged by fromKgList)
+  const kg = [
+    {
+      tool: 'get_concept_graph',
       nodes: [
-        { id: 'MONDO:1', label: 'chd', type: 'concept', concept_type: 'biolink:NamedThing' },
-        { id: 'phv1', label: 'FC219', type: 'variable', related_concepts_count: 12 },
+        { id: 'MONDO:1', name: 'chd', category: 'NamedThing' },
+        { id: 'phv1', name: 'FC219', category: 'StudyVariable' },
       ],
-      edges: [{ source: 'phv1', target: 'MONDO:1' }],
-    }
-    const kept = await run(sse({ type: 'graph', graph }, done({ graph })))
+      edges: [{ subject: 'phv1', object: 'MONDO:1' }],
+    },
+  ]
+  const graph = {
+    nodes: [
+      { id: 'MONDO:1', label: 'chd', type: 'concept', concept_type: 'NamedThing' },
+      { id: 'phv1', label: 'FC219', type: 'variable' },
+    ],
+    edges: [{ source: 'phv1', target: 'MONDO:1' }],
+  }
+
+  it('keeps the graph from the sources event, and lets done override it', async () => {
+    const sources = { type: 'sources', sources: {}, sources_md: '', kg }
+    const kept = await run(sse(sources, done({ kg })))
     expect(metaOf(kept.yields[0])).toMatchObject({ graph, done: false })
     expect(metaOf(kept.yields.at(-1)!).graph).toEqual(graph)
-    // rejected answer: done sends {} — the streamed graph goes too
-    const rejected = await run(sse({ type: 'graph', graph }, done({ graph: {} })))
+    // rejected answer: done sends [] — the streamed graph goes too
+    const rejected = await run(sse(sources, done({ kg: [] })))
     expect(metaOf(rejected.yields.at(-1)!).graph).toBeNull()
   })
 
-  it('has no graph without one (older servers send no graph field)', async () => {
+  it('has no graph without one', async () => {
     const { yields } = await run(sse(done()))
     expect(metaOf(yields[0]).graph).toBeNull()
+  })
+
+  it('reports a failed run as an error, not a lost connection', async () => {
+    await expect(run(sse({ type: 'token', text: 'half an' }, { type: 'error' }))).rejects.toThrow(
+      'BDC Assist ran into a problem answering. Please try again.',
+    )
+  })
+
+  it('keeps the names of unavailable MCP servers, and notes them', async () => {
+    const { yields } = await run(sse(done({ mcp_errors: ["dug_mcp: HTTPStatusError: Client error '403 Forbidden'"] })))
+    expect(metaOf(yields[0]).unavailable).toEqual(['dug_mcp'])
+    const part = (yields[0].content ?? []).find((p) => (p as { name?: string }).name === UNAVAILABLE_PART)
+    expect((part as { data?: unknown } | undefined)?.data).toEqual(['dug_mcp'])
   })
 
   it('marks blocked replies', async () => {
@@ -245,8 +273,8 @@ describe('data parts', () => {
   })
 
   it('adds the graph once known, before the status line, and holds it back in after-check', async () => {
-    const graph = { nodes: [{ id: 'C', label: 'c', type: 'concept' }], edges: [] }
-    const events = sse({ type: 'graph', graph }, { type: 'node', node: 'output_guardrail' }, done({ graph }))
+    const kg = [{ tool: 't', nodes: [{ id: 'C', name: 'c' }, { id: 'v', name: 'v', category: 'StudyVariable' }], edges: [{ subject: 'v', object: 'C' }] }]
+    const events = sse({ type: 'sources', sources: {}, sources_md: '', kg }, { type: 'node', node: 'output_guardrail' }, done({ kg }))
     const stream = await run(events)
     expect(names(stream.yields[0])).toContain(GRAPH_PART)
     const running = names(stream.yields[1])
@@ -305,9 +333,14 @@ describe('rejection', () => {
     expect(meta.rejected).toBe(false)
   })
 
-  it('is not inferred without a draft, or for a blocked question', async () => {
+  it('is not inferred without a draft: a blocked question is a refusal', async () => {
     expect((await finalMeta(done({ answer: 'Canned.' }))).rejected).toBe(false)
-    expect((await finalMeta({ type: 'token', text: 'x' }, done({ answer: 'Refusal.', blocked: true }))).rejected).toBe(false)
+    expect(await finalMeta(done({ answer: 'Refusal.', blocked: true }))).toMatchObject({ blocked: true, rejected: false })
+  })
+
+  it('reads blocked after a streamed draft as a reject, not a refusal (the output guardrail)', async () => {
+    const meta = await finalMeta({ type: 'token', text: 'a dubious answer' }, done({ answer: 'Sorry.', blocked: true }))
+    expect(meta).toMatchObject({ blocked: false, rejected: true })
   })
 
   it('adds a note in stream mode only', async () => {

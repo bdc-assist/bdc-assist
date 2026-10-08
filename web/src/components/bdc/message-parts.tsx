@@ -15,6 +15,7 @@ import {
   NewspaperIcon,
   RotateCcwIcon,
   ShieldAlertIcon,
+  TriangleAlertIcon,
   UserRoundIcon,
   type LucideIcon,
 } from 'lucide-react'
@@ -31,6 +32,7 @@ import {
   GRAPH_PART,
   REJECTED_PART,
   SOURCES_PART,
+  UNAVAILABLE_PART,
   STATUS_PART,
   type DraftPartData,
   type Source,
@@ -274,6 +276,18 @@ const GraphUI = makeAssistantDataUI<KgGraph>({
   ),
 })
 
+// Some MCP servers (e.g. the knowledge graph) were down: the answer had to do without
+// them. The server names are for whoever runs it, so they're only in the tooltip.
+const UnavailableUI = makeAssistantDataUI<string[]>({
+  name: UNAVAILABLE_PART,
+  render: ({ data }: { data: string[] }) => (
+    <p className="text-muted-foreground mt-3 flex items-center gap-1.5 text-xs" title={`Unavailable: ${data.join(', ')}`}>
+      <TriangleAlertIcon className="size-3.5" />
+      Some data services are unavailable right now, so this answer may be incomplete
+    </p>
+  ),
+})
+
 /** Mount once inside the runtime provider. */
 export function BdcMessageParts() {
   return (
@@ -283,6 +297,7 @@ export function BdcMessageParts() {
       <BlockedUI />
       <DraftUI />
       <RejectedUI />
+      <UnavailableUI />
       <GraphUI />
       <FollowupsUI />
     </>

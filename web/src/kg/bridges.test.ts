@@ -55,6 +55,21 @@ describe('bridges', () => {
     }
     expect([...bridges(g)].sort()).toEqual(['s', 'v'])
   })
+
+  it('does not count a concept related to other concepts', () => {
+    const g: KgGraph = {
+      nodes: [
+        { id: 'A', label: 'a', type: 'concept' },
+        { id: 'B', label: 'b', type: 'concept' },
+        { id: 'C', label: 'c', type: 'concept' },
+      ],
+      edges: [
+        { source: 'A', target: 'B', predicate: 'related_to' },
+        { source: 'A', target: 'C', predicate: 'related_to' },
+      ],
+    }
+    expect(bridges(g).size).toBe(0)
+  })
 })
 
 describe('sharedOnly', () => {
