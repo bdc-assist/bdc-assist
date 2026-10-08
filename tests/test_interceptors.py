@@ -67,6 +67,10 @@ def test_dug_results_get_a_trimmed_kg():
     assert [(n["id"], n["type"]) for n in kg["nodes"]] == [
         ("phv001", "variable"), ("MONDO:0005068", "concept"), ("phs000007", "study"), ("phv002", "variable")]
     assert kg["nodes"][1]["category"] == "biolink.Disease"  # verbatim, dot and all
+    # variables keep related_concepts_count, under attributes
+    assert kg["nodes"][0]["attributes"] == {"related_concepts_count": 3}
+    assert kg["nodes"][3]["attributes"] == {"related_concepts_count": 1}
+    assert "attributes" not in kg["nodes"][1]  # nothing to keep for the concept
     assert kg["edges"] == [{"subject": "phv001", "object": "MONDO:0005068"},
                            {"subject": "phv001", "object": "phs000007"},
                            {"subject": "phv002", "object": "MONDO:0005068"}]

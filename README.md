@@ -173,11 +173,12 @@ the client keeps history. `sources` is the distinct documents behind the agent's
 `{"r-doc": [{title, link, type}]}`, deduplicated on link and in relevance order (empty for canned,
 blocked replies); `sources_md` is the same list as markdown, worded by
 `sources`/`sources_item` in prompts.yaml. `kg` lists the knowledge graphs attached to the agent's
-tool results, one per tool call: `[{tool, args, nodes: [{id, name, type, category?, description?}],
+tool results, one per tool call: `[{tool, args, nodes: [{id, name, type, category?, description?, attributes?}],
 edges: [{subject, object, predicate?}]}]` (empty unless a server or interceptor attaches them, and
 for blocked replies). A tool result carries one as its structured content `"kg"`; the LLM never sees it.
 A node's `type` is its role, set by the interceptor (BDC: `concept`, `variable`, `study`, or `term` for a
-search word standing in for a concept); `category` is the source's own, verbatim, where it gives one.
+search word standing in for a concept); `category` is the source's own, verbatim, where it gives one;
+`attributes` holds other fields worth keeping (BDC: a variable's `related_concepts_count`).
 `mcp_errors` lists the MCP servers currently unavailable (re-checked every `MCP_RETRY_SECONDS`), `"name: error"` each (e.g.
 `"dug_mcp: HTTPStatusError: Client error '403 Forbidden' ..."`); the agent answers without their tools.
 

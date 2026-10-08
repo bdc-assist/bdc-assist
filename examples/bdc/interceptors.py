@@ -25,17 +25,20 @@ def _role(category):
 
 
 def to_kg(tool: str, data: dict) -> dict | None:
-    """One decoded dug-mcp result -> {"nodes": [{id, name, type, category?, description?}],
+    """One decoded dug-mcp result -> {"nodes": [{id, name, type, category?, description?, attributes?}],
     "edges": [{subject, object, predicate?}]}, or None when its rows hold no edges
     (counts, schema, name lists, errors). `type` is the node's role: concept, variable,
     study, or term (a search word standing in for a concept: find_cohort_variables).
-    `category` is Dug's own, verbatim, and only where Dug gives one. Every other field
+    `category` is Dug's own, verbatim, and only where Dug gives one. `attributes` holds
+    the other fields worth keeping (variables: related_concepts_count). Every other field
     is dropped."""
     nodes, edges = {}, {}
 
-    def node(id, name=None, type="concept", category=None, description=None):
+    def node(id, name=None, type="concept", category=None, description=None, attributes=None):
         if id and id not in nodes:
-            n = {"id": id, "name": name or id, "type": type, "category": category, "description": description}
+            attributes = {k: v for k, v in (attributes or {}).items() if v is not None}
+            n = {"id": id, "name": name or id, "type": type, "category": category, "description": description,
+                 "attributes": attributes}
             nodes[id] = {k: v for k, v in n.items() if v}
         return id
 
@@ -53,7 +56,8 @@ def to_kg(tool: str, data: dict) -> dict | None:
     elif tool == "get_concept_graph":
         for r in data.get("graph", []):
             if "variable_id" in r:  # expand_depth >= 2: concept - variable - study
-                var = node(r["variable_id"], r.get("variable_name"), "variable")
+                var = node(r["variable_id"], r.get("variable_name"), "variable",
+                           attributes={"related_concepts_count": r.get("related_concepts_count")})
                 edge(var, node(r.get("concept_id"), r.get("concept"), category=r.get("concept_type")))
                 edge(var, node(r.get("study_id"), r.get("study_name"), "study"))
             else:  # expand_depth 1: concept -[rel_type]- each neighbour

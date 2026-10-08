@@ -96,7 +96,9 @@ function draw(kg) {  // one {tool, args, nodes, edges} entry
     id: n.id, label: short(n.name || n.id), color: color(kind(n)),
     // a string title is shown as plain text, so names and descriptions can't inject HTML
     title: [n.name, "Type: " + kind(n), n.category && "Category: " + n.category,
-            n.description && "Description: " + n.description, "ID: " + n.id].filter(Boolean).join("\n"),
+            n.description && "Description: " + n.description,
+            ...Object.entries(n.attributes || {}).map(([k, v]) => `${k}: ${v}`),
+            "ID: " + n.id].filter(Boolean).join("\n"),
   }));
   const edges = kg.edges.map(e => ({ from: e.subject, to: e.object, title: e.predicate }));
   network = new vis.Network($("graph"), { nodes, edges }, {
