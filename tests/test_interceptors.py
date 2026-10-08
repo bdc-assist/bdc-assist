@@ -126,6 +126,17 @@ def test_each_graph_is_labelled_in_plain_words():
     assert call("get_concept_graph", CONCEPT_GRAPH)["label"]  # the interceptor attaches it
 
 
+def test_cited_studies_go_along_as_sources():
+    study = {"title": "Framingham Cohort", "link": "https://x/study?phs000007", "type": "dbgap-study"}
+    tool = convert_mcp_tool_to_langchain_tool(
+        FakeSession(json.dumps({**CONCEPT_GRAPH, "_sources": [study]})), Tool(name="get_concept_graph", inputSchema={"type": "object"}),
+        tool_interceptors=load_interceptors(Path("examples/bdc")), server_name="dug_mcp")
+    msg = asyncio.run(tool.ainvoke({"type": "tool_call", "name": "get_concept_graph", "args": {}, "id": "c1"}))
+    structured = msg.artifact["structured_content"]
+    assert structured["sources"] == {"dug": [study]}
+    assert structured["kg"]["nodes"]  # the graph still comes along
+
+
 def test_no_kg_when_nothing_to_draw():
     assert call("search_concepts", SEARCH_CONCEPTS, server="r_doc_mcp") is None  # yaml scopes dug_kg to dug_mcp
     assert call("list_graph_schema", {"schema": [{"node_type": "biolink.Disease", "count": 9}]}) is None  # no edges

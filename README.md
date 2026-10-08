@@ -171,7 +171,9 @@ requires restarting the MCP server (rerun `demo_services`).
 returns `{"answer", "blocked", "topics", "followups", "sources", "sources_md", "kg", "mcp_errors"}`. The server is stateless —
 the client keeps history. `sources` is the distinct documents behind the agent's `search_docs` chunks,
 `{"r-doc": [{title, link, type}]}`, deduplicated on link and in relevance order (empty for canned,
-blocked replies); `sources_md` is the same list as markdown, worded by
+blocked replies), plus any sources an interceptor attaches to tool results (structured content
+`"sources"`, `{key: [{title, link, type}]}`; BDC: the studies Dug cites, under `"dug"`), listed under
+their key and deduplicated on link; `sources_md` is all of them as one markdown list, worded by
 `sources`/`sources_item` in prompts.yaml. `kg` lists the knowledge graphs attached to the agent's
 tool results, one per tool call: `[{tool, args, label, nodes: [{id, name, type, category?, description?, attributes?}],
 edges: [{subject, object, predicate?}]}]` (empty unless a server or interceptor attaches them, and

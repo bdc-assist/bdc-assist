@@ -417,3 +417,30 @@ def test_mcp_tool_errors_are_logged(caplog):
     assert artifact is None
     assert agent.recheck.is_set(), "a failed call re-checks the servers"
     agent.recheck.clear()
+
+
+def test_attached_sources_join_the_doc_sources():
+    """An interceptor can attach sources to a tool result (structured content "sources",
+    {key: [...]}): they're listed under their key, deduplicated on link across calls, and
+    follow the doc sources in sources_md."""
+    fhs = {"title": "Framingham Cohort", "link": "https://x/study?phs000007", "type": "dbgap-study"}
+    aric = {"title": "ARIC", "link": "https://x/study?phs000280", "type": "dbgap-study"}
+
+    class CitingAgent(FakeAgent):
+        async def astream(self, payload, stream_mode=None):
+            async for mode, chunk in super().astream(payload, stream_mode):
+                if mode == "values":
+                    msgs = chunk["messages"]
+                    chunk = {"messages": [*msgs[:-1],
+                        ToolMessage(content="{}", artifact={"structured_content": {"sources": {"dug": [fhs]}}},
+                                    tool_call_id="t3"),
+                        ToolMessage(content="{}", artifact={"structured_content": {"sources": {"dug": [aric, fhs]}}},
+                                    tool_call_id="t4"),
+                        msgs[-1]]}
+                yield mode, chunk
+
+    llm = FakeListChatModel(responses=["No", "- none", "Yes", "- none"])
+    state = asyncio.run(build_graph(llm, CitingAgent(), PREDEFINED).ainvoke({"input": "q", "chat_history": []}))
+    assert state["sources"] == {**SOURCES, "dug": [fhs, aric]}
+    assert state["sources_md"] == (SOURCES_MD + "\n- [Framingham Cohort](https://x/study?phs000007) (dbgap-study)"
+                                               "\n- [ARIC](https://x/study?phs000280) (dbgap-study)")

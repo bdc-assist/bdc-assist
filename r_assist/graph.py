@@ -90,6 +90,26 @@ def _kgs(messages) -> list:
     return [kg for kg in found if kg]
 
 
+def _attached_sources(messages) -> dict[str, list[dict]]:
+    """Sources attached to tool results as structured content "sources": {key: [{title, link,
+    type}]} (by a <config dir>/interceptors.py interceptor, e.g. the studies Dug cites),
+    merged by key, deduplicated on link, in first-seen order. The LLM never sees them."""
+    out: dict[str, list[dict]] = {}
+    seen = set()
+    for m in messages:
+        if not (isinstance(m, ToolMessage) and isinstance(m.artifact, dict)):
+            continue
+        attached = (m.artifact.get("structured_content") or {}).get("sources") or {}
+        for key, items in attached.items() if isinstance(attached, dict) else ():
+            for item in items if isinstance(items, list) else ():
+                link = item.get("link") if isinstance(item, dict) else None
+                if link and link not in seen:
+                    seen.add(link)
+                    out.setdefault(key, []).append({"title": item.get("title") or link, "link": link,
+                                                    "type": item.get("type", "")})
+    return out
+
+
 def _sources_md(sources: list[dict]) -> str:
     if not sources:
         return ""
@@ -198,7 +218,9 @@ def build_graph(llm, agent, predefined: dict):
                 last_id = msg.id
                 writer({"type": "token", "text": msg.text})
         docs = _doc_sources(result["messages"])
-        sources, sources_md = ({prompts.SOURCES_KEY: docs} if docs else {}), _sources_md(docs)
+        attached = _attached_sources(result["messages"])  # e.g. the studies Dug cites
+        sources = ({prompts.SOURCES_KEY: docs} if docs else {}) | attached
+        sources_md = _sources_md(docs + [s for items in attached.values() for s in items])
         kg = _kgs(result["messages"])
         # sources are known once the agent is done: send them now rather than with "done",
         # which waits for the guardrail and follow-up nodes (a block clears them in "done")

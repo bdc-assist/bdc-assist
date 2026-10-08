@@ -3,7 +3,8 @@
 langchain-mcp-adapters tool interceptor: async (request, handler) -> result.
 
 dug_kg turns a graph-shaped dug-mcp result into a small knowledge graph, trimmed to what
-a graph view draws, and attaches it as the result's structuredContent["kg"]. The agent's
+a graph view draws, and attaches it as the result's structuredContent["kg"]; the studies
+dug-mcp cites (its "_sources") go along as structuredContent["sources"]["dug"]. The agent's
 LLM still reads only the text; r-assist lifts every attached kg into the response's "kg"
 list. dug-mcp itself is unchanged (github.com/bdc-assist/dug-mcp, redismcp_server.py).
 """
@@ -113,9 +114,17 @@ async def dug_kg(request, handler):
         data = json.loads(result.content[0].text)
     except (IndexError, AttributeError, ValueError):  # no/non-text block, or text cut at dug's 50k-char cap
         return result
-    kg = to_kg(request.name, data) if isinstance(data, dict) else None
-    if not kg:
+    if not isinstance(data, dict):
         return result
-    entry = {"tool": request.name, "args": request.args, "label": label(request.name, request.args or {}, kg), **kg}
-    structured = {**(result.structuredContent or {}), "kg": entry}
+    kg = to_kg(request.name, data)
+    cited = [s for s in data.get("_sources") or [] if isinstance(s, dict) and s.get("link")]
+    if not kg and not cited:
+        return result
+    structured = dict(result.structuredContent or {})
+    if kg:
+        structured["kg"] = {"tool": request.name, "args": request.args,
+                            "label": label(request.name, request.args or {}, kg), **kg}
+    if cited:  # {title, link, type: "dbgap-study"}, one per study; r-assist lists them under sources
+        structured["sources"] = {"dug": [{"title": s.get("title"), "link": s["link"], "type": s.get("type", "")}
+                                         for s in cited]}
     return result.model_copy(update={"structuredContent": structured})

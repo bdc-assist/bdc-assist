@@ -45,9 +45,13 @@ _FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def _attach(tool: str, args: dict, result: dict) -> dict:
-    """The kg the interceptor attaches to a real result (dug_kg)."""
+    """The structured content the interceptor attaches to a real result (dug_kg): its kg,
+    and the studies dug-mcp cites as sources."""
     kg = _interceptors.to_kg(tool, result)
-    return {"tool": tool, "args": args, "label": _interceptors.label(tool, args, kg), **kg}
+    attached = {"kg": {"tool": tool, "args": args, "label": _interceptors.label(tool, args, kg), **kg}}
+    if result.get("_sources"):
+        attached["sources"] = {"dug": result["_sources"]}
+    return attached
 
 
 def _concept_graph(args: dict, result: dict) -> dict:
@@ -102,14 +106,15 @@ class SlowAgent:
               "edges": [{"subject": v, "object": "MONDO:0005068", "predicate": "related_to"} for v in ("phv1", "phv2", "phv3")]
                        + [{"subject": "phv1", "object": "phs000007"}, {"subject": "phv2", "object": "phs000007"},
                           {"subject": "phv3", "object": "phs000280"}]}
-        kgs = (KG_RELATED if _has(question, "related") else KG_ASTHMA_COPD if _has(question, "kg2")
-               else KG_CHD if _has(question, "kg") else [kg])
+        # structured content per graph call, as the interceptor attaches it
+        attached = (KG_RELATED if _has(question, "related") else KG_ASTHMA_COPD if _has(question, "kg2")
+                    else KG_CHD if _has(question, "kg") else [{"kg": kg}])
         yield "values", {"messages": [
             AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": question}, "id": "t1"}]
-                      + [{"name": g["tool"], "args": g["args"], "id": f"t{i + 2}"} for i, g in enumerate(kgs)]),
+                      + [{"name": a["kg"]["tool"], "args": a["kg"]["args"], "id": f"t{i + 2}"} for i, a in enumerate(attached)]),
             ToolMessage(content=[{"type": "text", "text": json.dumps(c)} for c in chunks], tool_call_id="t1"),
-            *[ToolMessage(content="{}", artifact={"structured_content": {"kg": g}}, tool_call_id=f"t{i + 2}")
-              for i, g in enumerate(kgs)],
+            *[ToolMessage(content="{}", artifact={"structured_content": a}, tool_call_id=f"t{i + 2}")
+              for i, a in enumerate(attached)],
             AIMessage(content=" ".join(words)),
         ]}
 
