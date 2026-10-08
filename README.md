@@ -214,8 +214,11 @@ can embed it: see [web/src/kg/README.md](web/src/kg/README.md).
 Add `?reveal=after-check` to the page URL (or set `VITE_REVEAL=after-check`) to hold each answer
 back behind placeholder bars until the output guardrail has passed it, instead of streaming it.
 
-Without real services, run the stub (`uv run python tests/_stub_stream_server.py`, see
-Test / demo) and point the UI at it with `VITE_API_URL` as above.
+Without real services, run the stub (`uv run python tests/_stub_stream_server.py`) and point the
+UI at it with `VITE_API_URL` as above. A keyword in the question picks a path: `block` (input
+guardrail refuses), `reject` (output guardrail replaces the draft), `canned` (predefined reply),
+`nosources`, `crash` (the stream ends with an error), `kg` or `kg2` (a real Dug graph for one
+concept, or for asthma and COPD); anything else gets a docs answer with a small graph.
 
 ## Test / demo
 
