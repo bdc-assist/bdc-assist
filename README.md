@@ -205,28 +205,17 @@ search word standing in for a concept); `category` is the source's own, verbatim
 
 ## Web UI
 
-`web/` is a React chat client for `/chat/stream` (Vite + assistant-ui). It needs Node 20+.
+The web chat client, with the knowledge graph views, lives in its own repository:
+[bdc-assist-client](https://github.com/bdc-assist/bdc-assist-client). It talks to this server's
+`/chat/stream` (API on :8010 by default; see [API](#api) for the contract it relies on).
 
-```bash
-npm --prefix web install                                  # once
-npm --prefix web run dev                                  # http://localhost:5173, API on :8010
-VITE_API_URL=http://127.0.0.1:8011 npm --prefix web run dev   # against the stub server instead
-npm --prefix web test                                     # unit tests, no server needed
-```
-
-Answers with a knowledge graph show it in a panel under the answer (graph, flow, or list
-view). The drawing code in `web/src/kg/` has no framework or app dependencies, so another system
-can embed it: see [web/src/kg/README.md](web/src/kg/README.md).
-
-Add `?reveal=after-check` to the page URL (or set `VITE_REVEAL=after-check`) to hold each answer
-back behind placeholder bars until the output guardrail has passed it, instead of streaming it.
-
-Without real services, run the stub (`uv run python tests/_stub_stream_server.py`) and point the
-UI at it with `VITE_API_URL` as above. A keyword in the question picks a path: `block` (input
-guardrail refuses), `reject` (output guardrail replaces the draft), `canned` (predefined reply),
-`nosources`, `crash` (the stream ends with an error), `kg` or `kg2` (a real Dug graph for one
-concept, or for asthma and COPD), `related` (asthma's graph plus its related concepts); anything
-else gets a docs answer with a small graph.
+To work on it without real services, run the stub (`uv run python tests/_stub_stream_server.py`,
+port 8011) and start the client with `VITE_API_URL=http://127.0.0.1:8011`. A keyword in the
+question picks a path: `block` (input guardrail refuses), `reject` (output guardrail replaces the
+draft), `canned` (predefined reply), `nosources`, `crash` (the stream ends with an error), `kg` or
+`kg2` (a real Dug graph for one concept, or for asthma and COPD), `related` (asthma's graph plus
+its related concepts); anything else gets a docs answer with a small graph. The client's test
+fixtures are made from the Dug results in `tests/fixtures/` (its README says how).
 
 ## Test / demo
 

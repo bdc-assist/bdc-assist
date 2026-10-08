@@ -1,7 +1,7 @@
-"""Throwaway stub for eyeballing tests/ui/demo.html, tests/ui/kg_demo.html or the web UI (web/)
+"""Throwaway stub for eyeballing tests/ui/demo.html, tests/ui/kg_demo.html or the web client (bdc-assist-client)
 without real services: serves the real api app on :8011 with a fake slow agent. Run:
 uv run python tests/_stub_stream_server.py, then open tests/ui/demo.html?api=http://127.0.0.1:8011
-(or kg_demo.html?api=...), or VITE_API_URL=http://127.0.0.1:8011 npm --prefix web run dev.
+(or kg_demo.html?api=...), or VITE_API_URL=http://127.0.0.1:8011 npm run dev in bdc-assist-client.
 
 By default: a docs answer with a small knowledge graph and the covid disclaimer appended. A keyword
 anywhere in the question picks another path:
