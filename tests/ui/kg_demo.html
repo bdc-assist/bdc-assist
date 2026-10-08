@@ -79,7 +79,9 @@ function renderMd(el, md) {
 function draw(kg) {  // one {tool, args, nodes, edges} entry
   if (network) network.destroy();
   network = null;
-  const cats = [...new Set(kg.nodes.map(n => n.category || "Unknown"))];
+  // colour by role (type); older servers sent only a category
+  const kind = n => n.type || n.category || "Unknown";
+  const cats = [...new Set(kg.nodes.map(kind))];
   $("legend").replaceChildren(...cats.map(c => {
     const chip = document.createElement("span");
     chip.textContent = c;
@@ -91,9 +93,9 @@ function draw(kg) {  // one {tool, args, nodes, edges} entry
     return;
   }
   const nodes = kg.nodes.map(n => ({
-    id: n.id, label: short(n.name || n.id), color: color(n.category || "Unknown"),
+    id: n.id, label: short(n.name || n.id), color: color(kind(n)),
     // a string title is shown as plain text, so names and descriptions can't inject HTML
-    title: [n.name, "Category: " + (n.category || "Unknown"),
+    title: [n.name, "Type: " + kind(n), n.category && "Category: " + n.category,
             n.description && "Description: " + n.description, "ID: " + n.id].filter(Boolean).join("\n"),
   }));
   const edges = kg.edges.map(e => ({ from: e.subject, to: e.object, title: e.predicate }));

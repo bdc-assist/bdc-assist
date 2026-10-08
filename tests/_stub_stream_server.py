@@ -86,13 +86,14 @@ class SlowAgent:
         ]
         # a knowledge graph as an interceptor attaches it (examples/bdc/interceptors.py), for kg_demo.html
         kg = {"tool": "get_concept_graph", "args": {"concept_id": "MONDO:0005068"},
-              "nodes": [{"id": "MONDO:0005068", "name": "myocardial infarction", "category": "Disease"},
-                        {"id": "phv1", "name": "MI_EVER", "category": "StudyVariable",
+              "nodes": [{"id": "MONDO:0005068", "name": "myocardial infarction", "type": "concept",
+                         "category": "biolink:Disease"},
+                        {"id": "phv1", "name": "MI_EVER", "type": "variable",
                          "description": "Ever told by a doctor you had a heart attack?"},
-                        {"id": "phv2", "name": "MI_AGE", "category": "StudyVariable"},
-                        {"id": "phv3", "name": "ECG_MI", "category": "StudyVariable"},
-                        {"id": "phs000007", "name": "Framingham Cohort", "category": "Study"},
-                        {"id": "phs000280", "name": "Atherosclerosis Risk in Communities (ARIC) Cohort", "category": "Study"}],
+                        {"id": "phv2", "name": "MI_AGE", "type": "variable"},
+                        {"id": "phv3", "name": "ECG_MI", "type": "variable"},
+                        {"id": "phs000007", "name": "Framingham Cohort", "type": "study"},
+                        {"id": "phs000280", "name": "Atherosclerosis Risk in Communities (ARIC) Cohort", "type": "study"}],
               "edges": [{"subject": v, "object": "MONDO:0005068", "predicate": "related_to"} for v in ("phv1", "phv2", "phv3")]
                        + [{"subject": "phv1", "object": "phs000007"}, {"subject": "phv2", "object": "phs000007"},
                           {"subject": "phv3", "object": "phs000280"}]}

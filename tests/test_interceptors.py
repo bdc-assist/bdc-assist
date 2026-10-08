@@ -55,15 +55,18 @@ def call(tool_name, reply, server="dug_mcp"):
 def test_dug_results_get_a_trimmed_kg():
     assert call("search_concepts", SEARCH_CONCEPTS) == {
         "tool": "search_concepts", "args": {"q": 1},
-        "nodes": [{"id": "phv001.v1.p1", "name": "MI_EVER", "category": "StudyVariable",
-                   "description": "Ever had an MI"},
-                  {"id": "MONDO:0005068", "name": "myocardial infarction", "category": "Disease"},
-                  {"id": "HP:0001658", "name": "Myocardial infarction", "category": "PhenotypicFeature"}],
+        "nodes": [{"id": "phv001.v1.p1", "name": "MI_EVER", "type": "variable", "description": "Ever had an MI"},
+                  {"id": "MONDO:0005068", "name": "myocardial infarction", "type": "concept",
+                   "category": "biolink:Disease"},  # Dug's category, verbatim
+                  {"id": "HP:0001658", "name": "Myocardial infarction", "type": "concept",
+                   "category": "biolink:PhenotypicFeature"}],
         "edges": [{"subject": "phv001.v1.p1", "object": "MONDO:0005068", "predicate": "related_to"},
                   {"subject": "phv001.v1.p1", "object": "HP:0001658"}]}
 
     kg = call("get_concept_graph", CONCEPT_GRAPH)
-    assert [n["id"] for n in kg["nodes"]] == ["phv001", "MONDO:0005068", "phs000007", "phv002"]
+    assert [(n["id"], n["type"]) for n in kg["nodes"]] == [
+        ("phv001", "variable"), ("MONDO:0005068", "concept"), ("phs000007", "study"), ("phv002", "variable")]
+    assert kg["nodes"][1]["category"] == "biolink.Disease"  # verbatim, dot and all
     assert kg["edges"] == [{"subject": "phv001", "object": "MONDO:0005068"},
                            {"subject": "phv001", "object": "phs000007"},
                            {"subject": "phv002", "object": "MONDO:0005068"}]
@@ -86,6 +89,19 @@ def test_each_graph_tool_gets_a_kg():
                         ("get_concept_graph", NEIGHBOURS), ("get_concept_connections", CONNECTIONS)]:
         kg = call(tool, reply)
         assert kg and kg["tool"] == tool and kg["edges"], tool
+
+
+def test_each_node_gets_its_role():
+    """type: concept, variable, study, or term (find_cohort_variables' search word); Dug's
+    own Study/StudyVariable labels on neighbours count too."""
+    types = lambda kg: {n["id"]: n["type"] for n in kg["nodes"]}
+    assert types(call("find_cohort_variables", COHORT)) == {"v1": "variable", "s1": "study", "c1": "term"}
+    neighbours = {"concept_id": "c1", "connections": [
+        {"connected_id": "c2", "connected_type": "biolink.Disease"},
+        {"connected_id": "s9", "connected_type": "biolink.Study"},
+        {"connected_id": "v9", "connected_type": "biolink.StudyVariable"}]}
+    assert types(call("get_concept_connections", neighbours)) == {
+        "c1": "concept", "c2": "concept", "s9": "study", "v9": "variable"}
 
 
 def test_no_kg_when_nothing_to_draw():
