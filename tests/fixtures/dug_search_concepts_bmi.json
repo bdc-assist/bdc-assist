@@ -1,0 +1,973 @@
+{
+ "args": {
+  "search_term": "body mass index",
+  "find_variables": true,
+  "limit": 10
+ },
+ "result": {
+  "search_term": "body mass index",
+  "enrichment": {
+   "curies": [
+    "EFO:0004340",
+    "UMLS:C1305855",
+    "UMLS:C0231253",
+    "NCIT:C138901",
+    "MP:0006086",
+    "MP:0006087",
+    "MP:0020182",
+    "UMLS:C0231254",
+    "UMLS:C0231255",
+    "UMLS:C2957659",
+    "UMLS:C3698309",
+    "UMLS:C1648313",
+    "UMLS:C2911062",
+    "UMLS:C5566395",
+    "UMLS:C0005893",
+    "UMLS:C5547467"
+   ],
+   "labels": [
+    "body mass index",
+    "Body mass index",
+    "Normal body mass index",
+    "Body Mass Index Finding",
+    "decreased body mass index",
+    "increased body mass index",
+    "abnormal body mass index",
+    "Increased body mass index",
+    "Decreased body mass index",
+    "body mass index documented",
+    "Measurement of body mass index",
+    "Deprecated Body mass index (BMI)",
+    "body mass index, pediatric",
+    "Body mass index prime ratio",
+    "Body mass index procedure",
+    "Body mass index for age percentile"
+   ]
+  },
+  "total_results": 10,
+  "variables": [
+   {
+    "variable_id": "phs002752_F106BMI.v1.p1",
+    "variable_name": "F106BMI",
+    "variable_description": "body mass index",
+    "matched_concepts": [
+     {
+      "concept_id": "UMLS:C2957659",
+      "concept_name": "body mass index documented",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C3698309",
+      "concept_name": "Measurement of body mass index",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1305855",
+      "concept_name": "Body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1648313",
+      "concept_name": "Deprecated Body mass index (BMI)",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "EFO:0004340",
+      "concept_name": "body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C2911062",
+      "concept_name": "body mass index, pediatric",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5547467",
+      "concept_name": "Body mass index for age percentile",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5566395",
+      "concept_name": "Body mass index prime ratio",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "NCIT:C138901",
+      "concept_name": "Body Mass Index Finding",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     }
+    ]
+   },
+   {
+    "variable_id": "phs002907_BMI.v1.p1",
+    "variable_name": "Body mass index (kg/m2)",
+    "variable_description": "body mass index (kg/m2)",
+    "matched_concepts": [
+     {
+      "concept_id": "UMLS:C2957659",
+      "concept_name": "body mass index documented",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C3698309",
+      "concept_name": "Measurement of body mass index",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1305855",
+      "concept_name": "Body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1648313",
+      "concept_name": "Deprecated Body mass index (BMI)",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "EFO:0004340",
+      "concept_name": "body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C2911062",
+      "concept_name": "body mass index, pediatric",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5547467",
+      "concept_name": "Body mass index for age percentile",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5566395",
+      "concept_name": "Body mass index prime ratio",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "NCIT:C138901",
+      "concept_name": "Body Mass Index Finding",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     }
+    ]
+   },
+   {
+    "variable_id": "phs002908_BMI.v1.p1",
+    "variable_name": "Body mass index (kg/m2)",
+    "variable_description": "body mass index (kg/m2)",
+    "matched_concepts": [
+     {
+      "concept_id": "UMLS:C2957659",
+      "concept_name": "body mass index documented",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C3698309",
+      "concept_name": "Measurement of body mass index",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1305855",
+      "concept_name": "Body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1648313",
+      "concept_name": "Deprecated Body mass index (BMI)",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "EFO:0004340",
+      "concept_name": "body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C2911062",
+      "concept_name": "body mass index, pediatric",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5547467",
+      "concept_name": "Body mass index for age percentile",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5566395",
+      "concept_name": "Body mass index prime ratio",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "NCIT:C138901",
+      "concept_name": "Body Mass Index Finding",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     }
+    ]
+   },
+   {
+    "variable_id": "phs002988_BMI.v1.p1",
+    "variable_name": "BMI",
+    "variable_description": "body mass index (kg/m2)",
+    "matched_concepts": [
+     {
+      "concept_id": "UMLS:C2957659",
+      "concept_name": "body mass index documented",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C3698309",
+      "concept_name": "Measurement of body mass index",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1305855",
+      "concept_name": "Body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1648313",
+      "concept_name": "Deprecated Body mass index (BMI)",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "EFO:0004340",
+      "concept_name": "body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C2911062",
+      "concept_name": "body mass index, pediatric",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5547467",
+      "concept_name": "Body mass index for age percentile",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5566395",
+      "concept_name": "Body mass index prime ratio",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "NCIT:C138901",
+      "concept_name": "Body Mass Index Finding",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     }
+    ]
+   },
+   {
+    "variable_id": "phs003045_BMI.v1.p1",
+    "variable_name": "BMI",
+    "variable_description": "body mass index (kg/m2)",
+    "matched_concepts": [
+     {
+      "concept_id": "UMLS:C2957659",
+      "concept_name": "body mass index documented",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C3698309",
+      "concept_name": "Measurement of body mass index",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1305855",
+      "concept_name": "Body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1648313",
+      "concept_name": "Deprecated Body mass index (BMI)",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "EFO:0004340",
+      "concept_name": "body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C2911062",
+      "concept_name": "body mass index, pediatric",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5547467",
+      "concept_name": "Body mass index for age percentile",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5566395",
+      "concept_name": "Body mass index prime ratio",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "NCIT:C138901",
+      "concept_name": "Body Mass Index Finding",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     }
+    ]
+   },
+   {
+    "variable_id": "phv00004077.v1.p12",
+    "variable_name": "FL517",
+    "variable_description": "body mass index, exam19",
+    "matched_concepts": [
+     {
+      "concept_id": "UMLS:C2957659",
+      "concept_name": "body mass index documented",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C3698309",
+      "concept_name": "Measurement of body mass index",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1305855",
+      "concept_name": "Body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1648313",
+      "concept_name": "Deprecated Body mass index (BMI)",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "EFO:0004340",
+      "concept_name": "body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C2911062",
+      "concept_name": "body mass index, pediatric",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5547467",
+      "concept_name": "Body mass index for age percentile",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5566395",
+      "concept_name": "Body mass index prime ratio",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "NCIT:C138901",
+      "concept_name": "Body Mass Index Finding",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     }
+    ]
+   },
+   {
+    "variable_id": "phv00004077.v1.p15",
+    "variable_name": "FL517",
+    "variable_description": "body mass index, exam19",
+    "matched_concepts": [
+     {
+      "concept_id": "UMLS:C2957659",
+      "concept_name": "body mass index documented",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C3698309",
+      "concept_name": "Measurement of body mass index",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1305855",
+      "concept_name": "Body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1648313",
+      "concept_name": "Deprecated Body mass index (BMI)",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "EFO:0004340",
+      "concept_name": "body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C2911062",
+      "concept_name": "body mass index, pediatric",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5547467",
+      "concept_name": "Body mass index for age percentile",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5566395",
+      "concept_name": "Body mass index prime ratio",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "NCIT:C138901",
+      "concept_name": "Body Mass Index Finding",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     }
+    ]
+   },
+   {
+    "variable_id": "phv00004521.v1.p12",
+    "variable_name": "FM537",
+    "variable_description": "body mass index",
+    "matched_concepts": [
+     {
+      "concept_id": "UMLS:C2957659",
+      "concept_name": "body mass index documented",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C3698309",
+      "concept_name": "Measurement of body mass index",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1305855",
+      "concept_name": "Body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1648313",
+      "concept_name": "Deprecated Body mass index (BMI)",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "EFO:0004340",
+      "concept_name": "body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C2911062",
+      "concept_name": "body mass index, pediatric",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5547467",
+      "concept_name": "Body mass index for age percentile",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5566395",
+      "concept_name": "Body mass index prime ratio",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "NCIT:C138901",
+      "concept_name": "Body Mass Index Finding",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     }
+    ]
+   },
+   {
+    "variable_id": "phv00004521.v1.p15",
+    "variable_name": "FM537",
+    "variable_description": "body mass index",
+    "matched_concepts": [
+     {
+      "concept_id": "UMLS:C2957659",
+      "concept_name": "body mass index documented",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C3698309",
+      "concept_name": "Measurement of body mass index",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1305855",
+      "concept_name": "Body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1648313",
+      "concept_name": "Deprecated Body mass index (BMI)",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "EFO:0004340",
+      "concept_name": "body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C2911062",
+      "concept_name": "body mass index, pediatric",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5547467",
+      "concept_name": "Body mass index for age percentile",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5566395",
+      "concept_name": "Body mass index prime ratio",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "NCIT:C138901",
+      "concept_name": "Body Mass Index Finding",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     }
+    ]
+   },
+   {
+    "variable_id": "phv00004933.v1.p12",
+    "variable_name": "FN505",
+    "variable_description": "body mass index",
+    "matched_concepts": [
+     {
+      "concept_id": "UMLS:C2957659",
+      "concept_name": "body mass index documented",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C3698309",
+      "concept_name": "Measurement of body mass index",
+      "concept_type": "biolink:Activity",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1305855",
+      "concept_name": "Body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C1648313",
+      "concept_name": "Deprecated Body mass index (BMI)",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "EFO:0004340",
+      "concept_name": "body mass index",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C2911062",
+      "concept_name": "body mass index, pediatric",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5547467",
+      "concept_name": "Body mass index for age percentile",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "UMLS:C5566395",
+      "concept_name": "Body mass index prime ratio",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     },
+     {
+      "concept_id": "NCIT:C138901",
+      "concept_name": "Body Mass Index Finding",
+      "concept_type": "biolink:NamedThing",
+      "predicate": "biolink:related_to"
+     }
+    ]
+   }
+  ],
+  "_sources": [
+   {
+    "title": "Clinical Trial of COVID-19 Convalescent Plasma in Outpatients (C3PO)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs002752",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Collaborative Cohort of Cohorts for COVID-19 Research (C4R): Jackson Heart Study (JHS)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs002907",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Collaborative Cohort of Cohorts for COVID-19 Research (C4R): Hispanic Community Health Study/Study of Latinos (HCHS/SOL)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs002908",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Collaborative Cohort of Cohorts for COVID-19 Research (C4R): Atherosclerosis Risk in Communities Study (ARIC)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs002988",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Collaborative Cohort of Cohorts for COVID-19 Research (C4R): Coronary Artery Risk Development in Young Adults Study (CARDIA)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs003045",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Framingham Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000007",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000090",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000209",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Human Liver Cohort (HLC)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000253",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Cardiovascular Health Study (CHS) Cohort: an NHLBI-funded observational study of risk factors for cardiovascular disease in adults 65 years or older",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000287",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000285",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI Cleveland Family Study (CFS) Candidate Gene Association Resource (CARe)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000284",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "SNPs and Extent of Atherosclerosis (SEA) Study",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000349",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Women's Health Initiative Clinical Trial and Observational Study",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000281",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Jackson Heart Study (JHS) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000499",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI GO-ESP: Lung Cohorts Exome Sequencing Project (Asthma): Genetic variants affecting susceptibility and severity",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000422",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000557",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "CATHeterization GENetics (CATHGEN)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000704",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "CATHeterization GENetics (CATHGEN)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000705",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Cardiovascular Health Study (CHS) Cohort: an NHLBI-funded observational study of risk factors for cardiovascular disease in adults 65 years or older",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000667",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Framingham Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000651",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000280",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000668",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Study of African Americans, Asthma, Genes and Environment (SAGE)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000921",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Genetics of Cardiometabolic Health in the Amish (Amish)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000956",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Genome-Wide Association Study of Adiposity in Samoans",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000914",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "GeneSTAR (Genetic Study of Atherosclerosis Risk) NextGen Consortium: Functional Genomics of Platelet Aggregation Using iPS and Derived Megakaryocytes",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001074",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "The Diabetes Heart Study (DHS)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001012",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001252",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Diabetes Heart Study (DHS) African American Coronary Artery Calcification (AA CAC)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001412",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Genes-Environments and Admixture in Latino Asthmatics (GALA II) Study",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001180",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Genetic Study of Atherosclerosis Risk (GeneSTAR)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001218",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Novel Risk Factors for the Development of Atrial Fibrillation in Women (WGHS)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001040",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: San Antonio Family Heart Study (SAFHS)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001215",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Jackson Heart Study (JHS) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000286",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Rare Variants for Hypertension in Taiwan Chinese (THRV)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001387",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Severe Asthma Research Program (SARP)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001446",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Genetics of Asthma in Latino Americans (GALA)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001542",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed - NHGRI CCDG: The BioMe Biobank at Mount Sinai (BioMe_HMB-NPU)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001644",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Children's Health Study (CHS) Integrative Genomics and Environmental Research of Asthma (IGERA)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001603",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Children's Health Study (CHS) Integrative Genetic Approaches to Gene-Air Pollution Interactions in Asthma (GAP)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001602",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Children's Health Study (CHS) Effects of Air Pollution on the Development of Obesity in Children (Meta-AIR)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001604",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Lung Tissue Research Consortium (LTRC)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001662",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Chicago Initiative to Raise Asthma Health Equity (CHIRAH)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001605",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Pathways to Immunologically Mediated Asthma (PIMA)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001727",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Best ADd-on Therapy Giving Effective Response (BADGER)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001728",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Characterizing the Response to a Leukotriene Receptor Antagonist and an Inhaled Corticosteroid (CLIC)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001729",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Pediatric Asthma Controller Trial (PACT)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001730",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: TReating Children to Prevent EXacerbations of Asthma (TREXA)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001732",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Genetic Causes of Complex Pediatric Disorders - Asthma (GCPD-A)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001661",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Hispanic Community Health Study /Study of Latinos (HCHS/SOL)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000810",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Women's Health Initiative Clinical Trial and Observational Study",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000200",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "CONNECTS Master Protocol for Clinical Trials targeting Macro- and Micro-Immuno-Thrombosis, Vascular Hyperinflammation, and Hypercoagulability and Renin-Angiotensin-Aldosterone System (RAAS) in Hospitalized Patients with COVID-19 (ACTIV-4 Host Tissue)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs003708",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "National Heart, Lung, and Blood Institute SNP Health Association Asthma Resource Project (SHARP)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000166",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000398",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Framingham Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000401",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Cardiovascular Health Study (CHS) Cohort: an NHLBI-funded observational study of risk factors for cardiovascular disease in adults 65 years or older",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000400",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Jackson Heart Study (JHS) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000402",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000403",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000399",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Framingham Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000363",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: HyperGEN - Genetics of Left Ventricular (LV) Hypertrophy",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001293",
+    "type": "dbgap-study"
+   }
+  ]
+ }
+}

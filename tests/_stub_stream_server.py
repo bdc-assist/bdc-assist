@@ -15,6 +15,10 @@ anywhere in the question picks another path:
   kg2        the same for two concepts, asthma and COPD (dug_concept_graph_asthma_copd.json)
   related    asthma's concept graph plus its related concepts, a real Dug get_concept_connections
              result (dug_concept_connections_asthma.json): concept–concept edges
+  cohort     a real Dug find_cohort_variables result for asthma + COPD
+             (dug_find_cohort_variables_asthma_copd.json): search-term nodes, no concepts
+  mesh       a real Dug search_concepts result for body mass index (dug_search_concepts_bmi.json):
+             10 variables each linked to the same 9 concepts, no studies
 kg/kg2 graphs are made the way the Dug interceptor makes them (to_kg in examples/bdc/interceptors.py).
 """
 
@@ -47,8 +51,7 @@ _FIXTURES = Path(__file__).parent / "fixtures"
 def _attach(tool: str, args: dict, result: dict) -> dict:
     """The structured content the interceptor attaches to a real result (dug_kg): its kg,
     and the studies dug-mcp cites as sources."""
-    kg = _interceptors.to_kg(tool, result)
-    attached = {"kg": {"tool": tool, "args": args, "label": _interceptors.label(tool, args, kg), **kg}}
+    attached = {"kg": _interceptors.entry(tool, args, result, _interceptors.to_kg(tool, result))}
     if result.get("_sources"):
         attached["sources"] = {"dug": result["_sources"]}
     return attached
@@ -64,6 +67,15 @@ KG_ASTHMA_COPD = [_concept_graph(c["args"], c["result"])
                   for c in json.loads((_FIXTURES / "dug_concept_graph_asthma_copd.json").read_text())]
 _connections = json.loads((_FIXTURES / "dug_concept_connections_asthma.json").read_text())
 KG_RELATED = [KG_ASTHMA_COPD[0], _attach("get_concept_connections", _connections["args"], _connections["result"])]
+
+
+def _saved(tool: str, name: str) -> list[dict]:
+    saved = json.loads((_FIXTURES / name).read_text())
+    return [_attach(tool, saved["args"], saved["result"])]
+
+
+KG_COHORT = _saved("find_cohort_variables", "dug_find_cohort_variables_asthma_copd.json")
+KG_MESH = _saved("search_concepts", "dug_search_concepts_bmi.json")
 
 
 class SlowAgent:
@@ -95,6 +107,7 @@ class SlowAgent:
         ]
         # a knowledge graph as an interceptor attaches it (examples/bdc/interceptors.py), for kg_demo.html
         kg = {"tool": "get_concept_graph", "args": {"concept_id": "MONDO:0005068"}, "label": "myocardial infarction concept graph",
+              "seeds": ["MONDO:0005068"],
               "nodes": [{"id": "MONDO:0005068", "name": "myocardial infarction", "type": "concept",
                          "category": "biolink:Disease"},
                         {"id": "phv1", "name": "MI_EVER", "type": "variable",
@@ -107,7 +120,8 @@ class SlowAgent:
                        + [{"subject": "phv1", "object": "phs000007"}, {"subject": "phv2", "object": "phs000007"},
                           {"subject": "phv3", "object": "phs000280"}]}
         # structured content per graph call, as the interceptor attaches it
-        attached = (KG_RELATED if _has(question, "related") else KG_ASTHMA_COPD if _has(question, "kg2")
+        attached = (KG_COHORT if _has(question, "cohort") else KG_MESH if _has(question, "mesh")
+                    else KG_RELATED if _has(question, "related") else KG_ASTHMA_COPD if _has(question, "kg2")
                     else KG_CHD if _has(question, "kg") else [{"kg": kg}])
         yield "values", {"messages": [
             AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": question}, "id": "t1"}]
