@@ -1,6 +1,6 @@
 # Native Windows twin of demo_services.sh - same behavior, keep the two in sync.
 # Spawns everything demo.ipynb and the web client (bdc-assist-client) need:
-#   1. r-doc-mcp MCP server (HTTP) from DOC_MCP_DIR (.\.env, default ..\r-doc-mcp) on MCP_PORT
+#   1. r-doc-mcp MCP server (HTTP) from DOC_MCP_DIR (.\.env, default ..\bdc-doc-mcp) on MCP_PORT
 #      (that repo's .env, default 8001), health-checked at the r_doc_mcp url in
 #      <CONFIG_DIR>\mcp_servers.yaml - the URL r-assist actually connects to
 #   2. r-assist API on API_PORT (.\.env, default 8010)
@@ -23,7 +23,7 @@ function Get-DotEnv([string]$file, [string]$key, [string]$default) {
   if ($v) { $v } else { $default }
 }
 
-$DOC_MCP_DIR     = Get-DotEnv '.\.env' 'DOC_MCP_DIR' '..\r-doc-mcp'
+$DOC_MCP_DIR     = Get-DotEnv '.\.env' 'DOC_MCP_DIR' '..\bdc-doc-mcp'
 $START_TIMEOUT   = Get-DotEnv '.\.env' 'START_TIMEOUT' '30'
 $MCP_PORT        = Get-DotEnv (Join-Path $DOC_MCP_DIR '.env') 'MCP_PORT' '8001'
 $API_PORT        = Get-DotEnv '.\.env' 'API_PORT' '8010'

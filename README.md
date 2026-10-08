@@ -56,7 +56,7 @@ Also optional: COMPLETION_TEMPERATURE (default 0), COMPLETION_REASONING_EFFORT (
 non-reasoning models like gpt-4o-mini, which reject it; `none`/`low`/`medium`/`high` for reasoning models like
 gpt-6-luna; above `none` the temperature is not sent and calls go through the Responses API, the only one where
 gpt-6-luna calls tools while reasoning), LOG_LEVEL (default WARNING), MCP_RETRY_SECONDS (default 300: how often
-unavailable MCP servers are retried and live ones re-checked), and — for the demo scripts — DOC_MCP_DIR (default ../r-doc-mcp) and START_TIMEOUT (default 30 seconds per service).
+unavailable MCP servers are retried and live ones re-checked), and — for the demo scripts — DOC_MCP_DIR (default ../bdc-doc-mcp) and START_TIMEOUT (default 30 seconds per service).
 
 ## Run
 
@@ -75,7 +75,7 @@ Or by hand:
 
 ```bash
 # 1. doc MCP server, port 8001
-cd ../r-doc-mcp && uv run python -m r_doc_mcp.mcp_server --http
+cd ../bdc-doc-mcp && uv run python -m r_doc_mcp.mcp_server --http
 
 # 2. r-assist, port API_PORT (default 8010)
 uv run uvicorn r_assist.api:app --port "${API_PORT:-8010}"
