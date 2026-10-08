@@ -18,7 +18,7 @@ Sibling repos: **r-doc-mcp** (the doc search MCP server) and **r-doc-builder** (
 - `classify` sends flag-r topics straight to a canned response; flag-a topics get a disclaimer appended after the answer
 - `agent` calls tools on the doc MCP server (MCP over HTTP)
 - `output_guardrail` self-checks the answer against the question; a hard block like the input
-  guardrail (a "No" or a provider content filter → canned reject reply, `blocked: true`, run ends,
+  guardrail (a "No" or a provider content filter → canned reject reply, `blocked: "output"`, run ends,
   no disclaimers appended)
 - `suggest_followups` decides if follow-up questions would help and suggests as many as
   `followups` in `config/project.yaml` (default 3; list of strings in the `followups` response
@@ -168,7 +168,7 @@ requires restarting the MCP server (rerun `demo_services`).
 ## API
 
 `POST /chat` with `{"input": "...", "chat_history": [{"role": "user|assistant", "content": "..."}]}`
-returns `{"answer", "blocked", "blocked_by", "topics", "followups", "sources", "sources_md", "kg", "mcp_errors"}`. The server is stateless —
+returns `{"answer", "blocked", "topics", "followups", "sources", "sources_md", "kg", "mcp_errors"}`. The server is stateless —
 the client keeps history. `sources` is the distinct documents behind the agent's `search_docs` chunks,
 `{"r-doc": [{title, link, type}]}`, deduplicated on link and in relevance order (empty for canned,
 blocked replies), plus any sources an interceptor attaches to tool results (structured content
@@ -194,10 +194,10 @@ search word standing in for a concept); `category` is the source's own, verbatim
 - `{"type": "sources", sources, sources_md, kg}` — the agent finished; its documentation sources and graphs
   (same values as in `done` unless the answer is blocked, sent early so a UI can show them
   while the guardrail and follow-up steps still run)
-- `{"type": "done", answer, blocked, blocked_by, topics, followups, sources, sources_md, kg, mcp_errors}` — final state; the done answer is
+- `{"type": "done", answer, blocked, topics, followups, sources, sources_md, kg, mcp_errors}` — final state; the done answer is
   authoritative (an output-guardrail block, disclaimers, canned replies may replace the streamed text;
-  `blocked: true` means the streamed text was blocked and replaced; `blocked_by` says which guardrail:
-  `"input"` (the question was refused) or `"output"` (the answer was rejected), else `null`)
+  `blocked` says which guardrail stopped it: `"input"` (the question was refused) or `"output"` (the
+  streamed answer was rejected and replaced), else `null`)
 - `{"type": "error"}` — the run failed (an LLM or gateway error mid-answer); the last event, no `done`
   follows, the server log has the details. Discard the streamed text and say so.
 

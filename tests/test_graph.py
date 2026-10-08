@@ -94,8 +94,7 @@ def test_mcp_tool_retry():
 def test_blocked_input_skips_everything():
     # llm calls: input guardrail ("Yes" = block)
     state, agent = run(["Yes"])
-    assert state["blocked"] is True
-    assert state["blocked_by"] == "input"
+    assert state["blocked"] == "input"
     assert state["answer"] == REFUSAL
     assert not agent.called
 
@@ -109,7 +108,7 @@ def test_provider_content_filter_counts_as_block():
     agent = FakeAgent()
     graph = build_graph(FilteredLLM(), agent, PREDEFINED)
     state = asyncio.run(graph.ainvoke({"input": "jailbreak attempt", "chat_history": []}))
-    assert state["blocked"] is True
+    assert state["blocked"] == "input"
     assert state["answer"] == REFUSAL
     assert not agent.called
 
@@ -179,7 +178,7 @@ def test_stream_chat_emits_progress_tokens_and_done():
     tokens = [e["text"] for e in events[last_reset:] if e["type"] == "token"]
     assert "".join(tokens) == "Agent answer about BDC."  # no guardrail/classifier chatter mixed in
     assert events[-1] == {"type": "done", "answer": "Agent answer about BDC.\n\nCovid disclaimer.",
-                          "blocked": False, "blocked_by": None, "topics": ["covid"], "followups": [],
+                          "blocked": None, "topics": ["covid"], "followups": [],
                           "sources": SOURCES, "sources_md": SOURCES_MD, "kg": [KG], "mcp_errors": []}
 
 
@@ -187,8 +186,7 @@ def test_blocked_answer_gets_reject_reply_without_disclaimer():
     # llm calls: guardrail "No", classifier "- covid", output check "No" → REJECT, no append
     state, agent = run(["No", "- covid", "No"])
     assert agent.called
-    assert state["blocked"] is True
-    assert state["blocked_by"] == "output"
+    assert state["blocked"] == "output"
     assert state["answer"] == REJECT
     assert state["sources"] == {} and state["sources_md"] == ""  # no sources under "I couldn't answer"
     assert state["kg"] == []
@@ -207,7 +205,7 @@ def test_output_content_filter_counts_as_block():
 
     graph = build_graph(FilteredOutputLLM(), FakeAgent(), PREDEFINED)
     state = asyncio.run(graph.ainvoke({"input": "q", "chat_history": []}))
-    assert state["blocked"] is True
+    assert state["blocked"] == "output"
     assert state["answer"] == REJECT
 
 
@@ -223,7 +221,7 @@ def test_stream_blocked_answer_replaced_in_done():
     events = asyncio.run(collect())
     assert any(e["type"] == "token" for e in events)  # the provisional answer did stream
     assert events[-2] == {"type": "node", "node": "output_guardrail"}  # nothing runs after the block
-    assert events[-1] == {"type": "done", "answer": REJECT, "blocked": True, "blocked_by": "output", "topics": ["covid"],
+    assert events[-1] == {"type": "done", "answer": REJECT, "blocked": "output", "topics": ["covid"],
                           "followups": [], "sources": {}, "sources_md": "", "kg": [],
                           "mcp_errors": []}
 
@@ -267,7 +265,7 @@ def test_chat_endpoint_with_history(monkeypatch):
     res = TestClient(api.app).post("/chat", json={"input": "How do I get access to it?", "chat_history": history})
     assert res.status_code == 200, res.text
     assert agent.payload["messages"][0]["content"] == "How do I get access to PIC-SURE?"
-    assert res.json() == {"answer": "Agent answer about BDC.", "blocked": False, "blocked_by": None, "topics": [], "followups": [],
+    assert res.json() == {"answer": "Agent answer about BDC.", "blocked": None, "topics": [], "followups": [],
                           "sources": SOURCES, "sources_md": SOURCES_MD, "kg": [KG],
                           "mcp_errors": ["dug_mcp: ConnectError: x"]}
 
@@ -292,7 +290,7 @@ def test_responses_api_content_blocks():
     assert "".join(e["text"] for e in events[last_reset:] if e["type"] == "token") == "Agent answer about BDC."
     done = events[-1]
     assert done["answer"] == "Agent answer about BDC.\n\nCovid disclaimer."
-    assert (done["blocked"], done["topics"], done["followups"]) == (False, ["covid"], [])
+    assert (done["blocked"], done["topics"], done["followups"]) == (None, ["covid"], [])
 
 
 def test_mcp_servers_yaml():

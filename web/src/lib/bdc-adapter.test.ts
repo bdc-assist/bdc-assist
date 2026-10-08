@@ -25,7 +25,7 @@ const sse = (...events: object[]) => events.map((e) => `data: ${JSON.stringify(e
 const done = (over: object = {}) => ({
   type: 'done',
   answer: 'Final answer.',
-  blocked: false,
+  blocked: null,
   topics: [],
   followups: ['What is dbGaP?'],
   tool_results: [{ tool: 'search_docs' }],
@@ -136,7 +136,7 @@ describe('createBdcAdapter', () => {
       sse(
         { type: 'token', text: 'a dubious answer' },
         { type: 'sources', sources: { 'bdc-doc': [{ title: 'A', link: 'https://a', type: 'faq' }] }, sources_md: '- A' },
-        done({ answer: 'Sorry, I can only help with BDC.', sources: {}, sources_md: '', followups: [] }),
+        done({ answer: 'Sorry, I can only help with BDC.', blocked: 'output', sources: {}, sources_md: '', followups: [] }),
       ),
     )
     const last = yields.at(-1)!
@@ -193,7 +193,7 @@ describe('createBdcAdapter', () => {
   })
 
   it('marks blocked replies', async () => {
-    const { yields } = await run(sse(done({ blocked: true })))
+    const { yields } = await run(sse(done({ blocked: 'input' })))
     expect(metaOf(yields[0]).blocked).toBe(true)
   })
 
@@ -238,7 +238,7 @@ describe('data parts', () => {
   const names = (y: ChatModelRunResult) => partsOf(y).map((p) => p.name)
 
   it('keeps the text part first', async () => {
-    const { yields } = await run(sse({ type: 'node', node: 'agent' }, done({ blocked: true })))
+    const { yields } = await run(sse({ type: 'node', node: 'agent' }, done({ blocked: 'input' })))
     for (const y of yields) expect(y.content?.[0].type).toBe('text')
   })
 
@@ -312,11 +312,11 @@ describe('data parts', () => {
 
   it('adds no follow-ups when there are none, or for a blocked question', async () => {
     expect(names((await run(sse(done({ followups: [] })))).yields[0])).not.toContain(FOLLOWUPS_PART)
-    expect(names((await run(sse(done({ blocked: true })))).yields[0])).not.toContain(FOLLOWUPS_PART)
+    expect(names((await run(sse(done({ blocked: 'input' })))).yields[0])).not.toContain(FOLLOWUPS_PART)
   })
 
   it('adds the blocked notice', async () => {
-    const { yields } = await run(sse(done({ blocked: true, sources: {} })))
+    const { yields } = await run(sse(done({ blocked: 'input', sources: {} })))
     expect(names(yields[0])).toEqual([BLOCKED_PART])
   })
 
@@ -338,43 +338,25 @@ describe('data parts', () => {
 describe('rejection', () => {
   const finalMeta = async (...events: object[]) => metaOf((await run(sse(...events))).yields.at(-1)!)
 
-  it('is inferred when done replaces the streamed draft', async () => {
-    const meta = await finalMeta({ type: 'token', text: 'Off  target\n draft.' }, done({ answer: 'Canned.' }))
-    expect(meta.rejected).toBe(true)
-  })
-
-  it('is not inferred for a passed answer with a disclaimer appended', async () => {
-    const meta = await finalMeta(
-      { type: 'token', text: 'BDC is ' },
-      { type: 'token', text: 'a platform. ' },
-      done({ answer: 'BDC is a platform.\n\nCovid disclaimer.' }),
-    )
-    expect(meta.rejected).toBe(false)
-  })
-
-  it('is not inferred without a draft: a blocked question is a refusal', async () => {
-    expect((await finalMeta(done({ answer: 'Canned.' }))).rejected).toBe(false)
-    expect(await finalMeta(done({ answer: 'Refusal.', blocked: true }))).toMatchObject({ blocked: true, rejected: false })
-  })
-
-  it('trusts blocked_by when the server says which guardrail blocked', async () => {
-    // after-check mode can reject before any draft was shown; blocked_by still says so
-    expect(await finalMeta(done({ answer: 'Sorry.', blocked: true, blocked_by: 'output' }))).toMatchObject({
-      blocked: false,
-      rejected: true,
-    })
-    expect(
-      await finalMeta({ type: 'token', text: 'x' }, done({ answer: 'Refusal.', blocked: true, blocked_by: 'input' })),
-    ).toMatchObject({ blocked: true, rejected: false })
-  })
-
-  it('reads blocked after a streamed draft as a reject, not a refusal (the output guardrail)', async () => {
-    const meta = await finalMeta({ type: 'token', text: 'a dubious answer' }, done({ answer: 'Sorry.', blocked: true }))
+  it('is the output guardrail blocking the streamed draft', async () => {
+    const meta = await finalMeta({ type: 'token', text: 'a dubious answer' }, done({ answer: 'Sorry.', blocked: 'output' }))
     expect(meta).toMatchObject({ blocked: false, rejected: true })
+    // after-check mode can reject before any draft was shown: still a reject
+    expect(await finalMeta(done({ answer: 'Sorry.', blocked: 'output' }))).toMatchObject({ rejected: true })
+  })
+
+  it('is not the input guardrail refusing the question', async () => {
+    expect(await finalMeta(done({ answer: 'Refusal.', blocked: 'input' }))).toMatchObject({ blocked: true, rejected: false })
+  })
+
+  it('is neither for an unblocked answer, even one that differs from the draft', async () => {
+    // a disclaimer appended, or a canned reply: done replaces the text, but nothing was blocked
+    const meta = await finalMeta({ type: 'token', text: 'BDC is a platform.' }, done({ answer: 'BDC is a platform.\n\nDisclaimer.' }))
+    expect(meta).toMatchObject({ blocked: false, rejected: false })
   })
 
   it('adds a note in stream mode only', async () => {
-    const events = sse({ type: 'token', text: 'draft' }, done({ answer: 'Canned.' }))
+    const events = sse({ type: 'token', text: 'draft' }, done({ answer: 'Canned.', blocked: 'output' }))
     const names = (y: ChatModelRunResult) => (y.content ?? []).map((p) => (p as { name?: string }).name)
     expect(names((await run(events)).yields.at(-1)!)).toContain(REJECTED_PART)
     expect(names((await run(events, { reveal: 'after-check' })).yields.at(-1)!)).not.toContain(REJECTED_PART)

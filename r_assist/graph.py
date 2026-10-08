@@ -9,7 +9,8 @@
                                       append_disclaimer ─────→ suggest_followups ─→ END
 
 Both guardrails are hard blocks: the agent's tokens stream as a provisional answer, but a
-blocked answer ends the run with the canned reply and blocked=True in the final state.
+blocked answer ends the run with the canned reply and blocked="input" or "output" (which
+guardrail) in the final state.
 """
 
 import json
@@ -35,8 +36,8 @@ class BotState(TypedDict, total=False):
     sources: dict           # {sources_key: [{title, link, type}]} — distinct documents behind doc_search_tool
     sources_md: str         # the same as a markdown list, ready to show under the answer
     kg: list                # knowledge graphs attached to tool results, one per tool call
-    blocked: bool           # an input or output guardrail blocked the run
-    blocked_by: str         # which: "input" (question refused) or "output" (answer rejected)
+    blocked: str | None     # which guardrail blocked the run: "input" (question refused) or
+                            # "output" (answer rejected); None when neither did
 
 
 def _parse_tool_content(content):
@@ -146,8 +147,8 @@ def build_graph(llm, agent, predefined: dict):
                 raise
             blocked = True
         if blocked:
-            return {"blocked": True, "blocked_by": "input", "answer": REFUSAL}
-        return {"blocked": False}
+            return {"blocked": "input", "answer": REFUSAL}
+        return {"blocked": None}
 
     async def contextualize(state: BotState):
         """
@@ -246,8 +247,8 @@ def build_graph(llm, agent, predefined: dict):
                 raise
             blocked = True
         if blocked:
-            return {"blocked": True, "blocked_by": "output", "answer": REJECT, "sources": {}, "sources_md": "", "kg": []}
-        return {"blocked": False}
+            return {"blocked": "output", "answer": REJECT, "sources": {}, "sources_md": "", "kg": []}
+        return {"blocked": None}
 
     async def append_disclaimer(state: BotState):
         """

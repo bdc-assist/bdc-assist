@@ -29,8 +29,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     answer: str
-    blocked: bool = False
-    blocked_by: str | None = None  # "input" (question refused) or "output" (answer rejected)
+    blocked: str | None = None     # "input" (question refused) or "output" (answer rejected)
     topics: list[str] = []
     followups: list[str] = []
     sources: dict = {}             # {sources_key: [{title, link, type}]}, deduplicated (project.yaml)
@@ -99,7 +98,7 @@ async def stream_chat(graph, input: str, chat_history: list):
       {"type": "token", "text"}   one token of the agent's provisional answer
       {"type": "reset"}           new model turn — discard tokens so far
       {"type": "sources", sources, sources_md, kg}  the agent finished; its doc sources and graphs
-      {"type": "done", answer, blocked, blocked_by, topics, followups, sources, sources_md, kg, mcp_errors}
+      {"type": "done", answer, blocked, topics, followups, sources, sources_md, kg, mcp_errors}
         final state — the done answer is authoritative (blocks, disclaimers, canned replies).
       {"type": "error"}           the run failed (details in the server log); last event, no done
     Custom-stream events come only from graph.py nodes, so guardrail/classifier
@@ -121,7 +120,7 @@ async def stream_chat(graph, input: str, chat_history: list):
         yield f"data: {json.dumps({'type': 'error'})}\n\n"
         return
     done = {"type": "done", "answer": state.get("answer", ""),
-            "blocked": state.get("blocked", False), "blocked_by": state.get("blocked_by"),
+            "blocked": state.get("blocked"),
             "topics": state.get("topics", []), "followups": state.get("followups", []),
             "sources": state.get("sources", {}), "sources_md": state.get("sources_md", ""),
             "kg": state.get("kg", []), "mcp_errors": mcp_errors}
@@ -141,8 +140,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
         "input": req.input,
         "chat_history": [(m.role, m.content) for m in req.chat_history],
     })
-    return ChatResponse(answer=state["answer"], blocked=state.get("blocked", False),
-                        blocked_by=state.get("blocked_by"),
+    return ChatResponse(answer=state["answer"], blocked=state.get("blocked"),
                         topics=state.get("topics", []), followups=state.get("followups", []),
                         sources=state.get("sources", {}), sources_md=state.get("sources_md", ""),
                         kg=state.get("kg", []), mcp_errors=mcp_errors)
