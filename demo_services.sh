@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Spawn everything demo.ipynb needs:
+# Spawn everything demo.ipynb and the web UI (web/) need:
 #   1. r-doc-mcp MCP server (HTTP) from DOC_MCP_DIR (./.env, default ../r-doc-mcp) on MCP_PORT
 #      (that repo's .env, default 8001), health-checked at the r_doc_mcp url in
 #      <CONFIG_DIR>/mcp_servers.yaml — the URL r-assist actually connects to
@@ -76,5 +76,7 @@ else
 fi
 
 echo
-echo "all services up — run demo.ipynb; Ctrl-C here to stop them"
+echo "all services up; Ctrl-C here to stop them"
+echo "  web UI: npm --prefix web run dev, then open http://localhost:5173"
+echo "  or run demo.ipynb"
 wait

@@ -1,0 +1,280 @@
+[
+ {
+  "tool": "get_concept_graph",
+  "args": {
+   "concept_id": "MONDO:0005453",
+   "expand_depth": 2,
+   "limit": 50
+  },
+  "nodes": [
+   {
+    "id": "phv00202373.v3.p3",
+    "name": "F33ANGHRTHSP",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "MONDO:0005453",
+    "name": "congenital heart disease",
+    "category": "NamedThing"
+   },
+   {
+    "id": "phs000200.v12.p3",
+    "name": "Women's Health Initiative Clinical Trial and Observational Study",
+    "category": "Study"
+   },
+   {
+    "id": "phv00001546.v1.p15",
+    "name": "FC219",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phs000007.v34.p15",
+    "name": "Framingham Cohort",
+    "category": "Study"
+   },
+   {
+    "id": "phv00124261.v1.p1",
+    "name": "ANGDIADAY",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phs000284.v2.p1",
+    "name": "NHLBI Cleveland Family Study (CFS) Candidate Gene Association Resource (CARe)",
+    "category": "Study"
+   },
+   {
+    "id": "phv00001350.v1.p12",
+    "name": "FB230",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phs000007.v31.p12",
+    "name": "Framingham Cohort",
+    "category": "Study"
+   },
+   {
+    "id": "phv00202361.v3.p3",
+    "name": "F33ANGHRTHSP",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phv00206800.v6.p2",
+    "name": "HFAA11F",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phs000280.v8.p2",
+    "name": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+    "category": "Study"
+   },
+   {
+    "id": "phv00122460.v1.p1",
+    "name": "HEARTDIS",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phv00407048.v1.p1",
+    "name": "AFFECTION_STATUS",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phs001814.v1.p1",
+    "name": "Molecular Genetics of Heterotaxy and Related Congenital Heart Defects",
+    "category": "Study"
+   },
+   {
+    "id": "phv00001546.v1.p12",
+    "name": "FC219",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phv00202374.v3.p3",
+    "name": "F33ANGHRTHSPDY",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phv00114408.v2.p2",
+    "name": "B09CHD",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phs000285.v3.p2",
+    "name": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+    "category": "Study"
+   },
+   {
+    "id": "phv00113042.v2.p2",
+    "name": "A09CHD",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phv00113013.v2.p2",
+    "name": "A08HRMED",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phv00266817.v1.p2",
+    "name": "AFFECTION_STATUS",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phs001194.v2.p2",
+    "name": "National Heart, Lung, and Blood Institute (NHLBI) Bench to Bassinet Program: The Pediatric Cardiac Genetics Consortium (PCGC) Study",
+    "category": "Study"
+   },
+   {
+    "id": "phv00001350.v1.p15",
+    "name": "FB230",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phv00205042.v2.p2",
+    "name": "DSRA4",
+    "category": "StudyVariable"
+   },
+   {
+    "id": "phv00202362.v3.p3",
+    "name": "F33ANGHRTHSPDY",
+    "category": "StudyVariable"
+   }
+  ],
+  "edges": [
+   {
+    "subject": "phv00202373.v3.p3",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00202373.v3.p3",
+    "object": "phs000200.v12.p3"
+   },
+   {
+    "subject": "phv00001546.v1.p15",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00001546.v1.p15",
+    "object": "phs000007.v34.p15"
+   },
+   {
+    "subject": "phv00124261.v1.p1",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00124261.v1.p1",
+    "object": "phs000284.v2.p1"
+   },
+   {
+    "subject": "phv00001350.v1.p12",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00001350.v1.p12",
+    "object": "phs000007.v31.p12"
+   },
+   {
+    "subject": "phv00202361.v3.p3",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00202361.v3.p3",
+    "object": "phs000200.v12.p3"
+   },
+   {
+    "subject": "phv00206800.v6.p2",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00206800.v6.p2",
+    "object": "phs000280.v8.p2"
+   },
+   {
+    "subject": "phv00122460.v1.p1",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00122460.v1.p1",
+    "object": "phs000284.v2.p1"
+   },
+   {
+    "subject": "phv00407048.v1.p1",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00407048.v1.p1",
+    "object": "phs001814.v1.p1"
+   },
+   {
+    "subject": "phv00001546.v1.p12",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00001546.v1.p12",
+    "object": "phs000007.v31.p12"
+   },
+   {
+    "subject": "phv00202374.v3.p3",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00202374.v3.p3",
+    "object": "phs000200.v12.p3"
+   },
+   {
+    "subject": "phv00114408.v2.p2",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00114408.v2.p2",
+    "object": "phs000285.v3.p2"
+   },
+   {
+    "subject": "phv00113042.v2.p2",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00113042.v2.p2",
+    "object": "phs000285.v3.p2"
+   },
+   {
+    "subject": "phv00113013.v2.p2",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00113013.v2.p2",
+    "object": "phs000285.v3.p2"
+   },
+   {
+    "subject": "phv00266817.v1.p2",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00266817.v1.p2",
+    "object": "phs001194.v2.p2"
+   },
+   {
+    "subject": "phv00001350.v1.p15",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00001350.v1.p15",
+    "object": "phs000007.v34.p15"
+   },
+   {
+    "subject": "phv00205042.v2.p2",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00205042.v2.p2",
+    "object": "phs000280.v8.p2"
+   },
+   {
+    "subject": "phv00202362.v3.p3",
+    "object": "MONDO:0005453"
+   },
+   {
+    "subject": "phv00202362.v3.p3",
+    "object": "phs000200.v12.p3"
+   }
+  ]
+ }
+]

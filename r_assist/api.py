@@ -29,7 +29,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     answer: str
-    blocked: bool = False
+    blocked: str | None = None     # "input" (question refused) or "output" (answer rejected)
     topics: list[str] = []
     followups: list[str] = []
     sources: dict = {}             # {sources_key: [{title, link, type}]}, deduplicated (project.yaml)
@@ -120,7 +120,7 @@ async def stream_chat(graph, input: str, chat_history: list):
         yield f"data: {json.dumps({'type': 'error'})}\n\n"
         return
     done = {"type": "done", "answer": state.get("answer", ""),
-            "blocked": state.get("blocked", False),
+            "blocked": state.get("blocked"),
             "topics": state.get("topics", []), "followups": state.get("followups", []),
             "sources": state.get("sources", {}), "sources_md": state.get("sources_md", ""),
             "kg": state.get("kg", []), "mcp_errors": mcp_errors}
@@ -140,7 +140,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
         "input": req.input,
         "chat_history": [(m.role, m.content) for m in req.chat_history],
     })
-    return ChatResponse(answer=state["answer"], blocked=state.get("blocked", False),
+    return ChatResponse(answer=state["answer"], blocked=state.get("blocked"),
                         topics=state.get("topics", []), followups=state.get("followups", []),
                         sources=state.get("sources", {}), sources_md=state.get("sources_md", ""),
                         kg=state.get("kg", []), mcp_errors=mcp_errors)

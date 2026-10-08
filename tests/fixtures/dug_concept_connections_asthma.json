@@ -1,0 +1,318 @@
+{
+  "args": {
+    "concept_id": "MONDO:0004979"
+  },
+  "result": {
+    "concept_id": "MONDO:0004979",
+    "node_type_filter": null,
+    "summary": [
+      {
+        "entity_type": "biolink.NamedThing",
+        "count": 1867
+      }
+    ],
+    "total_connections_shown": 50,
+    "connections": [
+      {
+        "relationship": "biolink.affects",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Monobutylphthalate",
+        "connected_id": "CHEBI:88522"
+      },
+      {
+        "relationship": "biolink.affects",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Nitrogen trichloride",
+        "connected_id": "CHEBI:37382"
+      },
+      {
+        "relationship": "biolink.affects",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Tobacco Smoke Pollution",
+        "connected_id": "MESH:D014028"
+      },
+      {
+        "relationship": "biolink.affects",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Vehicle Emissions",
+        "connected_id": "MESH:D001335"
+      },
+      {
+        "relationship": "biolink.affects",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "bronchus",
+        "connected_id": "UBERON:0002185"
+      },
+      {
+        "relationship": "biolink.affects",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "monobenzyl phthalate",
+        "connected_id": "CHEBI:132612"
+      },
+      {
+        "relationship": "biolink.affects",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "perfluorodecanoic acid",
+        "connected_id": "CHEBI:35546"
+      },
+      {
+        "relationship": "biolink.affects",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "perfluorohexanesulfonic acid",
+        "connected_id": "CHEBI:132448"
+      },
+      {
+        "relationship": "biolink.affects",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "perfluorooctane-1-sulfonic acid",
+        "connected_id": "CHEBI:39421"
+      },
+      {
+        "relationship": "biolink.affects",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "perfluorooctanoic acid",
+        "connected_id": "CHEBI:35549"
+      },
+      {
+        "relationship": "biolink.affects",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "perfluoroundecanoic acid",
+        "connected_id": "CHEBI:83493"
+      },
+      {
+        "relationship": "biolink.ameliorates_condition",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Ephedrine",
+        "connected_id": "CHEBI:15407"
+      },
+      {
+        "relationship": "biolink.ameliorates_condition",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Epinephrine",
+        "connected_id": "CHEBI:28918"
+      },
+      {
+        "relationship": "biolink.ameliorates_condition",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Pseudoephedrine",
+        "connected_id": "CHEBI:51209"
+      },
+      {
+        "relationship": "biolink.applied_to_treat",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Epinephrine",
+        "connected_id": "CHEBI:28918"
+      },
+      {
+        "relationship": "biolink.applied_to_treat",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Guaifenesin",
+        "connected_id": "CHEBI:5551"
+      },
+      {
+        "relationship": "biolink.applied_to_treat",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Ipratropium",
+        "connected_id": "PUBCHEM.COMPOUND:657309"
+      },
+      {
+        "relationship": "biolink.applied_to_treat",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Oleandomycin",
+        "connected_id": "CHEBI:16869"
+      },
+      {
+        "relationship": "biolink.applied_to_treat",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Troleandomycin",
+        "connected_id": "CHEBI:45735"
+      },
+      {
+        "relationship": "biolink.associated_with",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "allergic bronchopulmonary aspergillosis",
+        "connected_id": "MONDO:0015243"
+      },
+      {
+        "relationship": "biolink.associated_with",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "cough variant asthma",
+        "connected_id": "MONDO:0001491"
+      },
+      {
+        "relationship": "biolink.associated_with",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "eosinophilic granulomatosis with polyangiitis",
+        "connected_id": "MONDO:0015943"
+      },
+      {
+        "relationship": "biolink.associated_with",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "intrinsic asthma",
+        "connected_id": "MONDO:0004765"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Acamprosate",
+        "connected_id": "CHEBI:51041"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Acetaminophen",
+        "connected_id": "CHEBI:46195"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Acetylcysteine",
+        "connected_id": "CHEBI:28939"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Albuterol",
+        "connected_id": "CHEBI:2549"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Alendronic acid",
+        "connected_id": "CHEBI:2567"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Alitretinoin",
+        "connected_id": "CHEBI:50648"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Allopurinol",
+        "connected_id": "CHEBI:40279"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Aminophylline",
+        "connected_id": "CHEBI:2659"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Amlodipine",
+        "connected_id": "CHEBI:2668"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Amphotericin B",
+        "connected_id": "CHEBI:2682"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Anagrelide",
+        "connected_id": "CHEBI:142290"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Apraclonidine",
+        "connected_id": "CHEBI:2788"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Arformoterol",
+        "connected_id": "CHEBI:408174"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Aripiprazole",
+        "connected_id": "CHEBI:31236"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Aspirin",
+        "connected_id": "CHEBI:15365"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Azelaic acid",
+        "connected_id": "CHEBI:48131"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Azelastine",
+        "connected_id": "CHEBI:2950"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Azithromycin",
+        "connected_id": "CHEBI:2955"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Benazepril",
+        "connected_id": "CHEBI:3011"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Betahistine",
+        "connected_id": "CHEBI:35677"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Betaxolol",
+        "connected_id": "CHEBI:3082"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Bethanechol",
+        "connected_id": "CHEBI:3084"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Bicalutamide",
+        "connected_id": "CHEBI:144093"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Bimatoprost",
+        "connected_id": "CHEBI:51230"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Bismuth subsalicylate",
+        "connected_id": "CHEBI:261649"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Bisoprolol",
+        "connected_id": "CHEBI:3127"
+      },
+      {
+        "relationship": "biolink.causes",
+        "connected_type": "biolink.NamedThing",
+        "connected_name": "Bortezomib",
+        "connected_id": "CHEBI:52717"
+      }
+    ]
+  }
+}

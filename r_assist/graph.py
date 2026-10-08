@@ -9,7 +9,8 @@
                                       append_disclaimer ─────→ suggest_followups ─→ END
 
 Both guardrails are hard blocks: the agent's tokens stream as a provisional answer, but a
-blocked answer ends the run with the canned reply and blocked=True in the final state.
+blocked answer ends the run with the canned reply and blocked="input" or "output" (which
+guardrail) in the final state.
 """
 
 import json
@@ -35,7 +36,8 @@ class BotState(TypedDict, total=False):
     sources: dict           # {sources_key: [{title, link, type}]} — distinct documents behind doc_search_tool
     sources_md: str         # the same as a markdown list, ready to show under the answer
     kg: list                # knowledge graphs attached to tool results, one per tool call
-    blocked: bool           # an input or output guardrail blocked the run
+    blocked: str | None     # which guardrail blocked the run: "input" (question refused) or
+                            # "output" (answer rejected); None when neither did
 
 
 def _parse_tool_content(content):
@@ -90,6 +92,26 @@ def _kgs(messages) -> list:
     return [kg for kg in found if kg]
 
 
+def _attached_sources(messages) -> dict[str, list[dict]]:
+    """Sources attached to tool results as structured content "sources": {key: [{title, link,
+    type}]} (by a <config dir>/interceptors.py interceptor, e.g. the studies Dug cites),
+    merged by key, deduplicated on link, in first-seen order. The LLM never sees them."""
+    out: dict[str, list[dict]] = {}
+    seen = set()
+    for m in messages:
+        if not (isinstance(m, ToolMessage) and isinstance(m.artifact, dict)):
+            continue
+        attached = (m.artifact.get("structured_content") or {}).get("sources") or {}
+        for key, items in attached.items() if isinstance(attached, dict) else ():
+            for item in items if isinstance(items, list) else ():
+                link = item.get("link") if isinstance(item, dict) else None
+                if link and link not in seen:
+                    seen.add(link)
+                    out.setdefault(key, []).append({"title": item.get("title") or link, "link": link,
+                                                    "type": item.get("type", "")})
+    return out
+
+
 def _sources_md(sources: list[dict]) -> str:
     if not sources:
         return ""
@@ -125,8 +147,8 @@ def build_graph(llm, agent, predefined: dict):
                 raise
             blocked = True
         if blocked:
-            return {"blocked": True, "answer": REFUSAL}
-        return {"blocked": False}
+            return {"blocked": "input", "answer": REFUSAL}
+        return {"blocked": None}
 
     async def contextualize(state: BotState):
         """
@@ -198,7 +220,9 @@ def build_graph(llm, agent, predefined: dict):
                 last_id = msg.id
                 writer({"type": "token", "text": msg.text})
         docs = _doc_sources(result["messages"])
-        sources, sources_md = ({prompts.SOURCES_KEY: docs} if docs else {}), _sources_md(docs)
+        attached = _attached_sources(result["messages"])  # e.g. the studies Dug cites
+        sources = ({prompts.SOURCES_KEY: docs} if docs else {}) | attached
+        sources_md = _sources_md(docs + [s for items in attached.values() for s in items])
         kg = _kgs(result["messages"])
         # sources are known once the agent is done: send them now rather than with "done",
         # which waits for the guardrail and follow-up nodes (a block clears them in "done")
@@ -223,8 +247,8 @@ def build_graph(llm, agent, predefined: dict):
                 raise
             blocked = True
         if blocked:
-            return {"blocked": True, "answer": REJECT, "sources": {}, "sources_md": "", "kg": []}
-        return {"blocked": False}
+            return {"blocked": "output", "answer": REJECT, "sources": {}, "sources_md": "", "kg": []}
+        return {"blocked": None}
 
     async def append_disclaimer(state: BotState):
         """

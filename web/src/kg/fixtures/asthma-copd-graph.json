@@ -1,0 +1,1257 @@
+{
+  "nodes": [
+    {
+      "id": "MONDO:0004979",
+      "label": "asthma",
+      "type": "concept",
+      "concept_type": "biolink:NamedThing"
+    },
+    {
+      "id": "phv00123418.v1.p1",
+      "label": "KIDASTHM",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phs000284.v2.p1",
+      "label": "NHLBI Cleveland Family Study (CFS) Candidate Gene Association Resource (CARe)",
+      "type": "study"
+    },
+    {
+      "id": "phv00009088.v9.p15",
+      "label": "D360",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phs000007.v34.p15",
+      "label": "Framingham Cohort",
+      "type": "study"
+    },
+    {
+      "id": "phv00545640.v1.p15",
+      "label": "K1420",
+      "type": "variable",
+      "related_concepts_count": 34
+    },
+    {
+      "id": "phv00424036.v1.p1",
+      "label": "ASTHMA",
+      "type": "variable",
+      "related_concepts_count": 19
+    },
+    {
+      "id": "phs001682.v3.p1",
+      "label": "NHLBI TOPMed: Pulmonary Hypertension and the Hypoxic Response in SCD (PUSH)",
+      "type": "study"
+    },
+    {
+      "id": "phv00175381.v1.p3",
+      "label": "oaia5c",
+      "type": "variable",
+      "related_concepts_count": 34
+    },
+    {
+      "id": "phs000209.v13.p3",
+      "label": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+      "type": "study"
+    },
+    {
+      "id": "phv00105885.v1.p1",
+      "label": "ASTHMA",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phs000287.v7.p1",
+      "label": "Cardiovascular Health Study (CHS) Cohort: an NHLBI-funded observational study of risk factors for cardiovascular disease in adults 65 years or older",
+      "type": "study"
+    },
+    {
+      "id": "phv00461208.v2.p15",
+      "label": "g3a540",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phv00159705.v4.p2",
+      "label": "AsthmaStillHave",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phs000179.v6.p2",
+      "label": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
+      "type": "study"
+    },
+    {
+      "id": "phv00087756.v1.p3",
+      "label": "qastha4",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phv00254260.v2.p12",
+      "label": "j421",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phs000007.v31.p12",
+      "label": "Framingham Cohort",
+      "type": "study"
+    },
+    {
+      "id": "phv00298008.v2.p2",
+      "label": "RSE14a",
+      "type": "variable",
+      "related_concepts_count": 10
+    },
+    {
+      "id": "phs000280.v8.p2",
+      "label": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+      "type": "study"
+    },
+    {
+      "id": "phv00114600.v2.p2",
+      "label": "B12ASTHM",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phs000285.v3.p2",
+      "label": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+      "type": "study"
+    },
+    {
+      "id": "phv00072313.v5.p12",
+      "label": "H359",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00106407.v1.p1",
+      "label": "ASTHCUR",
+      "type": "variable",
+      "related_concepts_count": 19
+    },
+    {
+      "id": "phv00007085.v1.p12",
+      "label": "FS525",
+      "type": "variable",
+      "related_concepts_count": 12
+    },
+    {
+      "id": "phv00083134.v1.p3",
+      "label": "oaia1c",
+      "type": "variable",
+      "related_concepts_count": 34
+    },
+    {
+      "id": "phv00006650.v1.p12",
+      "label": "FR425",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phv00117450.v2.p2",
+      "label": "D09ASNM",
+      "type": "variable",
+      "related_concepts_count": 22
+    },
+    {
+      "id": "phv00010489.v9.p15",
+      "label": "G418",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phv00117045.v2.p2",
+      "label": "D08ASTH",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phv00435946.v1.p1",
+      "label": "steroids_yes12mo",
+      "type": "variable",
+      "related_concepts_count": 42
+    },
+    {
+      "id": "phs001661.v3.p1",
+      "label": "NHLBI TOPMed: Genetic Causes of Complex Pediatric Disorders - Asthma (GCPD-A)",
+      "type": "study"
+    },
+    {
+      "id": "phv00083536.v1.p3",
+      "label": "qasnsaa4",
+      "type": "variable",
+      "related_concepts_count": 20
+    },
+    {
+      "id": "phv00104144.v1.p1",
+      "label": "ATH37",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phv00072491.v5.p12",
+      "label": "H652",
+      "type": "variable",
+      "related_concepts_count": 21
+    },
+    {
+      "id": "phv00461499.v2.p15",
+      "label": "e340",
+      "type": "variable",
+      "related_concepts_count": 27
+    },
+    {
+      "id": "phv00430345.v1.p1",
+      "label": "asthma_hospital_Yes12mo",
+      "type": "variable",
+      "related_concepts_count": 24
+    },
+    {
+      "id": "phs001732.v2.p1",
+      "label": "NHLBI TOPMed: TReating Children to Prevent EXacerbations of Asthma (TREXA)",
+      "type": "study"
+    },
+    {
+      "id": "phv00056977.v2.p12",
+      "label": "OAIA2",
+      "type": "variable",
+      "related_concepts_count": 24
+    },
+    {
+      "id": "phv00226388.v1.p1",
+      "label": "RSEA34",
+      "type": "variable",
+      "related_concepts_count": 13
+    },
+    {
+      "id": "phs000810.v1.p1",
+      "label": "Hispanic Community Health Study /Study of Latinos (HCHS/SOL)",
+      "type": "study"
+    },
+    {
+      "id": "phv00274124.v1.p15",
+      "label": "g3a544",
+      "type": "variable",
+      "related_concepts_count": 21
+    },
+    {
+      "id": "phv00009293.v6.p12",
+      "label": "E340",
+      "type": "variable",
+      "related_concepts_count": 18
+    },
+    {
+      "id": "phv00209067.v2.p2",
+      "label": "PHXB6E",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00462115.v2.p15",
+      "label": "G3C0835",
+      "type": "variable",
+      "related_concepts_count": 19
+    },
+    {
+      "id": "phv00526878.v1.p2",
+      "label": "RSEA36",
+      "type": "variable",
+      "related_concepts_count": 23
+    },
+    {
+      "id": "phs000810.v2.p2",
+      "label": "Hispanic Community Health Study /Study of Latinos (HCHS/SOL)",
+      "type": "study"
+    },
+    {
+      "id": "phv00226387.v2.p2",
+      "label": "RSEA32",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00430220.v1.p1",
+      "label": "Affection_Status",
+      "type": "variable",
+      "related_concepts_count": 17
+    },
+    {
+      "id": "phs001728.v3.p1",
+      "label": "NHLBI TOPMed: Best ADd-on Therapy Giving Effective Response (BADGER)",
+      "type": "study"
+    },
+    {
+      "id": "phv00008470.v6.p12",
+      "label": "C95",
+      "type": "variable",
+      "related_concepts_count": 20
+    },
+    {
+      "id": "phv00056804.v2.p12",
+      "label": "hi201e",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00429126.v1.p1",
+      "label": "PMH_ASTHMA_MD",
+      "type": "variable",
+      "related_concepts_count": 14
+    },
+    {
+      "id": "phs001662.v2.p1",
+      "label": "NHLBI TOPMed: Lung Tissue Research Consortium (LTRC)",
+      "type": "study"
+    },
+    {
+      "id": "phv00114602.v2.p2",
+      "label": "B12ASDOC",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00107852.v1.p1",
+      "label": "ASLAST56",
+      "type": "variable",
+      "related_concepts_count": 19
+    },
+    {
+      "id": "phv00175368.v1.p3",
+      "label": "istrd5c",
+      "type": "variable",
+      "related_concepts_count": 14
+    },
+    {
+      "id": "phv00128346.v2.p2",
+      "label": "RPAA16",
+      "type": "variable",
+      "related_concepts_count": 19
+    },
+    {
+      "id": "phs000286.v7.p2",
+      "label": "Jackson Heart Study (JHS) Cohort",
+      "type": "study"
+    },
+    {
+      "id": "phv00427613.v1.p1",
+      "label": "Affection_Status",
+      "type": "variable",
+      "related_concepts_count": 19
+    },
+    {
+      "id": "phs001604.v2.p1",
+      "label": "NHLBI TOPMed: Children's Health Study (CHS) Effects of Air Pollution on the Development of Obesity in Children (Meta-AIR)",
+      "type": "study"
+    },
+    {
+      "id": "phv00420871.v2.p2",
+      "label": "N_ICUAsthLstYear",
+      "type": "variable",
+      "related_concepts_count": 16
+    },
+    {
+      "id": "phs001446.v3.p2",
+      "label": "NHLBI TOPMed: Severe Asthma Research Program (SARP)",
+      "type": "study"
+    },
+    {
+      "id": "phs003708_MHASTH.v1.p1",
+      "label": "Asthma\u0442\u0080",
+      "type": "variable",
+      "related_concepts_count": 10
+    },
+    {
+      "id": "phs003708.v1.p1",
+      "label": "CONNECTS Master Protocol for Clinical Trials targeting Macro- and Micro-Immuno-Thrombosis, Vascular Hyperinflammation, and Hypercoagulability and Renin-Angiotensin-Aldosterone System (RAAS) in Hospitalized Patients with COVID-19 (ACTIV-4 Host Tissue)",
+      "type": "study"
+    },
+    {
+      "id": "phv00293273.v1.p1",
+      "label": "ATS5G4N",
+      "type": "variable",
+      "related_concepts_count": 18
+    },
+    {
+      "id": "phs001252.v1.p1",
+      "label": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
+      "type": "study"
+    },
+    {
+      "id": "phv00005285.v1.p12",
+      "label": "FO489",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00121585.v2.p2",
+      "label": "Y01ASTMD",
+      "type": "variable",
+      "related_concepts_count": 10
+    },
+    {
+      "id": "phv00274120.v1.p12",
+      "label": "g3a540",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phv00176725.v1.p3",
+      "label": "recuryr5",
+      "type": "variable",
+      "related_concepts_count": 38
+    },
+    {
+      "id": "MONDO:0005002",
+      "label": "chronic obstructive pulmonary disease",
+      "type": "concept",
+      "concept_type": "biolink:NamedThing"
+    },
+    {
+      "id": "phv00002837.v1.p15",
+      "label": "FI217",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00251719.v1.p12",
+      "label": "h663",
+      "type": "variable",
+      "related_concepts_count": 26
+    },
+    {
+      "id": "phv00003655.v1.p15",
+      "label": "FK444",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00251718.v1.p12",
+      "label": "h662",
+      "type": "variable",
+      "related_concepts_count": 10
+    },
+    {
+      "id": "phv00515927.v1.p2",
+      "label": "FDI33",
+      "type": "variable",
+      "related_concepts_count": 27
+    },
+    {
+      "id": "phv00002393.v1.p12",
+      "label": "FG287",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00177574.v4.p12",
+      "label": "g3b0600",
+      "type": "variable",
+      "related_concepts_count": 17
+    },
+    {
+      "id": "phv00251718.v2.p15",
+      "label": "h662",
+      "type": "variable",
+      "related_concepts_count": 10
+    },
+    {
+      "id": "phv00298000.v2.p2",
+      "label": "RSE11",
+      "type": "variable",
+      "related_concepts_count": 24
+    },
+    {
+      "id": "phv00251717.v2.p15",
+      "label": "h661",
+      "type": "variable",
+      "related_concepts_count": 15
+    },
+    {
+      "id": "phv00275389.v1.p15",
+      "label": "fy602",
+      "type": "variable",
+      "related_concepts_count": 16
+    },
+    {
+      "id": "phv00056802.v4.p15",
+      "label": "hi201c",
+      "type": "variable",
+      "related_concepts_count": 5
+    },
+    {
+      "id": "phv00492692.v1.p2",
+      "label": "COPD",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phs001644.v3.p2",
+      "label": "NHLBI TOPMed - NHGRI CCDG: The BioMe Biobank at Mount Sinai (BioMe_HMB-NPU)",
+      "type": "study"
+    },
+    {
+      "id": "phv00275055.v1.p12",
+      "label": "FX602",
+      "type": "variable",
+      "related_concepts_count": 16
+    },
+    {
+      "id": "phv00177574.v6.p15",
+      "label": "g3b0600",
+      "type": "variable",
+      "related_concepts_count": 17
+    },
+    {
+      "id": "phv00003655.v1.p12",
+      "label": "FK444",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00251719.v2.p15",
+      "label": "h663",
+      "type": "variable",
+      "related_concepts_count": 26
+    },
+    {
+      "id": "phv00002631.v1.p12",
+      "label": "FH306",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00251717.v1.p12",
+      "label": "h661",
+      "type": "variable",
+      "related_concepts_count": 15
+    },
+    {
+      "id": "phv00007944.v6.p12",
+      "label": "B325",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phv00275389.v1.p12",
+      "label": "fy602",
+      "type": "variable",
+      "related_concepts_count": 16
+    },
+    {
+      "id": "phv00002837.v1.p12",
+      "label": "FI217",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00056802.v2.p12",
+      "label": "hi201c",
+      "type": "variable",
+      "related_concepts_count": 5
+    },
+    {
+      "id": "phv00003236.v1.p12",
+      "label": "FJ348",
+      "type": "variable",
+      "related_concepts_count": 14
+    },
+    {
+      "id": "phv00255330.v1.p15",
+      "label": "fw602",
+      "type": "variable",
+      "related_concepts_count": 26
+    },
+    {
+      "id": "phv00002393.v1.p15",
+      "label": "FG287",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00275055.v1.p15",
+      "label": "FX602",
+      "type": "variable",
+      "related_concepts_count": 16
+    },
+    {
+      "id": "phv00255330.v1.p12",
+      "label": "fw602",
+      "type": "variable",
+      "related_concepts_count": 26
+    },
+    {
+      "id": "phv00002631.v1.p15",
+      "label": "FH306",
+      "type": "variable",
+      "related_concepts_count": 11
+    },
+    {
+      "id": "phv00007944.v9.p15",
+      "label": "B325",
+      "type": "variable",
+      "related_concepts_count": 9
+    },
+    {
+      "id": "phv00003236.v1.p15",
+      "label": "FJ348",
+      "type": "variable",
+      "related_concepts_count": 14
+    }
+  ],
+  "edges": [
+    {
+      "source": "phv00123418.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00123418.v1.p1",
+      "target": "phs000284.v2.p1"
+    },
+    {
+      "source": "phv00009088.v9.p15",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00009088.v9.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00545640.v1.p15",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00545640.v1.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00424036.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00424036.v1.p1",
+      "target": "phs001682.v3.p1"
+    },
+    {
+      "source": "phv00175381.v1.p3",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00175381.v1.p3",
+      "target": "phs000209.v13.p3"
+    },
+    {
+      "source": "phv00105885.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00105885.v1.p1",
+      "target": "phs000287.v7.p1"
+    },
+    {
+      "source": "phv00461208.v2.p15",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00461208.v2.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00159705.v4.p2",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00159705.v4.p2",
+      "target": "phs000179.v6.p2"
+    },
+    {
+      "source": "phv00087756.v1.p3",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00087756.v1.p3",
+      "target": "phs000209.v13.p3"
+    },
+    {
+      "source": "phv00254260.v2.p12",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00254260.v2.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00298008.v2.p2",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00298008.v2.p2",
+      "target": "phs000280.v8.p2"
+    },
+    {
+      "source": "phv00114600.v2.p2",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00114600.v2.p2",
+      "target": "phs000285.v3.p2"
+    },
+    {
+      "source": "phv00072313.v5.p12",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00072313.v5.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00106407.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00106407.v1.p1",
+      "target": "phs000287.v7.p1"
+    },
+    {
+      "source": "phv00007085.v1.p12",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00007085.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00083134.v1.p3",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00083134.v1.p3",
+      "target": "phs000209.v13.p3"
+    },
+    {
+      "source": "phv00006650.v1.p12",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00006650.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00117450.v2.p2",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00117450.v2.p2",
+      "target": "phs000285.v3.p2"
+    },
+    {
+      "source": "phv00010489.v9.p15",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00010489.v9.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00117045.v2.p2",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00117045.v2.p2",
+      "target": "phs000285.v3.p2"
+    },
+    {
+      "source": "phv00435946.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00435946.v1.p1",
+      "target": "phs001661.v3.p1"
+    },
+    {
+      "source": "phv00083536.v1.p3",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00083536.v1.p3",
+      "target": "phs000209.v13.p3"
+    },
+    {
+      "source": "phv00104144.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00104144.v1.p1",
+      "target": "phs000287.v7.p1"
+    },
+    {
+      "source": "phv00072491.v5.p12",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00072491.v5.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00461499.v2.p15",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00461499.v2.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00430345.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00430345.v1.p1",
+      "target": "phs001732.v2.p1"
+    },
+    {
+      "source": "phv00056977.v2.p12",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00056977.v2.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00226388.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00226388.v1.p1",
+      "target": "phs000810.v1.p1"
+    },
+    {
+      "source": "phv00274124.v1.p15",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00274124.v1.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00009293.v6.p12",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00009293.v6.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00209067.v2.p2",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00209067.v2.p2",
+      "target": "phs000280.v8.p2"
+    },
+    {
+      "source": "phv00462115.v2.p15",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00462115.v2.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00526878.v1.p2",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00526878.v1.p2",
+      "target": "phs000810.v2.p2"
+    },
+    {
+      "source": "phv00226387.v2.p2",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00226387.v2.p2",
+      "target": "phs000810.v2.p2"
+    },
+    {
+      "source": "phv00430220.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00430220.v1.p1",
+      "target": "phs001728.v3.p1"
+    },
+    {
+      "source": "phv00008470.v6.p12",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00008470.v6.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00056804.v2.p12",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00056804.v2.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00429126.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00429126.v1.p1",
+      "target": "phs001662.v2.p1"
+    },
+    {
+      "source": "phv00114602.v2.p2",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00114602.v2.p2",
+      "target": "phs000285.v3.p2"
+    },
+    {
+      "source": "phv00107852.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00107852.v1.p1",
+      "target": "phs000287.v7.p1"
+    },
+    {
+      "source": "phv00175368.v1.p3",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00175368.v1.p3",
+      "target": "phs000209.v13.p3"
+    },
+    {
+      "source": "phv00128346.v2.p2",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00128346.v2.p2",
+      "target": "phs000286.v7.p2"
+    },
+    {
+      "source": "phv00427613.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00427613.v1.p1",
+      "target": "phs001604.v2.p1"
+    },
+    {
+      "source": "phv00420871.v2.p2",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00420871.v2.p2",
+      "target": "phs001446.v3.p2"
+    },
+    {
+      "source": "phs003708_MHASTH.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phs003708_MHASTH.v1.p1",
+      "target": "phs003708.v1.p1"
+    },
+    {
+      "source": "phv00293273.v1.p1",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00293273.v1.p1",
+      "target": "phs001252.v1.p1"
+    },
+    {
+      "source": "phv00005285.v1.p12",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00005285.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00121585.v2.p2",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00121585.v2.p2",
+      "target": "phs000285.v3.p2"
+    },
+    {
+      "source": "phv00274120.v1.p12",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00274120.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00176725.v1.p3",
+      "target": "MONDO:0004979"
+    },
+    {
+      "source": "phv00176725.v1.p3",
+      "target": "phs000209.v13.p3"
+    },
+    {
+      "source": "phv00002837.v1.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00002837.v1.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00251719.v1.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00251719.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00003655.v1.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00003655.v1.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00251718.v1.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00251718.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00515927.v1.p2",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00515927.v1.p2",
+      "target": "phs000280.v8.p2"
+    },
+    {
+      "source": "phv00002393.v1.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00002393.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00177574.v4.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00177574.v4.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00251718.v2.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00251718.v2.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00298000.v2.p2",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00298000.v2.p2",
+      "target": "phs000280.v8.p2"
+    },
+    {
+      "source": "phv00251717.v2.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00251717.v2.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00275389.v1.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00275389.v1.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00056802.v4.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00056802.v4.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00492692.v1.p2",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00492692.v1.p2",
+      "target": "phs001644.v3.p2"
+    },
+    {
+      "source": "phv00275055.v1.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00275055.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00177574.v6.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00177574.v6.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00003655.v1.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00003655.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00251719.v2.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00251719.v2.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00002631.v1.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00002631.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00251717.v1.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00251717.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00007944.v6.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00007944.v6.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00275389.v1.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00275389.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00002837.v1.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00002837.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00056802.v2.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00056802.v2.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00003236.v1.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00003236.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00255330.v1.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00255330.v1.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00002393.v1.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00002393.v1.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00275055.v1.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00275055.v1.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00255330.v1.p12",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00255330.v1.p12",
+      "target": "phs000007.v31.p12"
+    },
+    {
+      "source": "phv00002631.v1.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00002631.v1.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00007944.v9.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00007944.v9.p15",
+      "target": "phs000007.v34.p15"
+    },
+    {
+      "source": "phv00003236.v1.p15",
+      "target": "MONDO:0005002"
+    },
+    {
+      "source": "phv00003236.v1.p15",
+      "target": "phs000007.v34.p15"
+    }
+  ]
+}

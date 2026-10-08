@@ -1,4 +1,5 @@
 import asyncio
+import importlib.util
 import json
 from pathlib import Path
 
@@ -54,16 +55,23 @@ def call(tool_name, reply, server="dug_mcp"):
 
 def test_dug_results_get_a_trimmed_kg():
     assert call("search_concepts", SEARCH_CONCEPTS) == {
-        "tool": "search_concepts", "args": {"q": 1},
-        "nodes": [{"id": "phv001.v1.p1", "name": "MI_EVER", "category": "StudyVariable",
-                   "description": "Ever had an MI"},
-                  {"id": "MONDO:0005068", "name": "myocardial infarction", "category": "Disease"},
-                  {"id": "HP:0001658", "name": "Myocardial infarction", "category": "PhenotypicFeature"}],
+        "tool": "search_concepts", "args": {"q": 1}, "label": "search concepts",  # no search_term in these args
+        "nodes": [{"id": "phv001.v1.p1", "name": "MI_EVER", "type": "variable", "description": "Ever had an MI"},
+                  {"id": "MONDO:0005068", "name": "myocardial infarction", "type": "concept",
+                   "category": "biolink:Disease"},  # Dug's category, verbatim
+                  {"id": "HP:0001658", "name": "Myocardial infarction", "type": "concept",
+                   "category": "biolink:PhenotypicFeature"}],
         "edges": [{"subject": "phv001.v1.p1", "object": "MONDO:0005068", "predicate": "related_to"},
                   {"subject": "phv001.v1.p1", "object": "HP:0001658"}]}
 
     kg = call("get_concept_graph", CONCEPT_GRAPH)
-    assert [n["id"] for n in kg["nodes"]] == ["phv001", "MONDO:0005068", "phs000007", "phv002"]
+    assert [(n["id"], n["type"]) for n in kg["nodes"]] == [
+        ("phv001", "variable"), ("MONDO:0005068", "concept"), ("phs000007", "study"), ("phv002", "variable")]
+    assert kg["nodes"][1]["category"] == "biolink.Disease"  # verbatim, dot and all
+    # variables keep related_concepts_count, under attributes
+    assert kg["nodes"][0]["attributes"] == {"related_concepts_count": 3}
+    assert kg["nodes"][3]["attributes"] == {"related_concepts_count": 1}
+    assert "attributes" not in kg["nodes"][1]  # nothing to keep for the concept
     assert kg["edges"] == [{"subject": "phv001", "object": "MONDO:0005068"},
                            {"subject": "phv001", "object": "phs000007"},
                            {"subject": "phv002", "object": "MONDO:0005068"}]
@@ -86,6 +94,47 @@ def test_each_graph_tool_gets_a_kg():
                         ("get_concept_graph", NEIGHBOURS), ("get_concept_connections", CONNECTIONS)]:
         kg = call(tool, reply)
         assert kg and kg["tool"] == tool and kg["edges"], tool
+
+
+def test_each_node_gets_its_role():
+    """type: concept, variable, study, or term (find_cohort_variables' search word); Dug's
+    own Study/StudyVariable labels on neighbours count too."""
+    types = lambda kg: {n["id"]: n["type"] for n in kg["nodes"]}
+    assert types(call("find_cohort_variables", COHORT)) == {"v1": "variable", "s1": "study", "c1": "term"}
+    neighbours = {"concept_id": "c1", "connections": [
+        {"connected_id": "c2", "connected_type": "biolink.Disease"},
+        {"connected_id": "s9", "connected_type": "biolink.Study"},
+        {"connected_id": "v9", "connected_type": "biolink.StudyVariable"}]}
+    assert types(call("get_concept_connections", neighbours)) == {
+        "c1": "concept", "c2": "concept", "s9": "study", "v9": "variable"}
+
+
+def test_each_graph_is_labelled_in_plain_words():
+    spec = importlib.util.spec_from_file_location("bdc_interceptors", "examples/bdc/interceptors.py")
+    bdc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bdc)
+
+    def label(tool, reply, args):
+        return bdc.label(tool, args, bdc.to_kg(tool, reply))
+
+    assert label("get_concept_graph", CONCEPT_GRAPH, {"concept_id": "MONDO:0005068"}) == "myocardial infarction concept graph"
+    assert label("find_cohort_variables", COHORT, {"concepts": ["asthma", "copd"]}) == "asthma + copd cohort variables"
+    assert label("search_concepts", SEARCH_CONCEPTS, {"search_term": "heart attack"}) == "heart attack concept search"
+    # dug doesn't name the concept get_concept_connections was asked about: its id
+    assert label("get_concept_connections", CONNECTIONS, {"concept_id": "c1"}) == "c1 related concepts"
+    assert label("find_cohort_variables", COHORT, {}) == "find cohort variables"  # nothing to name it by
+    assert call("get_concept_graph", CONCEPT_GRAPH)["label"]  # the interceptor attaches it
+
+
+def test_cited_studies_go_along_as_sources():
+    study = {"title": "Framingham Cohort", "link": "https://x/study?phs000007", "type": "dbgap-study"}
+    tool = convert_mcp_tool_to_langchain_tool(
+        FakeSession(json.dumps({**CONCEPT_GRAPH, "_sources": [study]})), Tool(name="get_concept_graph", inputSchema={"type": "object"}),
+        tool_interceptors=load_interceptors(Path("examples/bdc")), server_name="dug_mcp")
+    msg = asyncio.run(tool.ainvoke({"type": "tool_call", "name": "get_concept_graph", "args": {}, "id": "c1"}))
+    structured = msg.artifact["structured_content"]
+    assert structured["sources"] == {"dug": [study]}
+    assert structured["kg"]["nodes"]  # the graph still comes along
 
 
 def test_no_kg_when_nothing_to_draw():

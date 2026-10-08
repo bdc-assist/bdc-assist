@@ -18,7 +18,7 @@ Sibling repos: **r-doc-mcp** (the doc search MCP server) and **r-doc-builder** (
 - `classify` sends flag-r topics straight to a canned response; flag-a topics get a disclaimer appended after the answer
 - `agent` calls tools on the doc MCP server (MCP over HTTP)
 - `output_guardrail` self-checks the answer against the question; a hard block like the input
-  guardrail (a "No" or a provider content filter → canned reject reply, `blocked: true`, run ends,
+  guardrail (a "No" or a provider content filter → canned reject reply, `blocked: "output"`, run ends,
   no disclaimers appended)
 - `suggest_followups` decides if follow-up questions would help and suggests as many as
   `followups` in `config/project.yaml` (default 3; list of strings in the `followups` response
@@ -171,11 +171,17 @@ requires restarting the MCP server (rerun `demo_services`).
 returns `{"answer", "blocked", "topics", "followups", "sources", "sources_md", "kg", "mcp_errors"}`. The server is stateless —
 the client keeps history. `sources` is the distinct documents behind the agent's `search_docs` chunks,
 `{"r-doc": [{title, link, type}]}`, deduplicated on link and in relevance order (empty for canned,
-blocked replies); `sources_md` is the same list as markdown, worded by
+blocked replies), plus any sources an interceptor attaches to tool results (structured content
+`"sources"`, `{key: [{title, link, type}]}`; BDC: the studies Dug cites, under `"dug"`), listed under
+their key and deduplicated on link; `sources_md` is all of them as one markdown list, worded by
 `sources`/`sources_item` in prompts.yaml. `kg` lists the knowledge graphs attached to the agent's
-tool results, one per tool call: `[{tool, args, nodes: [{id, name, category?, description?}],
+tool results, one per tool call: `[{tool, args, label, nodes: [{id, name, type, category?, description?, attributes?}],
 edges: [{subject, object, predicate?}]}]` (empty unless a server or interceptor attaches them, and
 for blocked replies). A tool result carries one as its structured content `"kg"`; the LLM never sees it.
+A node's `type` is its role, set by the interceptor (BDC: `concept`, `variable`, `study`, or `term` for a
+search word standing in for a concept); `category` is the source's own, verbatim, where it gives one;
+`attributes` holds other fields worth keeping (BDC: a variable's `related_concepts_count`).
+`label` names the graph in the user's terms ("asthma concept graph"), for a UI to show instead of a tool name.
 `mcp_errors` lists the MCP servers currently unavailable (re-checked every `MCP_RETRY_SECONDS`), `"name: error"` each (e.g.
 `"dug_mcp: HTTPStatusError: Client error '403 Forbidden' ..."`); the agent answers without their tools.
 
@@ -190,11 +196,37 @@ for blocked replies). A tool result carries one as its structured content `"kg"`
   while the guardrail and follow-up steps still run)
 - `{"type": "done", answer, blocked, topics, followups, sources, sources_md, kg, mcp_errors}` — final state; the done answer is
   authoritative (an output-guardrail block, disclaimers, canned replies may replace the streamed text;
-  `blocked: true` means the streamed text was blocked and replaced)
+  `blocked` says which guardrail stopped it: `"input"` (the question was refused) or `"output"` (the
+  streamed answer was rejected and replaced), else `null`)
 - `{"type": "error"}` — the run failed (an LLM or gateway error mid-answer); the last event, no `done`
   follows, the server log has the details. Discard the streamed text and say so.
 
 `GET /health` returns `{"status": "ok", "mcp_errors"}`, so a UI can warn before the first question.
+
+## Web UI
+
+`web/` is a React chat client for `/chat/stream` (Vite + assistant-ui). It needs Node 20+.
+
+```bash
+npm --prefix web install                                  # once
+npm --prefix web run dev                                  # http://localhost:5173, API on :8010
+VITE_API_URL=http://127.0.0.1:8011 npm --prefix web run dev   # against the stub server instead
+npm --prefix web test                                     # unit tests, no server needed
+```
+
+Answers with a knowledge graph show it in a panel under the answer (graph, flow, or list
+view). The drawing code in `web/src/kg/` has no framework or app dependencies, so another system
+can embed it: see [web/src/kg/README.md](web/src/kg/README.md).
+
+Add `?reveal=after-check` to the page URL (or set `VITE_REVEAL=after-check`) to hold each answer
+back behind placeholder bars until the output guardrail has passed it, instead of streaming it.
+
+Without real services, run the stub (`uv run python tests/_stub_stream_server.py`) and point the
+UI at it with `VITE_API_URL` as above. A keyword in the question picks a path: `block` (input
+guardrail refuses), `reject` (output guardrail replaces the draft), `canned` (predefined reply),
+`nosources`, `crash` (the stream ends with an error), `kg` or `kg2` (a real Dug graph for one
+concept, or for asthma and COPD), `related` (asthma's graph plus its related concepts); anything
+else gets a docs answer with a small graph.
 
 ## Test / demo
 

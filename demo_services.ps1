@@ -1,5 +1,5 @@
 # Native Windows twin of demo_services.sh - same behavior, keep the two in sync.
-# Spawns everything demo.ipynb needs:
+# Spawns everything demo.ipynb and the web UI (web/) need:
 #   1. r-doc-mcp MCP server (HTTP) from DOC_MCP_DIR (.\.env, default ..\r-doc-mcp) on MCP_PORT
 #      (that repo's .env, default 8001), health-checked at the r_doc_mcp url in
 #      <CONFIG_DIR>\mcp_servers.yaml - the URL r-assist actually connects to
@@ -93,7 +93,11 @@ try {
   if ($procs.Count -eq 0) {
     Write-Host 'all services were already up - nothing started, nothing to stop'
   } else {
-    Write-Host 'all services up - run demo.ipynb; Ctrl-C here to stop them'
+    Write-Host 'all services up; Ctrl-C here to stop them'
+  }
+  Write-Host '  web UI: npm --prefix web run dev, then open http://localhost:5173'
+  Write-Host '  or run demo.ipynb'
+  if ($procs.Count -gt 0) {
     Wait-Process -Id ($procs | ForEach-Object Id)
   }
 } finally {

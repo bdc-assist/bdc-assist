@@ -1,0 +1,1103 @@
+{
+  "biolink:SubjectOfInvestigation": {
+    "curie_prefix": {
+      "UMLS": "175225",
+      "UBERON": "14912",
+      "FMA": "98634",
+      "NCIT": "10382",
+      "EMAPA": "8098",
+      "ZFA": "2060",
+      "FBbt": "356",
+      "MESH": "1997",
+      "WBbt": "48",
+      "MA": "2450",
+      "XAO": "427",
+      "CL": "3316",
+      "SNOMEDCT": "1811",
+      "CLO": "38896",
+      "GO": "4075"
+    }
+  },
+  "biolink:Disease": {
+    "curie_prefix": {
+      "UMLS": "358656",
+      "SNOMEDCT": "101001",
+      "orphanet": "11195",
+      "NCIT": "27904",
+      "MEDDRA": "47399",
+      "MONDO": "27931",
+      "OMIM": "10365",
+      "medgen": "21238",
+      "MESH": "11292",
+      "DOID": "12210",
+      "ICD10": "2483",
+      "EFO": "2471",
+      "OMIM.PS": "592",
+      "HP": "2404",
+      "ICD9": "2212",
+      "KEGG.DISEASE": "40",
+      "icd11": "5"
+    }
+  },
+  "biolink:NamedThing": {
+    "curie_prefix": {
+      "PUBCHEM.COMPOUND": "124014846",
+      "INCHIKEY": "123545520",
+      "CHEMBL.COMPOUND": "2921845",
+      "CAS": "4466355",
+      "HMDB": "217920",
+      "CHEBI": "220476",
+      "MESH": "364643",
+      "UMLS": "3443818",
+      "UNII": "142954",
+      "DrugCentral": "4995",
+      "GTOPDB": "13857",
+      "DRUGBANK": "19928",
+      "RXCUI": "125926",
+      "KEGG.COMPOUND": "15021",
+      "PMID": "40819774",
+      "doi": "31884189",
+      "PMC": "11265870",
+      "UniProtKB": "149881839",
+      "ENSEMBL": "37075686",
+      "NCIT": "74045",
+      "PR": "254242",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "HGNC": "45130",
+      "OMIM": "28272",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892",
+      "UBERON": "14912",
+      "FMA": "98634",
+      "EMAPA": "8098",
+      "ZFA": "2060",
+      "FBbt": "356",
+      "WBbt": "48",
+      "MA": "2450",
+      "XAO": "427",
+      "RHEA": "74232",
+      "REACT": "115278",
+      "GO": "38263",
+      "EC": "8866",
+      "TCDB": "20",
+      "KEGG.REACTION": "5",
+      "NCBITaxon": "2859704",
+      "CL": "3316",
+      "SNOMEDCT": "108976",
+      "PANTHER.FAMILY": "26140",
+      "HGNC.FAMILY": "2323",
+      "CLO": "38896",
+      "EFO": "10206",
+      "MP": "14750",
+      "HP": "18805",
+      "MEDDRA": "53808",
+      "SMPDB": "30248",
+      "PANTHER.PATHWAY": "175",
+      "orphanet": "11195",
+      "MONDO": "27931",
+      "medgen": "21238",
+      "DOID": "12210",
+      "ICD10": "2483",
+      "OMIM.PS": "592",
+      "ICD9": "2212",
+      "KEGG.DISEASE": "40",
+      "icd11": "5",
+      "ComplexPortal": "20579"
+    }
+  },
+  "biolink:MolecularEntity": {
+    "curie_prefix": {
+      "PUBCHEM.COMPOUND": "112200166",
+      "INCHIKEY": "111886154",
+      "CHEMBL.COMPOUND": "2747146",
+      "CAS": "4137747",
+      "HMDB": "217461",
+      "CHEBI": "186978",
+      "MESH": "78520",
+      "UMLS": "73501",
+      "UNII": "97202",
+      "DrugCentral": "4304",
+      "GTOPDB": "13631",
+      "DRUGBANK": "13830",
+      "RXCUI": "4374",
+      "KEGG.COMPOUND": "12809"
+    }
+  },
+  "biolink:PhysicalEntity": {
+    "curie_prefix": {
+      "UMLS": "6624"
+    }
+  },
+  "biolink:Procedure": {
+    "curie_prefix": {
+      "UMLS": "447867"
+    }
+  },
+  "biolink:SmallMolecule": {
+    "curie_prefix": {
+      "PUBCHEM.COMPOUND": "112200166",
+      "INCHIKEY": "111886154",
+      "CHEMBL.COMPOUND": "2747146",
+      "CAS": "4137747",
+      "HMDB": "217461",
+      "CHEBI": "186978",
+      "MESH": "78520",
+      "UMLS": "72936",
+      "UNII": "97202",
+      "DrugCentral": "4304",
+      "GTOPDB": "13631",
+      "DRUGBANK": "13830",
+      "RXCUI": "4374",
+      "KEGG.COMPOUND": "12809"
+    }
+  },
+  "biolink:OrganismTaxon": {
+    "curie_prefix": {
+      "NCBITaxon": "2859704",
+      "UMLS": "814777",
+      "MESH": "70652"
+    }
+  },
+  "biolink:ChemicalOrDrugOrTreatment": {
+    "curie_prefix": {
+      "PUBCHEM.COMPOUND": "124014846",
+      "INCHIKEY": "123545520",
+      "CHEMBL.COMPOUND": "2921845",
+      "CAS": "4466355",
+      "HMDB": "217920",
+      "CHEBI": "220476",
+      "MESH": "171783",
+      "UMLS": "628510",
+      "UNII": "142954",
+      "DrugCentral": "4995",
+      "GTOPDB": "13857",
+      "DRUGBANK": "17436",
+      "RXCUI": "125926",
+      "KEGG.COMPOUND": "15021"
+    }
+  },
+  "biolink:PhysiologicalProcess": {
+    "curie_prefix": {
+      "UMLS": "108"
+    }
+  },
+  "biolink:ChemicalEntity": {
+    "curie_prefix": {
+      "PUBCHEM.COMPOUND": "124014846",
+      "INCHIKEY": "123545520",
+      "CHEMBL.COMPOUND": "2921845",
+      "CAS": "4466355",
+      "HMDB": "217920",
+      "CHEBI": "220476",
+      "MESH": "171783",
+      "UMLS": "628510",
+      "UNII": "142954",
+      "DrugCentral": "4995",
+      "GTOPDB": "13857",
+      "DRUGBANK": "17436",
+      "RXCUI": "125926",
+      "KEGG.COMPOUND": "15021"
+    }
+  },
+  "biolink:Agent": {
+    "curie_prefix": {
+      "UMLS": "4461"
+    }
+  },
+  "biolink:ClinicalAttribute": {
+    "curie_prefix": {
+      "UMLS": "112982"
+    }
+  },
+  "biolink:CellularOrganism": {
+    "curie_prefix": {
+      "UMLS": "46"
+    }
+  },
+  "biolink:BiologicalProcess": {
+    "curie_prefix": {
+      "GO": "24136",
+      "UMLS": "45459",
+      "REACT": "23323",
+      "SMPDB": "30248",
+      "PANTHER.PATHWAY": "175"
+    }
+  },
+  "biolink:Attribute": {
+    "curie_prefix": {
+      "UMLS": "112982"
+    }
+  },
+  "biolink:GeneFamily": {
+    "curie_prefix": {
+      "PANTHER.FAMILY": "26140",
+      "HGNC.FAMILY": "2323"
+    }
+  },
+  "biolink:Pathway": {
+    "curie_prefix": {
+      "SMPDB": "30248",
+      "REACT": "22806",
+      "PANTHER.PATHWAY": "175",
+      "GO": "543"
+    }
+  },
+  "biolink:ClinicalEntity": {
+    "curie_prefix": {
+      "UMLS": "36772"
+    }
+  },
+  "biolink:PopulationOfIndividualOrganisms": {
+    "curie_prefix": {
+      "UMLS": "14333"
+    }
+  },
+  "biolink:Food": {
+    "curie_prefix": {
+      "DRUGBANK": "289",
+      "UMLS": "9108",
+      "RXCUI": "284",
+      "MESH": "37",
+      "CAS": "8",
+      "UNII": "22",
+      "DrugCentral": "3",
+      "CHEBI": "2",
+      "CHEMBL.COMPOUND": "2",
+      "KEGG.COMPOUND": "2"
+    }
+  },
+  "biolink:MolecularMixture": {
+    "curie_prefix": {
+      "UMLS": "296902",
+      "RXCUI": "103924",
+      "MESH": "6547",
+      "DRUGBANK": "514",
+      "PUBCHEM.COMPOUND": "11800563",
+      "CAS": "324187",
+      "INCHIKEY": "11603917",
+      "CHEMBL.COMPOUND": "119275",
+      "UNII": "21376",
+      "CHEBI": "3911",
+      "DrugCentral": "295",
+      "HMDB": "367",
+      "KEGG.COMPOUND": "542",
+      "GTOPDB": "64"
+    }
+  },
+  "biolink:PhenotypicFeature": {
+    "curie_prefix": {
+      "EFO": "7735",
+      "MP": "14750",
+      "HP": "16401",
+      "UMLS": "39826",
+      "NCIT": "22756",
+      "SNOMEDCT": "6164",
+      "MEDDRA": "6409",
+      "MESH": "731"
+    }
+  },
+  "biolink:Activity": {
+    "curie_prefix": {
+      "UMLS": "9092"
+    }
+  },
+  "biolink:Occurrent": {
+    "curie_prefix": {
+      "RHEA": "74232",
+      "UMLS": "863799",
+      "REACT": "115278",
+      "GO": "34188",
+      "EC": "8866",
+      "TCDB": "20",
+      "KEGG.REACTION": "5",
+      "SMPDB": "30248",
+      "PANTHER.PATHWAY": "175"
+    }
+  },
+  "biolink:ChemicalMixture": {
+    "curie_prefix": {
+      "DRUGBANK": "1186",
+      "UMLS": "306472",
+      "RXCUI": "104585",
+      "MESH": "6805",
+      "CAS": "324205",
+      "UNII": "21415",
+      "DrugCentral": "299",
+      "CHEBI": "4403",
+      "CHEMBL.COMPOUND": "119277",
+      "KEGG.COMPOUND": "649",
+      "INCHIKEY": "11603929",
+      "PUBCHEM.COMPOUND": "11800564",
+      "HMDB": "367",
+      "GTOPDB": "64"
+    }
+  },
+  "biolink:GeneOrGeneProductOrGeneFamily": {
+    "curie_prefix": {
+      "ENSEMBL": "17284916",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "UMLS": "47237",
+      "HGNC": "45130",
+      "OMIM": "17907",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892",
+      "PANTHER.FAMILY": "26140",
+      "HGNC.FAMILY": "2323"
+    }
+  },
+  "biolink:OrganismalEntity": {
+    "curie_prefix": {
+      "UMLS": "175225",
+      "UBERON": "14912",
+      "FMA": "98634",
+      "NCIT": "10382",
+      "EMAPA": "8098",
+      "ZFA": "2060",
+      "FBbt": "356",
+      "MESH": "1997",
+      "WBbt": "48",
+      "MA": "2450",
+      "XAO": "427",
+      "CL": "3316",
+      "SNOMEDCT": "1811",
+      "CLO": "38896",
+      "GO": "4075"
+    }
+  },
+  "biolink:Gene": {
+    "curie_prefix": {
+      "ENSEMBL": "17284916",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "UMLS": "47237",
+      "HGNC": "45130",
+      "OMIM": "17907",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892"
+    }
+  },
+  "biolink:Polypeptide": {
+    "curie_prefix": {
+      "UniProtKB": "149881839",
+      "ENSEMBL": "19790770",
+      "UMLS": "168184",
+      "NCIT": "13003",
+      "PR": "254242",
+      "MESH": "108188",
+      "DRUGBANK": "2492"
+    }
+  },
+  "biolink:NucleicAcidEntity": {
+    "curie_prefix": {
+      "UMLS": "551"
+    }
+  },
+  "biolink:GeographicLocation": {
+    "curie_prefix": {
+      "UMLS": "4698"
+    }
+  },
+  "biolink:Cell": {
+    "curie_prefix": {
+      "CL": "3315",
+      "UMLS": "6462",
+      "NCIT": "2597",
+      "SNOMEDCT": "1246",
+      "MESH": "330",
+      "UBERON": "2"
+    }
+  },
+  "biolink:Publication": {
+    "curie_prefix": {
+      "PMID": "40819774",
+      "doi": "31884189",
+      "PMC": "11265870",
+      "UMLS": "53920"
+    }
+  },
+  "biolink:PlanetaryEntity": {
+    "curie_prefix": {
+      "UMLS": "4698"
+    }
+  },
+  "biolink:GrossAnatomicalStructure": {
+    "curie_prefix": {
+      "UBERON": "10708",
+      "UMLS": "2392",
+      "NCIT": "2084",
+      "EMAPA": "5310",
+      "MA": "2450",
+      "MESH": "781",
+      "ZFA": "1454",
+      "FBbt": "239",
+      "XAO": "427",
+      "WBbt": "30"
+    }
+  },
+  "biolink:GeneOrGeneProduct": {
+    "curie_prefix": {
+      "UniProtKB": "149881839",
+      "ENSEMBL": "37075686",
+      "UMLS": "215202",
+      "NCIT": "13003",
+      "PR": "254242",
+      "MESH": "108188",
+      "DRUGBANK": "2492",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "HGNC": "45130",
+      "OMIM": "17907",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892"
+    }
+  },
+  "biolink:GenomicEntity": {
+    "curie_prefix": {
+      "ENSEMBL": "17284916",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "UMLS": "90209",
+      "HGNC": "45130",
+      "OMIM": "17907",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892"
+    }
+  },
+  "biolink:ClinicalIntervention": {
+    "curie_prefix": {
+      "UMLS": "36772"
+    }
+  },
+  "biolink:DiseaseOrPhenotypicFeature": {
+    "curie_prefix": {
+      "EFO": "10206",
+      "MP": "14750",
+      "HP": "18805",
+      "UMLS": "398482",
+      "NCIT": "50660",
+      "SNOMEDCT": "107165",
+      "MEDDRA": "53808",
+      "MESH": "12023",
+      "orphanet": "11195",
+      "MONDO": "27931",
+      "OMIM": "10365",
+      "medgen": "21238",
+      "DOID": "12210",
+      "ICD10": "2483",
+      "OMIM.PS": "592",
+      "ICD9": "2212",
+      "KEGG.DISEASE": "40",
+      "icd11": "5"
+    }
+  },
+  "biolink:AdministrativeEntity": {
+    "curie_prefix": {
+      "UMLS": "4461"
+    }
+  },
+  "biolink:ComplexMolecularMixture": {
+    "curie_prefix": {
+      "DRUGBANK": "383",
+      "UMLS": "462",
+      "RXCUI": "377",
+      "MESH": "219",
+      "UNII": "16",
+      "CAS": "10",
+      "PUBCHEM.COMPOUND": "1",
+      "INCHIKEY": "1",
+      "DrugCentral": "1"
+    }
+  },
+  "biolink:Protein": {
+    "curie_prefix": {
+      "UniProtKB": "149881839",
+      "ENSEMBL": "19790770",
+      "UMLS": "167965",
+      "NCIT": "13003",
+      "PR": "254242",
+      "MESH": "108188",
+      "DRUGBANK": "2492"
+    }
+  },
+  "biolink:ChemicalEntityOrProteinOrPolypeptide": {
+    "curie_prefix": {
+      "PUBCHEM.COMPOUND": "124014846",
+      "INCHIKEY": "123545520",
+      "CHEMBL.COMPOUND": "2921845",
+      "CAS": "4466355",
+      "HMDB": "217920",
+      "CHEBI": "220476",
+      "MESH": "279971",
+      "UMLS": "796694",
+      "UNII": "142954",
+      "DrugCentral": "4995",
+      "GTOPDB": "13857",
+      "DRUGBANK": "19928",
+      "RXCUI": "125926",
+      "KEGG.COMPOUND": "15021",
+      "UniProtKB": "149881839",
+      "ENSEMBL": "19790770",
+      "NCIT": "13003",
+      "PR": "254242"
+    }
+  },
+  "biolink:Device": {
+    "curie_prefix": {
+      "UMLS": "73167"
+    }
+  },
+  "biolink:Drug": {
+    "curie_prefix": {
+      "UMLS": "290615",
+      "RXCUI": "99375",
+      "MESH": "5",
+      "DRUGBANK": "1"
+    }
+  },
+  "biolink:AnatomicalEntity": {
+    "curie_prefix": {
+      "UMLS": "160846",
+      "UBERON": "14912",
+      "FMA": "98634",
+      "NCIT": "10382",
+      "EMAPA": "8098",
+      "ZFA": "2060",
+      "FBbt": "356",
+      "MESH": "1997",
+      "WBbt": "48",
+      "MA": "2450",
+      "XAO": "427",
+      "CL": "3316",
+      "SNOMEDCT": "1811",
+      "GO": "4075"
+    }
+  },
+  "biolink:CellularComponent": {
+    "curie_prefix": {
+      "GO": "4075",
+      "UMLS": "8439",
+      "NCIT": "1453",
+      "MESH": "278",
+      "SNOMEDCT": "565",
+      "UBERON": "7",
+      "CL": "1"
+    }
+  },
+  "biolink:ActivityAndBehavior": {
+    "curie_prefix": {
+      "UMLS": "461161"
+    }
+  },
+  "biolink:CellLine": {
+    "curie_prefix": {
+      "CLO": "38896"
+    }
+  },
+  "biolink:MacromolecularMachineMixin": {
+    "curie_prefix": {
+      "UniProtKB": "149881839",
+      "ENSEMBL": "37075686",
+      "UMLS": "215202",
+      "NCIT": "13003",
+      "PR": "254242",
+      "MESH": "108188",
+      "DRUGBANK": "2492",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "HGNC": "45130",
+      "OMIM": "17907",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892",
+      "PANTHER.FAMILY": "26140",
+      "HGNC.FAMILY": "2323",
+      "ComplexPortal": "20579"
+    }
+  },
+  "biolink:InformationContentEntity": {
+    "curie_prefix": {
+      "PMID": "40819774",
+      "doi": "31884189",
+      "PMC": "11265870",
+      "UMLS": "108470"
+    }
+  },
+  "biolink:OntologyClass": {
+    "curie_prefix": {
+      "PUBCHEM.COMPOUND": "124000730",
+      "INCHIKEY": "123490083",
+      "CHEMBL.COMPOUND": "2866423",
+      "CAS": "4461952",
+      "HMDB": "217828",
+      "CHEBI": "191381",
+      "MESH": "99345",
+      "UMLS": "1173831",
+      "UNII": "118617",
+      "DrugCentral": "4603",
+      "GTOPDB": "13695",
+      "DRUGBANK": "15016",
+      "RXCUI": "108959",
+      "KEGG.COMPOUND": "13458",
+      "ENSEMBL": "17284916",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "HGNC": "45130",
+      "OMIM": "28272",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892",
+      "UBERON": "14912",
+      "FMA": "98634",
+      "NCIT": "61042",
+      "EMAPA": "8098",
+      "ZFA": "2060",
+      "FBbt": "356",
+      "WBbt": "48",
+      "MA": "2450",
+      "XAO": "427",
+      "RHEA": "74232",
+      "REACT": "115278",
+      "GO": "38263",
+      "EC": "8866",
+      "TCDB": "20",
+      "KEGG.REACTION": "5",
+      "CL": "3316",
+      "SNOMEDCT": "108976",
+      "EFO": "10206",
+      "MP": "14750",
+      "HP": "18805",
+      "MEDDRA": "53808",
+      "SMPDB": "30248",
+      "PANTHER.PATHWAY": "175",
+      "orphanet": "11195",
+      "MONDO": "27931",
+      "medgen": "21238",
+      "DOID": "12210",
+      "ICD10": "2483",
+      "OMIM.PS": "592",
+      "ICD9": "2212",
+      "KEGG.DISEASE": "40",
+      "icd11": "5"
+    }
+  },
+  "biolink:Cohort": {
+    "curie_prefix": {
+      "UMLS": "950"
+    }
+  },
+  "biolink:MolecularActivity": {
+    "curie_prefix": {
+      "RHEA": "74232",
+      "UMLS": "28852",
+      "REACT": "91955",
+      "GO": "10052",
+      "EC": "8866",
+      "TCDB": "20",
+      "KEGG.REACTION": "5"
+    }
+  },
+  "biolink:PhysicalEssenceOrOccurrent": {
+    "curie_prefix": {
+      "PUBCHEM.COMPOUND": "124014846",
+      "INCHIKEY": "123545520",
+      "CHEMBL.COMPOUND": "2921845",
+      "CAS": "4466355",
+      "HMDB": "217920",
+      "CHEBI": "220476",
+      "MESH": "173780",
+      "UMLS": "1707016",
+      "UNII": "142954",
+      "DrugCentral": "4995",
+      "GTOPDB": "13857",
+      "DRUGBANK": "17436",
+      "RXCUI": "125926",
+      "KEGG.COMPOUND": "15021",
+      "ENSEMBL": "17284916",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "HGNC": "45130",
+      "OMIM": "17907",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892",
+      "UBERON": "14912",
+      "FMA": "98634",
+      "NCIT": "10382",
+      "EMAPA": "8098",
+      "ZFA": "2060",
+      "FBbt": "356",
+      "WBbt": "48",
+      "MA": "2450",
+      "XAO": "427",
+      "RHEA": "74232",
+      "REACT": "115278",
+      "GO": "38263",
+      "EC": "8866",
+      "TCDB": "20",
+      "KEGG.REACTION": "5",
+      "CL": "3316",
+      "SNOMEDCT": "1811",
+      "SMPDB": "30248",
+      "PANTHER.PATHWAY": "175"
+    }
+  },
+  "biolink:GeneGroupingMixin": {
+    "curie_prefix": {
+      "PANTHER.FAMILY": "26140",
+      "HGNC.FAMILY": "2323"
+    }
+  },
+  "biolink:GeneProductMixin": {
+    "curie_prefix": {
+      "UniProtKB": "149881839",
+      "ENSEMBL": "19790770",
+      "UMLS": "167965",
+      "NCIT": "13003",
+      "PR": "254242",
+      "MESH": "108188",
+      "DRUGBANK": "2492"
+    }
+  },
+  "biolink:ChemicalEntityOrGeneOrGeneProduct": {
+    "curie_prefix": {
+      "PUBCHEM.COMPOUND": "124014846",
+      "INCHIKEY": "123545520",
+      "CHEMBL.COMPOUND": "2921845",
+      "CAS": "4466355",
+      "HMDB": "217920",
+      "CHEBI": "220476",
+      "MESH": "279971",
+      "UMLS": "843931",
+      "UNII": "142954",
+      "DrugCentral": "4995",
+      "GTOPDB": "13857",
+      "DRUGBANK": "19928",
+      "RXCUI": "125926",
+      "KEGG.COMPOUND": "15021",
+      "UniProtKB": "149881839",
+      "ENSEMBL": "37075686",
+      "NCIT": "13003",
+      "PR": "254242",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "HGNC": "45130",
+      "OMIM": "17907",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892",
+      "PANTHER.FAMILY": "26140",
+      "HGNC.FAMILY": "2323"
+    }
+  },
+  "biolink:Behavior": {
+    "curie_prefix": {
+      "UMLS": "4202"
+    }
+  },
+  "biolink:Event": {
+    "curie_prefix": {
+      "UMLS": "288"
+    }
+  },
+  "biolink:BiologicalEntity": {
+    "curie_prefix": {
+      "UniProtKB": "149881839",
+      "ENSEMBL": "37075686",
+      "UMLS": "863549",
+      "NCIT": "74045",
+      "PR": "254242",
+      "MESH": "122208",
+      "DRUGBANK": "2492",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "HGNC": "45130",
+      "OMIM": "28272",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892",
+      "UBERON": "14912",
+      "FMA": "98634",
+      "EMAPA": "8098",
+      "ZFA": "2060",
+      "FBbt": "356",
+      "WBbt": "48",
+      "MA": "2450",
+      "XAO": "427",
+      "RHEA": "74232",
+      "REACT": "115278",
+      "GO": "38263",
+      "EC": "8866",
+      "TCDB": "20",
+      "KEGG.REACTION": "5",
+      "CL": "3316",
+      "SNOMEDCT": "108976",
+      "PANTHER.FAMILY": "26140",
+      "HGNC.FAMILY": "2323",
+      "CLO": "38896",
+      "EFO": "10206",
+      "MP": "14750",
+      "HP": "18805",
+      "MEDDRA": "53808",
+      "SMPDB": "30248",
+      "PANTHER.PATHWAY": "175",
+      "orphanet": "11195",
+      "MONDO": "27931",
+      "medgen": "21238",
+      "DOID": "12210",
+      "ICD10": "2483",
+      "OMIM.PS": "592",
+      "ICD9": "2212",
+      "KEGG.DISEASE": "40",
+      "icd11": "5",
+      "ComplexPortal": "20579"
+    }
+  },
+  "biolink:Human": {
+    "curie_prefix": {
+      "UMLS": "46"
+    }
+  },
+  "biolink:Mammal": {
+    "curie_prefix": {
+      "UMLS": "46"
+    }
+  },
+  "biolink:ThingWithTaxon": {
+    "curie_prefix": {
+      "UniProtKB": "149881839",
+      "ENSEMBL": "37075686",
+      "UMLS": "864100",
+      "NCIT": "74045",
+      "PR": "254242",
+      "MESH": "122208",
+      "DRUGBANK": "2492",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "HGNC": "45130",
+      "OMIM": "28272",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892",
+      "UBERON": "14912",
+      "FMA": "98634",
+      "EMAPA": "8098",
+      "ZFA": "2060",
+      "FBbt": "356",
+      "WBbt": "48",
+      "MA": "2450",
+      "XAO": "427",
+      "RHEA": "74232",
+      "REACT": "115278",
+      "GO": "38263",
+      "EC": "8866",
+      "TCDB": "20",
+      "KEGG.REACTION": "5",
+      "CL": "3316",
+      "SNOMEDCT": "108976",
+      "PANTHER.FAMILY": "26140",
+      "HGNC.FAMILY": "2323",
+      "CLO": "38896",
+      "EFO": "10206",
+      "MP": "14750",
+      "HP": "18805",
+      "MEDDRA": "53808",
+      "SMPDB": "30248",
+      "PANTHER.PATHWAY": "175",
+      "orphanet": "11195",
+      "MONDO": "27931",
+      "medgen": "21238",
+      "DOID": "12210",
+      "ICD10": "2483",
+      "OMIM.PS": "592",
+      "ICD9": "2212",
+      "KEGG.DISEASE": "40",
+      "icd11": "5",
+      "ComplexPortal": "20579"
+    }
+  },
+  "biolink:MacromolecularComplex": {
+    "curie_prefix": {
+      "ComplexPortal": "20579"
+    }
+  },
+  "biolink:Entity": {
+    "curie_prefix": {
+      "PUBCHEM.COMPOUND": "124014846",
+      "INCHIKEY": "123545520",
+      "CHEMBL.COMPOUND": "2921845",
+      "CAS": "4466355",
+      "HMDB": "217920",
+      "CHEBI": "220476",
+      "MESH": "364643",
+      "UMLS": "3443818",
+      "UNII": "142954",
+      "DrugCentral": "4995",
+      "GTOPDB": "13857",
+      "DRUGBANK": "19928",
+      "RXCUI": "125926",
+      "KEGG.COMPOUND": "15021",
+      "PMID": "40819774",
+      "doi": "31884189",
+      "PMC": "11265870",
+      "UniProtKB": "149881839",
+      "ENSEMBL": "37075686",
+      "NCIT": "74045",
+      "PR": "254242",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "HGNC": "45130",
+      "OMIM": "28272",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892",
+      "UBERON": "14912",
+      "FMA": "98634",
+      "EMAPA": "8098",
+      "ZFA": "2060",
+      "FBbt": "356",
+      "WBbt": "48",
+      "MA": "2450",
+      "XAO": "427",
+      "RHEA": "74232",
+      "REACT": "115278",
+      "GO": "38263",
+      "EC": "8866",
+      "TCDB": "20",
+      "KEGG.REACTION": "5",
+      "NCBITaxon": "2859704",
+      "CL": "3316",
+      "SNOMEDCT": "108976",
+      "PANTHER.FAMILY": "26140",
+      "HGNC.FAMILY": "2323",
+      "CLO": "38896",
+      "EFO": "10206",
+      "MP": "14750",
+      "HP": "18805",
+      "MEDDRA": "53808",
+      "SMPDB": "30248",
+      "PANTHER.PATHWAY": "175",
+      "orphanet": "11195",
+      "MONDO": "27931",
+      "medgen": "21238",
+      "DOID": "12210",
+      "ICD10": "2483",
+      "OMIM.PS": "592",
+      "ICD9": "2212",
+      "KEGG.DISEASE": "40",
+      "icd11": "5",
+      "ComplexPortal": "20579"
+    }
+  },
+  "biolink:StudyPopulation": {
+    "curie_prefix": {
+      "UMLS": "950"
+    }
+  },
+  "biolink:PhysicalEssence": {
+    "curie_prefix": {
+      "PUBCHEM.COMPOUND": "124014846",
+      "INCHIKEY": "123545520",
+      "CHEMBL.COMPOUND": "2921845",
+      "CAS": "4466355",
+      "HMDB": "217920",
+      "CHEBI": "220476",
+      "MESH": "173780",
+      "UMLS": "843217",
+      "UNII": "142954",
+      "DrugCentral": "4995",
+      "GTOPDB": "13857",
+      "DRUGBANK": "17436",
+      "RXCUI": "125926",
+      "KEGG.COMPOUND": "15021",
+      "ENSEMBL": "17284916",
+      "NCBIGene": "70201057",
+      "MGI": "635946",
+      "RGD": "366481",
+      "HGNC": "45130",
+      "OMIM": "17907",
+      "ZFIN": "37976",
+      "FB": "32160",
+      "WormBase": "49529",
+      "SGD": "8097",
+      "dictyBase": "13892",
+      "UBERON": "14912",
+      "FMA": "98634",
+      "NCIT": "10382",
+      "EMAPA": "8098",
+      "ZFA": "2060",
+      "FBbt": "356",
+      "WBbt": "48",
+      "MA": "2450",
+      "XAO": "427",
+      "CL": "3316",
+      "SNOMEDCT": "1811",
+      "GO": "4075"
+    }
+  },
+  "biolink:Phenomenon": {
+    "curie_prefix": {
+      "UMLS": "332529"
+    }
+  },
+  "biolink:ClinicalFinding": {
+    "curie_prefix": {
+      "UMLS": "11065"
+    }
+  },
+  "biolink:BiologicalProcessOrActivity": {
+    "curie_prefix": {
+      "RHEA": "74232",
+      "UMLS": "74311",
+      "REACT": "115278",
+      "GO": "34188",
+      "EC": "8866",
+      "TCDB": "20",
+      "KEGG.REACTION": "5",
+      "SMPDB": "30248",
+      "PANTHER.PATHWAY": "175"
+    }
+  }
+}
