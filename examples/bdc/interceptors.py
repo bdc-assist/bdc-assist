@@ -84,6 +84,27 @@ def to_kg(tool: str, data: dict) -> dict | None:
     return {"nodes": list(nodes.values()), "edges": list(edges.values())} if edges else None
 
 
+def label(tool: str, args: dict, kg: dict) -> str:
+    """The graph in the user's terms, for a UI to show instead of a tool name: "asthma
+    concept graph", "asthma + copd cohort variables". A concept is named from the graph
+    when it can be; get_concept_connections doesn't name the concept it was asked about,
+    so that one shows its id (a client merging several calls may know the name)."""
+    names = {n["id"]: n.get("name", n["id"]) for n in kg.get("nodes", [])}
+    concept = names.get(args.get("concept_id"), args.get("concept_id") or "")
+
+    def words(v):
+        return " + ".join(x for x in (v if isinstance(v, list) else [v]) if isinstance(x, str) and x)
+
+    text = {
+        "get_concept_graph": f"{concept} concept graph",
+        "get_concept_connections": f"{concept} related concepts",
+        "find_cohort_variables": f"{words(args.get('concepts'))} cohort variables",
+        "search_concepts": f"{words(args.get('search_term'))} concept search",
+        "picsure_search": f"{words(next((v for v in args.values() if isinstance(v, str)), ''))} PIC-SURE variables",
+    }.get(tool, "")
+    return text if text.split(" ", 1)[0] else tool.replace("_", " ")  # nothing to name it by: the tool
+
+
 async def dug_kg(request, handler):
     result = await handler(request)
     if not isinstance(result, CallToolResult) or result.isError:
@@ -95,5 +116,6 @@ async def dug_kg(request, handler):
     kg = to_kg(request.name, data) if isinstance(data, dict) else None
     if not kg:
         return result
-    structured = {**(result.structuredContent or {}), "kg": {"tool": request.name, "args": request.args, **kg}}
+    entry = {"tool": request.name, "args": request.args, "label": label(request.name, request.args or {}, kg), **kg}
+    structured = {**(result.structuredContent or {}), "kg": entry}
     return result.model_copy(update={"structuredContent": structured})

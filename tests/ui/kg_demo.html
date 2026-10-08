@@ -118,7 +118,8 @@ function showKg(list) {
   for (const kg of list) {
     const b = document.createElement("button");
     const what = Object.values(kg.args || {}).filter(v => typeof v === "string").join(", ");
-    b.textContent = `${kg.tool}${what ? " · " + what : ""} — ${kg.nodes.length} nodes, ${kg.edges.length} edges`;
+    const name = kg.label || `${kg.tool}${what ? " · " + what : ""}`;  // older servers send no label
+    b.textContent = `${name} — ${kg.nodes.length} nodes, ${kg.edges.length} edges`;
     b.onclick = () => {
       for (const t of $("tabs").children) t.classList.toggle("on", t === b);
       draw(kg);

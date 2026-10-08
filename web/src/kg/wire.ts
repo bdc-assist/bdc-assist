@@ -107,11 +107,17 @@ export function kgLabel(entry: KgWireEntry): string {
   return what.trim() || (entry.tool ?? 'graph').replace(/_/g, ' ')
 }
 
-/** Each entry of the API's `kg` that has something to draw, labelled (kgLabel). */
+/** Each entry of the API's `kg` that has something to draw, labelled (kgLabel). A
+ * call may know a concept only by id (get_concept_connections doesn't name the one it
+ * was asked about): if another call names it, the label uses the name. */
 export function kgParts(value: unknown): KgPart[] {
   if (!Array.isArray(value)) return []
+  const named = new Map((fromKgList(value)?.nodes ?? []).filter((n) => n.label !== n.id).map((n) => [n.id, n.label]))
   return (value as KgWireEntry[]).flatMap((entry) => {
     const graph = fromKgList([entry])
-    return graph ? [{ label: kgLabel(entry), graph }] : []
+    if (!graph) return []
+    let label = kgLabel(entry)
+    for (const n of graph.nodes) if (n.label === n.id && named.has(n.id)) label = label.replace(n.id, named.get(n.id)!)
+    return [{ label, graph }]
   })
 }

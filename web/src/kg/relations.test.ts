@@ -54,7 +54,9 @@ describe('concept–concept edges (real asthma data)', () => {
     expect(listed).toEqual(new Set([ASTHMA]))
   })
 
-  it('label the connections call in plain words', () => {
-    expect(kgParts(KG).map((p) => p.label)).toEqual(['asthma concept graph', 'MONDO:0004979 related concepts'])
+  it('label the connections call in plain words, naming asthma from the other call', () => {
+    expect(kgParts(KG).map((p) => p.label)).toEqual(['asthma concept graph', 'asthma related concepts'])
+    // on its own nothing names it, so the label keeps the id
+    expect(kgParts(relatedKg).map((p) => p.label)).toEqual(['MONDO:0004979 related concepts'])
   })
 })

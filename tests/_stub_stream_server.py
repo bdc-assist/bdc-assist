@@ -44,8 +44,14 @@ _spec.loader.exec_module(_interceptors)
 _FIXTURES = Path(__file__).parent / "fixtures"
 
 
+def _attach(tool: str, args: dict, result: dict) -> dict:
+    """The kg the interceptor attaches to a real result (dug_kg)."""
+    kg = _interceptors.to_kg(tool, result)
+    return {"tool": tool, "args": args, "label": _interceptors.label(tool, args, kg), **kg}
+
+
 def _concept_graph(args: dict, result: dict) -> dict:
-    return {"tool": "get_concept_graph", "args": args, **_interceptors.to_kg("get_concept_graph", result)}
+    return _attach("get_concept_graph", args, result)
 
 
 KG_CHD = [_concept_graph({"concept_id": "MONDO:0005453", "expand_depth": 2, "limit": 50},
@@ -53,8 +59,7 @@ KG_CHD = [_concept_graph({"concept_id": "MONDO:0005453", "expand_depth": 2, "lim
 KG_ASTHMA_COPD = [_concept_graph(c["args"], c["result"])
                   for c in json.loads((_FIXTURES / "dug_concept_graph_asthma_copd.json").read_text())]
 _connections = json.loads((_FIXTURES / "dug_concept_connections_asthma.json").read_text())
-KG_RELATED = [KG_ASTHMA_COPD[0], {"tool": "get_concept_connections", "args": _connections["args"],
-                                  **_interceptors.to_kg("get_concept_connections", _connections["result"])}]
+KG_RELATED = [KG_ASTHMA_COPD[0], _attach("get_concept_connections", _connections["args"], _connections["result"])]
 
 
 class SlowAgent:
@@ -85,7 +90,7 @@ class SlowAgent:
                                                                               "doc_type": "docs", "hierarchy": "Getting started"}},
         ]
         # a knowledge graph as an interceptor attaches it (examples/bdc/interceptors.py), for kg_demo.html
-        kg = {"tool": "get_concept_graph", "args": {"concept_id": "MONDO:0005068"},
+        kg = {"tool": "get_concept_graph", "args": {"concept_id": "MONDO:0005068"}, "label": "myocardial infarction concept graph",
               "nodes": [{"id": "MONDO:0005068", "name": "myocardial infarction", "type": "concept",
                          "category": "biolink:Disease"},
                         {"id": "phv1", "name": "MI_EVER", "type": "variable",
