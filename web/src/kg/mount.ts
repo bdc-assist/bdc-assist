@@ -1,4 +1,5 @@
 import cytoscape, { type LayoutOptions, type StylesheetJson } from 'cytoscape'
+import fcose from 'cytoscape-fcose'
 
 import { bridges, sharedOnly } from './bridges'
 import { collapseVersions } from './collapse'
@@ -9,9 +10,12 @@ import { orient } from './orient'
 import type { KgGraph } from './types'
 import type { KgView, KgViewOptions } from './view'
 
+// fCoSE: Cytoscape's improved force-directed layout (an extension), for the force view
+cytoscape.use(fcose)
+
 /**
  * - radial: concepts in the middle, their variables around them, studies outside
- * - force: a force-directed layout (Cytoscape's cose); clusters form on their own
+ * - force: a force-directed layout (fCoSE, cytoscape-fcose); clusters form on their own
  * - columns: a left-to-right flow, concepts | variables | studies
  */
 export const KG_LAYOUTS = ['radial', 'force', 'columns'] as const
@@ -180,7 +184,19 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
       return { name: 'preset', positions: Object.fromEntries(pos), padding: PADDING, animate: false }
     }
     if (layout === 'force') {
-      return { name: 'cose', padding: PADDING, animate: false, randomize: true, nodeDimensionsIncludeLabels: true }
+      return {
+        name: 'fcose',
+        quality: 'proof', // the slower, better pass; our graphs are small (tens of nodes)
+        randomize: true,
+        animate: false,
+        padding: PADDING,
+        nodeDimensionsIncludeLabels: true, // keep long study labels from piling up
+        nodeRepulsion: 8000,
+        idealEdgeLength: 70,
+        edgeElasticity: 0.45,
+        nodeSeparation: 80,
+        packComponents: true, // separate pieces (unconnected nodes) sit side by side
+      } as LayoutOptions // fcose's options aren't in Cytoscape's types
     }
     return {
       name: 'breadthfirst',
