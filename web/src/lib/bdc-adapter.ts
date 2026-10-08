@@ -18,6 +18,7 @@ type StreamEvent =
       type: 'done'
       answer: string
       blocked: boolean // the input was refused, or the answer was (output guardrail)
+      blocked_by?: 'input' | 'output' | null // which; older servers don't say
       topics: string[]
       followups: string[]
       sources: Sources
@@ -214,11 +215,13 @@ export function createBdcAdapter(
             case 'done': {
               // authoritative: rejects, disclaimers and canned replies replace
               // the streamed text, and a rejected answer has no sources or graph.
-              // blocked covers both guardrails; a streamed draft that was replaced
-              // means the output one (a reject), none means the input was refused.
+              // blocked covers both guardrails; blocked_by says which. Servers that
+              // don't send it: a streamed draft that was replaced means the output
+              // guardrail (a reject), none means the input was refused.
               const replaced = replacedDraft(state.text, ev.answer)
-              meta.rejected = replaced
-              meta.blocked = ev.blocked && !replaced
+              const by = ev.blocked_by ?? (ev.blocked ? (replaced ? 'output' : 'input') : null)
+              meta.rejected = by === 'output' || (!ev.blocked && replaced) // the latter: pre-r-assist servers
+              meta.blocked = by === 'input'
               state.text = ev.answer
               meta.sources = ev.sources
               meta.graph = fromKgList(ev.kg)

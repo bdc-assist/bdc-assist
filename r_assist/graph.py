@@ -36,6 +36,7 @@ class BotState(TypedDict, total=False):
     sources_md: str         # the same as a markdown list, ready to show under the answer
     kg: list                # knowledge graphs attached to tool results, one per tool call
     blocked: bool           # an input or output guardrail blocked the run
+    blocked_by: str         # which: "input" (question refused) or "output" (answer rejected)
 
 
 def _parse_tool_content(content):
@@ -145,7 +146,7 @@ def build_graph(llm, agent, predefined: dict):
                 raise
             blocked = True
         if blocked:
-            return {"blocked": True, "answer": REFUSAL}
+            return {"blocked": True, "blocked_by": "input", "answer": REFUSAL}
         return {"blocked": False}
 
     async def contextualize(state: BotState):
@@ -245,7 +246,7 @@ def build_graph(llm, agent, predefined: dict):
                 raise
             blocked = True
         if blocked:
-            return {"blocked": True, "answer": REJECT, "sources": {}, "sources_md": "", "kg": []}
+            return {"blocked": True, "blocked_by": "output", "answer": REJECT, "sources": {}, "sources_md": "", "kg": []}
         return {"blocked": False}
 
     async def append_disclaimer(state: BotState):

@@ -357,6 +357,17 @@ describe('rejection', () => {
     expect(await finalMeta(done({ answer: 'Refusal.', blocked: true }))).toMatchObject({ blocked: true, rejected: false })
   })
 
+  it('trusts blocked_by when the server says which guardrail blocked', async () => {
+    // after-check mode can reject before any draft was shown; blocked_by still says so
+    expect(await finalMeta(done({ answer: 'Sorry.', blocked: true, blocked_by: 'output' }))).toMatchObject({
+      blocked: false,
+      rejected: true,
+    })
+    expect(
+      await finalMeta({ type: 'token', text: 'x' }, done({ answer: 'Refusal.', blocked: true, blocked_by: 'input' })),
+    ).toMatchObject({ blocked: true, rejected: false })
+  })
+
   it('reads blocked after a streamed draft as a reject, not a refusal (the output guardrail)', async () => {
     const meta = await finalMeta({ type: 'token', text: 'a dubious answer' }, done({ answer: 'Sorry.', blocked: true }))
     expect(meta).toMatchObject({ blocked: false, rejected: true })
