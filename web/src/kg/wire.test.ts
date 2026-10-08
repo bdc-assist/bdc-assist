@@ -5,7 +5,7 @@ import asthmaCopd from './fixtures/asthma-copd-graph.json'
 import chdKg from './fixtures/chd-kg.json'
 import chd from './fixtures/chd-graph.json'
 import type { KgGraph } from './types'
-import { fromKgList } from './wire'
+import { fromKgList, kgLabel, kgParts } from './wire'
 
 // *-kg.json: what the API sends today, made by main's interceptor (to_kg in
 // examples/bdc/interceptors.py) from the same Dug results as the *-graph.json fixtures
@@ -65,5 +65,33 @@ describe('fromKgList', () => {
     expect(fromKgList({})).toBeNull()
     expect(fromKgList([])).toBeNull()
     expect(fromKgList([{ tool: 't', nodes: [{ id: 'a' }], edges: [] }])).toBeNull()
+  })
+})
+
+describe('kgLabel', () => {
+  it("names a graph in the user's terms, never by tool", () => {
+    expect(kgLabel(asthmaCopdKg[0])).toBe('asthma concept graph')
+    expect(kgLabel(asthmaCopdKg[1])).toBe('chronic obstructive pulmonary disease concept graph')
+    const entry = (tool: string, args: Record<string, unknown>) => ({ tool, args, nodes: [], edges: [] })
+    expect(kgLabel(entry('find_cohort_variables', { concepts: ['asthma', 'copd'], require_all: true }))).toBe(
+      'asthma + copd cohort variables',
+    )
+    expect(kgLabel(entry('search_concepts', { search_term: 'asthma' }))).toBe('asthma concept search')
+    expect(kgLabel(entry('some_new_tool', {}))).toBe('some new tool')
+  })
+
+  it("prefers the server's label", () => {
+    expect(kgLabel({ tool: 'get_concept_graph', label: 'Asthma studies', nodes: [], edges: [] })).toBe('Asthma studies')
+  })
+})
+
+describe('kgParts', () => {
+  it('gives each call its own graph and label', () => {
+    const parts = kgParts(asthmaCopdKg)
+    expect(parts.map((p) => p.label)).toEqual([
+      'asthma concept graph',
+      'chronic obstructive pulmonary disease concept graph',
+    ])
+    expect(parts.map((p) => p.graph.nodes.filter((n) => n.type === 'concept').length)).toEqual([1, 1])
   })
 })

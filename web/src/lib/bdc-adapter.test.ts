@@ -101,6 +101,7 @@ describe('createBdcAdapter', () => {
       status: null,
       sources: { 'bdc-doc': [{ title: 'Overview', link: 'https://x/overview', type: 'page' }] },
       graph: null,
+      graphParts: [],
       unavailable: [],
       followups: ['What is dbGaP?'],
       blocked: false,
@@ -282,6 +283,24 @@ describe('data parts', () => {
     const held = await run(events, { reveal: 'after-check' })
     expect(names(held.yields[1])).not.toContain(GRAPH_PART)
     expect(names(held.yields.at(-1)!)).toContain(GRAPH_PART)
+  })
+
+  it('passes each call\'s graph along, labelled, only when there are several', async () => {
+    const call = (concept: string) => ({
+      tool: 'get_concept_graph',
+      args: { concept_id: concept },
+      nodes: [{ id: concept, name: concept.toLowerCase() }, { id: `v-${concept}`, name: 'v', category: 'StudyVariable' }],
+      edges: [{ subject: `v-${concept}`, object: concept }],
+    })
+    const graphData = async (kg: object[]) => {
+      const { yields } = await run(sse(done({ kg })))
+      return partsOf(yields[0]).find((p) => p.name === GRAPH_PART)?.data as { parts: { label: string }[] }
+    }
+    expect((await graphData([call('ASTHMA')])).parts).toEqual([])
+    expect((await graphData([call('ASTHMA'), call('COPD')])).parts.map((p) => p.label)).toEqual([
+      'asthma concept graph',
+      'copd concept graph',
+    ])
   })
 
   it('adds the follow-ups last, once done', async () => {

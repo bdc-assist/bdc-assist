@@ -63,3 +63,45 @@ export function fromKgList(value: unknown): KgGraph | null {
   const kept = [...edges.values()].filter((e) => nodes.has(e.source) && nodes.has(e.target))
   return kept.length ? { nodes: [...nodes.values()], edges: kept } : null
 }
+
+export type KgPart = { label: string; graph: KgGraph } // one tool call's graph, for showing it on its own
+
+const words = (v: unknown) => (Array.isArray(v) ? v : [v]).filter((x) => typeof x === 'string' && x).join(' + ')
+
+/**
+ * A graph entry in the user's terms, never a tool name: its `label` if the server
+ * sent one, else made from the tool and its arguments ("asthma concept graph",
+ * "asthma + COPD cohort variables"); a concept id is named from the entry's nodes.
+ */
+export function kgLabel(entry: KgWireEntry): string {
+  if (entry.label) return entry.label
+  const args = entry.args ?? {}
+  const conceptName = (id: unknown) =>
+    (typeof id === 'string' && entry.nodes?.find((n) => n.id === id)?.name) || (typeof id === 'string' ? id : '')
+  const what = (() => {
+    switch (entry.tool) {
+      case 'get_concept_graph':
+        return `${conceptName(args.concept_id)} concept graph`
+      case 'get_concept_connections':
+        return `${conceptName(args.concept_id)} related concepts`
+      case 'find_cohort_variables':
+        return `${words(args.concepts)} cohort variables`
+      case 'search_concepts':
+        return `${words(args.search_term)} concept search`
+      case 'picsure_search':
+        return `${words(Object.values(args).find((v) => typeof v === 'string'))} PIC-SURE variables`
+      default:
+        return entry.tool?.replace(/_/g, ' ') ?? 'graph'
+    }
+  })()
+  return what.trim() || (entry.tool ?? 'graph').replace(/_/g, ' ')
+}
+
+/** Each entry of the API's `kg` that has something to draw, labelled (kgLabel). */
+export function kgParts(value: unknown): KgPart[] {
+  if (!Array.isArray(value)) return []
+  return (value as KgWireEntry[]).flatMap((entry) => {
+    const graph = fromKgList([entry])
+    return graph ? [{ label: kgLabel(entry), graph }] : []
+  })
+}

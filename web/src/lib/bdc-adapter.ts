@@ -1,7 +1,7 @@
 import type { ChatModelAdapter, ThreadMessage } from '@assistant-ui/react'
 
 import type { KgGraph } from '@/kg/types'
-import { fromKgList } from '@/kg/wire'
+import { fromKgList, kgParts, type KgPart } from '@/kg/wire'
 import { readSSE } from '@/lib/sse'
 
 // Wire format of POST /chat/stream (see stream_chat in r_assist/api.py).
@@ -34,6 +34,7 @@ export type BdcMessageMeta = {
   status: string | null // latest tool-call status; cleared by reset and new nodes
   sources: Sources | null // null until the agent reports them
   graph: KgGraph | null // the knowledge graph (kg) merged; null when there is none (yet)
+  graphParts: KgPart[] // the same per tool call, labelled, to show one on its own
   unavailable: string[] // MCP servers that were down, by name (from mcp_errors)
   followups: string[]
   blocked: boolean // input guardrail refused the question
@@ -52,7 +53,10 @@ export const SOURCES_PART = 'bdc-sources'
 export const BLOCKED_PART = 'bdc-blocked'
 export const DRAFT_PART = 'bdc-draft'
 export const REJECTED_PART = 'bdc-rejected'
-export const GRAPH_PART = 'bdc-graph' // data: KgGraph
+export const GRAPH_PART = 'bdc-graph' // data: GraphPartData
+
+/** The graph part's data: the merged graph, and each call's graph when there are several. */
+export type GraphPartData = { graph: KgGraph; parts: KgPart[] }
 export const FOLLOWUPS_PART = 'bdc-followups' // data: string[]
 export const UNAVAILABLE_PART = 'bdc-unavailable' // data: string[] (MCP server names)
 
@@ -78,7 +82,10 @@ export function toContent({ text, streaming, meta }: StreamState, reveal: Reveal
     parts.push(data(DRAFT_PART, { words: text.split(/\s+/).filter(Boolean).length } satisfies DraftPartData))
   }
   // before the status line, so the status stays at the bottom while later nodes run
-  if (!hold && meta.graph) parts.push(data(GRAPH_PART, meta.graph))
+  if (!hold && meta.graph) {
+    const graphData: GraphPartData = { graph: meta.graph, parts: meta.graphParts.length > 1 ? meta.graphParts : [] }
+    parts.push(data(GRAPH_PART, graphData))
+  }
   // streamed tokens are the progress, so the node label steps aside for them;
   // with the text held back, the label stays
   if (meta.status || (meta.node && (hold || !streaming))) {
@@ -141,6 +148,7 @@ export function createBdcAdapter(
           status: null,
           sources: null,
           graph: null,
+          graphParts: [],
           unavailable: [],
           followups: [],
           blocked: false,
@@ -201,6 +209,7 @@ export function createBdcAdapter(
               // agent finished: sources and graphs are final
               meta.sources = ev.sources
               meta.graph = fromKgList(ev.kg)
+              meta.graphParts = kgParts(ev.kg)
               break
             case 'done': {
               // authoritative: rejects, disclaimers and canned replies replace
@@ -213,6 +222,7 @@ export function createBdcAdapter(
               state.text = ev.answer
               meta.sources = ev.sources
               meta.graph = fromKgList(ev.kg)
+              meta.graphParts = kgParts(ev.kg)
               meta.unavailable = [...new Set((ev.mcp_errors ?? []).map((e) => e.split(':')[0].trim()))]
               meta.followups = ev.followups
               meta.node = null

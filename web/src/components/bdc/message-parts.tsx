@@ -30,6 +30,7 @@ import {
   DRAFT_PART,
   FOLLOWUPS_PART,
   GRAPH_PART,
+  type GraphPartData,
   REJECTED_PART,
   SOURCES_PART,
   UNAVAILABLE_PART,
@@ -267,13 +268,17 @@ const FollowupsUI = makeAssistantDataUI<string[]>({
 // has a graph, not with the page; a placeholder the panel's height stands in.
 const KnowledgeGraph = lazy(() => import('@/components/bdc/knowledge-graph').then((m) => ({ default: m.KnowledgeGraph })))
 
-const GraphUI = makeAssistantDataUI<KgGraph>({
+const GraphUI = makeAssistantDataUI<GraphPartData | KgGraph>({
   name: GRAPH_PART,
-  render: ({ data }) => (
-    <Suspense fallback={<Skeleton className="my-3 h-[23rem] w-full rounded-lg" aria-label="Loading the knowledge graph" />}>
-      <KnowledgeGraph graph={data} />
-    </Suspense>
-  ),
+  render: ({ data }) => {
+    // conversations saved before per-call graphs stored just the graph
+    const { graph, parts } = 'nodes' in data ? { graph: data, parts: [] } : data
+    return (
+      <Suspense fallback={<Skeleton className="my-3 h-[23rem] w-full rounded-lg" aria-label="Loading the knowledge graph" />}>
+        <KnowledgeGraph graph={graph} parts={parts} />
+      </Suspense>
+    )
+  },
 })
 
 // Some MCP servers (e.g. the knowledge graph) were down: the answer had to do without

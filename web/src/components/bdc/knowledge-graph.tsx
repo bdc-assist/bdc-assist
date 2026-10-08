@@ -12,6 +12,7 @@ import { mountFlow, type FlowView } from '@/kg/flow'
 import { focusConnections, isPair, pairVariables, sameFocus, type KgFocus } from '@/kg/focus'
 import { KG_LAYOUTS, mountGraph, type GraphView, type KgLayout } from '@/kg/mount'
 import type { KgGraph, KgNode } from '@/kg/types'
+import type { KgPart } from '@/kg/wire'
 
 // The demo's wrapper around src/kg (loaded on demand: see GraphUI in message-parts.tsx):
 // a collapsible panel under the answer with the graph, or the same as a list, and
@@ -95,6 +96,28 @@ function ViewPicker({ layout, mode, onLayout, onMode }: Pick<GraphBodyProps, 'la
         {[...KG_LAYOUTS, 'flow' as const, 'list' as const].map((v) => (
           <option key={v} value={v}>
             {VIEW_LABELS[v]}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+/** Which graph to show: all of the answer's graphs merged, or one tool call's on its
+ * own (by its label, in the user's terms). Only offered with more than one. */
+function SourcePicker({ sources, source, onSource }: { sources: string[]; source: number; onSource: (i: number) => void }) {
+  return (
+    <label className="flex min-w-0 items-center gap-1.5">
+      Show
+      <select
+        value={source}
+        onChange={(e) => onSource(Number(e.target.value))}
+        className="bg-background text-foreground max-w-56 truncate rounded-md border px-1 py-0.5"
+      >
+        <option value={-1}>All results</option>
+        {sources.map((label, i) => (
+          <option key={i} value={i}>
+            {label}
           </option>
         ))}
       </select>
@@ -304,6 +327,9 @@ type GraphBodyProps = {
   sharedOnly: boolean
   onSharedOnly: (on: boolean) => void
   canShare: boolean // some study connects two or more concepts: offer the filter
+  sources: string[] // the per-call graphs' labels (none: nothing to pick)
+  source: number // which one is shown; -1: all merged
+  onSource: (i: number) => void
   zoomGestures: boolean | 'modifier' // see mountGraph: 'modifier' where the chat scrolls around the graph
 }
 
@@ -312,6 +338,7 @@ const ZOOM_KEY = /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl'
 
 function GraphBody(props: GraphBodyProps) {
   const { json, shown, canvasClass, layout, onLayout, mode, onMode, sharedOnly, onSharedOnly, canShare, zoomGestures } = props
+  const { sources, source, onSource } = props
   const container = useRef<HTMLDivElement>(null)
   const view = useRef<GraphView | null>(null)
   const flowContainer = useRef<HTMLDivElement>(null)
@@ -390,7 +417,8 @@ function GraphBody(props: GraphBodyProps) {
     <div data-slot="bdc-graph" className="flex min-h-0 flex-1 flex-col text-xs">
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-3 py-1.5">
         <Legend />
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex min-w-0 items-center gap-3">
+          {sources.length > 1 && <SourcePicker sources={sources} source={source} onSource={onSource} />}
           {canShare && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -451,20 +479,26 @@ function GraphBody(props: GraphBodyProps) {
   )
 }
 
-export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
+/** `graph`: the answer's graphs merged; `parts`: each tool call's, when there are several. */
+export function KnowledgeGraph({ graph, parts }: { graph: KgGraph; parts: KgPart[] }) {
   const [maximized, setMaximized] = useState(false)
   // shared by the panel and the dialog
   const [layout, setLayout] = useState<KgLayout>('radial')
   const [mode, setMode] = useState<ViewMode>('graph')
-  const [sharedOnly, setSharedOnly] = useState(false)
+  const [sharedOnlyWanted, setSharedOnly] = useState(false)
+  const [source, setSource] = useState(-1) // which graph: -1 all merged, else parts[source]
+  const current = (source >= 0 && parts[source]?.graph) || graph
   // the message is re-rendered on every stream event, and done delivers the same
-  // graph again as a new object: redraw only when the content changes
-  const json = JSON.stringify(graph)
+  // graph again as a new object: redraw only when the content changes. A new
+  // source is a new graph too, so the views start over (and the focus clears).
+  const json = JSON.stringify(current)
   const merged = useMemo(() => collapseVersions(JSON.parse(json) as KgGraph), [json])
   const sharedStudies = useMemo(() => {
     const ids = bridges(merged)
     return merged.nodes.filter((n) => n.type === 'study' && ids.has(n.id)).length
   }, [merged])
+  // a single call's graph may share nothing: then the filter is off (and not offered)
+  const sharedOnly = sharedOnlyWanted && sharedStudies > 0
   // what the list and the details see: the same as mountGraph draws
   const shown = useMemo(() => (sharedOnly ? onlyShared(merged) : merged), [merged, sharedOnly])
   const title = (
@@ -473,7 +507,14 @@ export function KnowledgeGraph({ graph }: { graph: KgGraph }) {
       {sharedStudies > 0 && ` · ${sharedStudies} shared`}
     </>
   )
-  const filter = { sharedOnly, onSharedOnly: setSharedOnly, canShare: sharedStudies > 0 }
+  const filter = {
+    sharedOnly,
+    onSharedOnly: setSharedOnly,
+    canShare: sharedStudies > 0,
+    sources: parts.map((p) => p.label),
+    source,
+    onSource: setSource,
+  }
 
   return (
     <>
