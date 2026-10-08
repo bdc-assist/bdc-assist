@@ -218,7 +218,8 @@ Without real services, run the stub (`uv run python tests/_stub_stream_server.py
 UI at it with `VITE_API_URL` as above. A keyword in the question picks a path: `block` (input
 guardrail refuses), `reject` (output guardrail replaces the draft), `canned` (predefined reply),
 `nosources`, `crash` (the stream ends with an error), `kg` or `kg2` (a real Dug graph for one
-concept, or for asthma and COPD); anything else gets a docs answer with a small graph.
+concept, or for asthma and COPD), `related` (asthma's graph plus its related concepts); anything
+else gets a docs answer with a small graph.
 
 ## Test / demo
 

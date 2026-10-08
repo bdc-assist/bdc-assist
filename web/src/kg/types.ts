@@ -13,8 +13,9 @@ export type KgNode = {
   versions?: string[] // after collapseVersions: the versioned ids merged into this node
 }
 
-/** variable → concept, variable → study, and concept → concept (with Dug's predicate,
- * e.g. from get_concept_connections). */
-export type KgEdge = { source: string; target: string; predicate?: string }
+/** variable → concept, variable → study, and concept → concept (e.g. from
+ * get_concept_connections) with Dug's predicates: two concepts can be related in
+ * more than one way (asthma — ameliorates condition, applied to treat — epinephrine). */
+export type KgEdge = { source: string; target: string; predicates?: string[] }
 
 export type KgGraph = { nodes: KgNode[]; edges: KgEdge[] }

@@ -35,8 +35,8 @@ function nodeType(n: KgWireNode): KgNodeType {
 
 /**
  * Merge the API's per-call graphs into one graph for the views: nodes by id (the
- * first call's fields win), edges by endpoints (one edge per pair; its predicate, if
- * any, from the first call). Concept–concept edges are kept. Returns null when there
+ * first call's fields win, except that a real name beats a bare id), edges by endpoints (one edge per pair, keeping
+ * all its predicates). Concept–concept edges are kept. Returns null when there
  * is nothing to draw (no list, or no edges).
  */
 export function fromKgList(value: unknown): KgGraph | null {
@@ -45,7 +45,14 @@ export function fromKgList(value: unknown): KgGraph | null {
   const edges = new Map<string, KgEdge>()
   for (const entry of value as KgWireEntry[]) {
     for (const n of entry?.nodes ?? []) {
-      if (!n?.id || nodes.has(n.id)) continue
+      if (!n?.id) continue
+      const seen = nodes.get(n.id)
+      if (seen) {
+        // a call may know a node only by id (get_concept_connections names the
+        // neighbours, not the concept asked about): take a real name from another
+        if (seen.label === n.id && n.name && n.name !== n.id) seen.label = n.name
+        continue
+      }
       const type = nodeType(n)
       const node: KgNode = { id: n.id, label: n.name || n.id, type }
       if (type === 'concept' && n.category) node.concept_type = n.category
@@ -56,7 +63,10 @@ export function fromKgList(value: unknown): KgGraph | null {
     for (const e of entry?.edges ?? []) {
       if (!e?.subject || !e.object) continue
       const key = `${e.subject}->${e.object}`
-      if (!edges.has(key)) edges.set(key, { source: e.subject, target: e.object, ...(e.predicate && { predicate: e.predicate }) })
+      const edge = edges.get(key) ?? { source: e.subject, target: e.object }
+      // one edge per pair; every way they're related is kept on it
+      if (e.predicate && !edge.predicates?.includes(e.predicate)) edge.predicates = [...(edge.predicates ?? []), e.predicate]
+      edges.set(key, edge)
     }
   }
   // an edge to a node no call described (shouldn't happen): keep the graph consistent

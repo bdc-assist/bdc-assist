@@ -57,7 +57,7 @@ describe('fromKgList', () => {
       { id: 'D', label: 'd', type: 'concept' },
       { id: 'v', label: 'V', type: 'variable', related_concepts_count: 9 },
     ])
-    expect(g.edges).toContainEqual({ source: 'C', target: 'D', predicate: 'related_to' })
+    expect(g.edges).toContainEqual({ source: 'C', target: 'D', predicates: ['related_to'] })
   })
 
   it('is null for no list, an empty list, or graphs without edges', () => {

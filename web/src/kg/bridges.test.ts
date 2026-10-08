@@ -64,8 +64,8 @@ describe('bridges', () => {
         { id: 'C', label: 'c', type: 'concept' },
       ],
       edges: [
-        { source: 'A', target: 'B', predicate: 'related_to' },
-        { source: 'A', target: 'C', predicate: 'related_to' },
+        { source: 'A', target: 'B', predicates: ['related_to'] },
+        { source: 'A', target: 'C', predicates: ['related_to'] },
       ],
     }
     expect(bridges(g).size).toBe(0)

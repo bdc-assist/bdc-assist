@@ -49,8 +49,9 @@ type KgNode = {
   versions?: string[]              // after collapseVersions: the versioned ids merged into this node
 }
 
-type KgEdge = { source: string; target: string; predicate?: string }
-// variable → concept, variable → study; concept → concept with Dug's predicate
+type KgEdge = { source: string; target: string; predicates?: string[] }
+// variable → concept, variable → study; concept → concept with Dug's predicates (a pair
+// can be related more than one way, e.g. "ameliorates condition" and "applied to treat")
 ```
 
 ## Quick start
@@ -160,6 +161,7 @@ used) first, so ids match what the views draw.
 | `focusConnections(graph, focus)`, `pairVariables(graph, concept, study)` | `focus.ts` | what a focus lights up; a pair's variables |
 | `flowData(graph)` | `flow.ts` | the flow's concept → study links with their variables, for your own chart |
 | `fromKgList(kg)` | `wire.ts` | the API's per-call graphs merged into one |
+| `relations(graph)` | `elements.ts` | the concept → concept edges (drawn dashed in the graph view; the flow view can't show them) |
 | `variableWeights(graph)` | `elements.ts` | `related_concepts_count` scaled to 0..1 within the graph |
 
 ## Things to know

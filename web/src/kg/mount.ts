@@ -97,6 +97,14 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
     container.removeAttribute('title')
     container.style.cursor = ''
   })
+  // a relationship between concepts: name it ("asthma — causes — smoking"). Dug doesn't
+  // say which way it reads, so the wording stays neutral.
+  cy.on('mouseover', 'edge.relation', (e) => {
+    const [s, t] = [e.target.source().data('label'), e.target.target().data('label')]
+    const predicate = String(e.target.data('predicate') || 'related to').replace(/_/g, ' ')
+    container.title = `${s} — ${predicate} — ${t}`
+  })
+  cy.on('mouseout', 'edge.relation', () => container.removeAttribute('title'))
 
   // 'modifier' zoom: Cytoscape's own wheel zoom is off, so handle Ctrl/⌘ + wheel here
   // (non-passive, to keep the browser from zooming the page instead)
@@ -160,6 +168,12 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
     cy.fit(undefined, PADDING)
   }
 
+  function radialRoots(): string[] {
+    const concepts = cy.nodes('[type = "concept"]')
+    const withVariables = concepts.filter((c) => c.neighborhood('node[type = "variable"]').length > 0)
+    return (withVariables.length ? withVariables : concepts).map((n) => n.id())
+  }
+
   function layoutOptions(layout: KgLayout): LayoutOptions {
     if (layout === 'columns') {
       const pos = columnPositions(drawn)
@@ -175,7 +189,9 @@ export function mountGraph(container: HTMLElement, graph: KgGraph, options: Grap
       // redraw (e.g. toggling sharedOnly) would spread wider and fit smaller. Use the
       // container's own size (a fallback while it's hidden, e.g. in the list view).
       boundingBox: { x1: 0, y1: 0, w: container.clientWidth || 600, h: container.clientHeight || 300 },
-      roots: cy.nodes('[type = "concept"]').map((n) => n.id()),
+      // the concepts with variables in the middle; concepts only related to them (no
+      // variables of their own) form a ring around them instead of joining the middle
+      roots: radialRoots(),
       circle: true,
       depthSort: (a, b) => String(a.data('order')).localeCompare(String(b.data('order'))),
       padding: PADDING,
@@ -280,6 +296,11 @@ function styleFor(el: HTMLElement): StylesheetJson {
     },
     { selector: 'node.columns[type = "concept"]', style: { 'text-halign': 'left', 'text-margin-x': -5 } },
     { selector: 'edge', style: { width: 1, 'line-color': color('edge'), 'curve-style': 'straight' } },
+    {
+      // concept → concept: dashed, in the concept colour
+      selector: 'edge.relation',
+      style: { 'line-style': 'dashed', 'line-color': color('concept'), 'line-opacity': 0.6 },
+    },
     {
       // connects two or more concepts: a soft halo in the concept colour
       selector: 'node.bridge',

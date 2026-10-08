@@ -13,6 +13,8 @@ anywhere in the question picks another path:
   kg         the graph is a real Dug get_concept_graph result (congenital heart disease,
              tests/fixtures/dug_concept_graph_chd.json) instead of the small one
   kg2        the same for two concepts, asthma and COPD (dug_concept_graph_asthma_copd.json)
+  related    asthma's concept graph plus its related concepts, a real Dug get_concept_connections
+             result (dug_concept_connections_asthma.json): concept–concept edges
 kg/kg2 graphs are made the way the Dug interceptor makes them (to_kg in examples/bdc/interceptors.py).
 """
 
@@ -50,6 +52,9 @@ KG_CHD = [_concept_graph({"concept_id": "MONDO:0005453", "expand_depth": 2, "lim
                          json.loads((_FIXTURES / "dug_concept_graph_chd.json").read_text()))]
 KG_ASTHMA_COPD = [_concept_graph(c["args"], c["result"])
                   for c in json.loads((_FIXTURES / "dug_concept_graph_asthma_copd.json").read_text())]
+_connections = json.loads((_FIXTURES / "dug_concept_connections_asthma.json").read_text())
+KG_RELATED = [KG_ASTHMA_COPD[0], {"tool": "get_concept_connections", "args": _connections["args"],
+                                  **_interceptors.to_kg("get_concept_connections", _connections["result"])}]
 
 
 class SlowAgent:
@@ -91,7 +96,8 @@ class SlowAgent:
               "edges": [{"subject": v, "object": "MONDO:0005068", "predicate": "related_to"} for v in ("phv1", "phv2", "phv3")]
                        + [{"subject": "phv1", "object": "phs000007"}, {"subject": "phv2", "object": "phs000007"},
                           {"subject": "phv3", "object": "phs000280"}]}
-        kgs = KG_ASTHMA_COPD if _has(question, "kg2") else KG_CHD if _has(question, "kg") else [kg]
+        kgs = (KG_RELATED if _has(question, "related") else KG_ASTHMA_COPD if _has(question, "kg2")
+               else KG_CHD if _has(question, "kg") else [kg])
         yield "values", {"messages": [
             AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": question}, "id": "t1"}]
                       + [{"name": g["tool"], "args": g["args"], "id": f"t{i + 2}"} for i, g in enumerate(kgs)]),

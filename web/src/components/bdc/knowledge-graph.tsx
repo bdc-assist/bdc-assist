@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { bridges, sharedOnly as onlyShared } from '@/kg/bridges'
 import { collapseVersions } from '@/kg/collapse'
+import { relations } from '@/kg/elements'
 import { nodeLinks, type KgLink } from '@/kg/links'
 import { studyList } from '@/kg/list'
 import { mountFlow, type FlowView } from '@/kg/flow'
@@ -41,7 +42,7 @@ const LEGEND: { type: KgNode['type']; shape: string }[] = [
   { type: 'study', shape: 'size-2.5 rounded-[2px]' },
 ]
 
-function Legend() {
+function Legend({ related }: { related: boolean }) {
   return (
     <ul aria-label="Legend" className="flex flex-wrap items-center gap-x-3 gap-y-1">
       {LEGEND.map(({ type, shape }) => (
@@ -59,6 +60,12 @@ function Legend() {
           {type === 'variable' && <span className="opacity-70">(darker: links more concepts)</span>}
         </li>
       ))}
+      {related && (
+        <li className="flex items-center gap-1.5">
+          <span className="w-4 border-t-2 border-dashed" style={{ borderColor: 'var(--kg-concept)' }} />
+          Related concepts
+        </li>
+      )}
     </ul>
   )
 }
@@ -339,6 +346,7 @@ const ZOOM_KEY = /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl'
 function GraphBody(props: GraphBodyProps) {
   const { json, shown, canvasClass, layout, onLayout, mode, onMode, sharedOnly, onSharedOnly, canShare, zoomGestures } = props
   const { sources, source, onSource } = props
+  const relationCount = useMemo(() => relations(shown).length, [shown])
   const container = useRef<HTMLDivElement>(null)
   const view = useRef<GraphView | null>(null)
   const flowContainer = useRef<HTMLDivElement>(null)
@@ -416,7 +424,7 @@ function GraphBody(props: GraphBodyProps) {
   return (
     <div data-slot="bdc-graph" className="flex min-h-0 flex-1 flex-col text-xs">
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-3 py-1.5">
-        <Legend />
+        <Legend related={relationCount > 0} />
         <div className="ml-auto flex min-w-0 items-center gap-3">
           {sources.length > 1 && <SourcePicker sources={sources} source={source} onSource={onSource} />}
           {canShare && (
@@ -438,11 +446,20 @@ function GraphBody(props: GraphBodyProps) {
           <StudyList graph={shown} focus={focus} onPick={pickFromList} />
         </div>
       )}
-      <div
-        ref={flowContainer}
-        className={`border-t ${canvasClass} ${mode === 'flow' ? '' : 'hidden'}`}
-        aria-label="Knowledge graph as flows from concepts to studies. The List view shows the same as text."
-      />
+      {/* the flow's own box (mountFlow fills it), plus a note on what it can't show */}
+      <div className={`relative border-t ${canvasClass} ${mode === 'flow' ? '' : 'hidden'}`}>
+        <div
+          ref={flowContainer}
+          className="h-full w-full"
+          aria-label="Knowledge graph as flows from concepts to studies. The List view shows the same as text."
+        />
+        {relationCount > 0 && (
+          <p className="text-muted-foreground bg-background/80 absolute bottom-1.5 left-1.5 rounded px-1.5 py-0.5">
+            {relationCount} {relationCount === 1 ? 'relationship' : 'relationships'} between concepts not shown in this
+            view
+          </p>
+        )}
+      </div>
       {/* kept mounted while another view shows, so the graph keeps its layout and zoom */}
       <div className={`relative border-t ${canvasClass} ${mode === 'graph' ? '' : 'hidden'}`}>
         {/* sized by height, not `absolute inset-0`: Cytoscape gives its container

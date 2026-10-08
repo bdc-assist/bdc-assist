@@ -1,0 +1,511 @@
+[
+ {
+  "tool": "get_concept_connections",
+  "args": {
+   "concept_id": "MONDO:0004979"
+  },
+  "nodes": [
+   {
+    "id": "MONDO:0004979",
+    "name": "MONDO:0004979"
+   },
+   {
+    "id": "CHEBI:88522",
+    "name": "Monobutylphthalate",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:37382",
+    "name": "Nitrogen trichloride",
+    "category": "NamedThing"
+   },
+   {
+    "id": "MESH:D014028",
+    "name": "Tobacco Smoke Pollution",
+    "category": "NamedThing"
+   },
+   {
+    "id": "MESH:D001335",
+    "name": "Vehicle Emissions",
+    "category": "NamedThing"
+   },
+   {
+    "id": "UBERON:0002185",
+    "name": "bronchus",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:132612",
+    "name": "monobenzyl phthalate",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:35546",
+    "name": "perfluorodecanoic acid",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:132448",
+    "name": "perfluorohexanesulfonic acid",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:39421",
+    "name": "perfluorooctane-1-sulfonic acid",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:35549",
+    "name": "perfluorooctanoic acid",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:83493",
+    "name": "perfluoroundecanoic acid",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:15407",
+    "name": "Ephedrine",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:28918",
+    "name": "Epinephrine",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:51209",
+    "name": "Pseudoephedrine",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:5551",
+    "name": "Guaifenesin",
+    "category": "NamedThing"
+   },
+   {
+    "id": "PUBCHEM.COMPOUND:657309",
+    "name": "Ipratropium",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:16869",
+    "name": "Oleandomycin",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:45735",
+    "name": "Troleandomycin",
+    "category": "NamedThing"
+   },
+   {
+    "id": "MONDO:0015243",
+    "name": "allergic bronchopulmonary aspergillosis",
+    "category": "NamedThing"
+   },
+   {
+    "id": "MONDO:0001491",
+    "name": "cough variant asthma",
+    "category": "NamedThing"
+   },
+   {
+    "id": "MONDO:0015943",
+    "name": "eosinophilic granulomatosis with polyangiitis",
+    "category": "NamedThing"
+   },
+   {
+    "id": "MONDO:0004765",
+    "name": "intrinsic asthma",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:51041",
+    "name": "Acamprosate",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:46195",
+    "name": "Acetaminophen",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:28939",
+    "name": "Acetylcysteine",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:2549",
+    "name": "Albuterol",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:2567",
+    "name": "Alendronic acid",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:50648",
+    "name": "Alitretinoin",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:40279",
+    "name": "Allopurinol",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:2659",
+    "name": "Aminophylline",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:2668",
+    "name": "Amlodipine",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:2682",
+    "name": "Amphotericin B",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:142290",
+    "name": "Anagrelide",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:2788",
+    "name": "Apraclonidine",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:408174",
+    "name": "Arformoterol",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:31236",
+    "name": "Aripiprazole",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:15365",
+    "name": "Aspirin",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:48131",
+    "name": "Azelaic acid",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:2950",
+    "name": "Azelastine",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:2955",
+    "name": "Azithromycin",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:3011",
+    "name": "Benazepril",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:35677",
+    "name": "Betahistine",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:3082",
+    "name": "Betaxolol",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:3084",
+    "name": "Bethanechol",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:144093",
+    "name": "Bicalutamide",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:51230",
+    "name": "Bimatoprost",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:261649",
+    "name": "Bismuth subsalicylate",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:3127",
+    "name": "Bisoprolol",
+    "category": "NamedThing"
+   },
+   {
+    "id": "CHEBI:52717",
+    "name": "Bortezomib",
+    "category": "NamedThing"
+   }
+  ],
+  "edges": [
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:88522",
+    "predicate": "affects"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:37382",
+    "predicate": "affects"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "MESH:D014028",
+    "predicate": "affects"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "MESH:D001335",
+    "predicate": "affects"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "UBERON:0002185",
+    "predicate": "affects"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:132612",
+    "predicate": "affects"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:35546",
+    "predicate": "affects"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:132448",
+    "predicate": "affects"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:39421",
+    "predicate": "affects"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:35549",
+    "predicate": "affects"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:83493",
+    "predicate": "affects"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:15407",
+    "predicate": "ameliorates_condition"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:28918",
+    "predicate": "ameliorates_condition"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:51209",
+    "predicate": "ameliorates_condition"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:28918",
+    "predicate": "applied_to_treat"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:5551",
+    "predicate": "applied_to_treat"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "PUBCHEM.COMPOUND:657309",
+    "predicate": "applied_to_treat"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:16869",
+    "predicate": "applied_to_treat"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:45735",
+    "predicate": "applied_to_treat"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "MONDO:0015243",
+    "predicate": "associated_with"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "MONDO:0001491",
+    "predicate": "associated_with"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "MONDO:0015943",
+    "predicate": "associated_with"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "MONDO:0004765",
+    "predicate": "associated_with"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:51041",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:46195",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:28939",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:2549",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:2567",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:50648",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:40279",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:2659",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:2668",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:2682",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:142290",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:2788",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:408174",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:31236",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:15365",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:48131",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:2950",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:2955",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:3011",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:35677",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:3082",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:3084",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:144093",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:51230",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:261649",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:3127",
+    "predicate": "causes"
+   },
+   {
+    "subject": "MONDO:0004979",
+    "object": "CHEBI:52717",
+    "predicate": "causes"
+   }
+  ]
+ }
+]
