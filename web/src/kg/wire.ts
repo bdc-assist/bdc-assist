@@ -25,7 +25,8 @@ export type KgWireEntry = {
 const TYPES: readonly string[] = ['concept', 'variable', 'study'] satisfies KgNodeType[]
 
 /** The role of a wire node: its `type` if it names one we draw, else from today's
- * `category` ("Study", "StudyVariable"); anything else is a concept. */
+ * `category` ("Study", "StudyVariable"); anything else (including a search `term`) is a
+ * concept. */
 function nodeType(n: KgWireNode): KgNodeType {
   if (n.type && TYPES.includes(n.type)) return n.type as KgNodeType
   if (n.category === 'Study') return 'study'
@@ -55,6 +56,7 @@ export function fromKgList(value: unknown): KgGraph | null {
       }
       const type = nodeType(n)
       const node: KgNode = { id: n.id, label: n.name || n.id, type }
+      if (n.type === 'term') node.term = true // drawn as a concept, but marked as just a search word
       if (type === 'concept' && n.category) node.concept_type = n.category
       const count = n.attributes?.related_concepts_count
       if (type === 'variable' && typeof count === 'number') node.related_concepts_count = count

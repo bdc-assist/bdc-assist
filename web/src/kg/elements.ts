@@ -47,6 +47,7 @@ export function toElements(graph: KgGraph): ElementDefinition[] {
         label: n.label,
         type: n.type,
         order: order(n.id, n.type),
+        ...(n.term && { term: true }),
         ...(n.type === 'variable' && { weight: weights.get(n.id) }),
       },
     })),

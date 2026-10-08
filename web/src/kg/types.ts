@@ -9,6 +9,7 @@ export type KgNode = {
   label: string
   type: KgNodeType
   concept_type?: string // concepts: Dug's category, verbatim
+  term?: true // concepts: a search word, not a resolved concept (find_cohort_variables); its id is the word
   related_concepts_count?: number // variables: other concepts it links to (Dug: rough relevance signal)
   versions?: string[] // after collapseVersions: the versioned ids merged into this node
 }

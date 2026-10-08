@@ -283,6 +283,11 @@ function styleFor(el: HTMLElement): StylesheetJson {
       },
     },
     {
+      // a search word standing in for a concept: hollow, in the concept colour
+      selector: 'node[?term]',
+      style: { 'background-opacity': 0, 'border-width': 2, 'border-color': color('concept') },
+    },
+    {
       selector: 'node[type = "variable"]',
       style: { 'background-color': (n) => mix(color('variableLow'), color('variableHigh'), n.data('weight') ?? 1) },
     },

@@ -45,6 +45,7 @@ type KgNode = {
   label: string
   type: 'concept' | 'variable' | 'study'
   concept_type?: string            // concepts: Dug's biolink category, verbatim
+  term?: true                      // concepts: just a search word (find_cohort_variables), no concept id
   related_concepts_count?: number  // variables: how many other concepts it links to
   versions?: string[]              // after collapseVersions: the versioned ids merged into this node
 }

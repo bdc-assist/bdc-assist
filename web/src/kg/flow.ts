@@ -143,7 +143,11 @@ export function mountFlow(container: HTMLElement, graph: KgGraph, options: FlowO
       item.style.cursor = 'pointer'
       const rect = item.appendChild(document.createElementNS(SVG, 'rect'))
       for (const [k, v] of Object.entries({ x: x0, y: y0, width: x1 - x0, height: Math.max(1, y1 - y0), rx: 2 })) rect.setAttribute(k, String(v))
-      rect.style.fill = isConcept ? fill.concept : fill.study
+      if (n.node.term) {
+        // a search word standing in for a concept: hollow, in the concept colour
+        rect.dataset.term = ''
+        Object.assign(rect.style, { fill: 'none', stroke: fill.concept, strokeWidth: '1.5' })
+      } else rect.style.fill = isConcept ? fill.concept : fill.study
       const text = item.appendChild(document.createElementNS(SVG, 'text'))
       text.setAttribute('x', String(isConcept ? x0 - 6 : x1 + 6))
       text.setAttribute('y', String((y0 + y1) / 2))
@@ -164,8 +168,11 @@ export function mountFlow(container: HTMLElement, graph: KgGraph, options: FlowO
     svg.querySelectorAll<SVGElement>('.kg-flow-nodes [data-id]').forEach((el) => {
       el.style.opacity = linked && !linked.has(el.dataset.id ?? '') ? FADED : ''
       const rect = el.querySelector('rect')
-      if (rect) rect.style.stroke = el.dataset.id === outlined ? 'var(--kg-selected, #0f172a)' : ''
-      if (rect) rect.style.strokeWidth = el.dataset.id === outlined ? '2' : ''
+      if (!rect) return
+      const term = rect.dataset.term !== undefined
+      const on = el.dataset.id === outlined
+      rect.style.stroke = on ? 'var(--kg-selected, #0f172a)' : term ? fill.concept : ''
+      rect.style.strokeWidth = on ? '2' : term ? '1.5' : ''
     })
     svg.querySelectorAll<SVGElement>('[data-link]').forEach((el) => {
       const [s, t] = (el.dataset.link ?? '').split('->')

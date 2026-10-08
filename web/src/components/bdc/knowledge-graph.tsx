@@ -42,7 +42,7 @@ const LEGEND: { type: KgNode['type']; shape: string }[] = [
   { type: 'study', shape: 'size-2.5 rounded-[2px]' },
 ]
 
-function Legend({ related }: { related: boolean }) {
+function Legend({ related, terms }: { related: boolean; terms: boolean }) {
   return (
     <ul aria-label="Legend" className="flex flex-wrap items-center gap-x-3 gap-y-1">
       {LEGEND.map(({ type, shape }) => (
@@ -60,6 +60,12 @@ function Legend({ related }: { related: boolean }) {
           {type === 'variable' && <span className="opacity-70">(darker: links more concepts)</span>}
         </li>
       ))}
+      {terms && (
+        <li className="flex items-center gap-1.5">
+          <span className="size-3 rounded-full border-2" style={{ borderColor: 'var(--kg-concept)' }} />
+          Search term
+        </li>
+      )}
       {related && (
         <li className="flex items-center gap-1.5">
           <span className="w-4 border-t-2 border-dashed" style={{ borderColor: 'var(--kg-concept)' }} />
@@ -149,6 +155,17 @@ function ExternalLink({ link }: { link: KgLink }) {
 // The ID is shown as its link(s): a concept's ontology page, or one dbGaP page per
 // release of a study or variable (merged releases list each versioned ID).
 function NodeDetails({ node, graph }: { node: KgNode; graph: KgGraph }) {
+  if (node.term) {
+    // find_cohort_variables reports the words it searched for, not concept ids
+    return (
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+        <dt className="text-muted-foreground">Search term</dt>
+        <dd className="font-medium">{node.label}</dd>
+        <dt className="text-muted-foreground">ID</dt>
+        <dd className="text-muted-foreground">None: matched by search, not a resolved concept</dd>
+      </dl>
+    )
+  }
   const all = nodeLinks(node, graph)
   const links = all.filter((l) => !l.note) // the node's own pages
   const standIns = all.filter((l) => l.note) // e.g. a variable without a dbGaP accession: its study
@@ -187,7 +204,7 @@ function PairDetails({ concept, study, graph }: { concept: KgNode; study: KgNode
   const variables = pairVariables(graph, concept.id, study.id)
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
-      <dt className="text-muted-foreground">Concept</dt>
+      <dt className="text-muted-foreground">{concept.term ? 'Search term' : 'Concept'}</dt>
       <dd className="font-medium">{concept.label}</dd>
       <dt className="text-muted-foreground">Study</dt>
       <dd className="font-medium">{study.label}</dd>
@@ -283,6 +300,7 @@ function StudyList({ graph, focus, onPick }: { graph: KgGraph; focus: KgFocus | 
                         >
                           <span className="size-2 shrink-0 self-center rounded-full" style={{ background: 'var(--kg-concept)' }} />
                           <span>{concept.label}</span>
+                          {concept.term && <span className="text-muted-foreground shrink-0">(search term)</span>}
                           <span className="text-muted-foreground shrink-0">· {vs.length}</span>
                         </button>
                       ) : (
@@ -347,6 +365,7 @@ function GraphBody(props: GraphBodyProps) {
   const { json, shown, canvasClass, layout, onLayout, mode, onMode, sharedOnly, onSharedOnly, canShare, zoomGestures } = props
   const { sources, source, onSource } = props
   const relationCount = useMemo(() => relations(shown).length, [shown])
+  const hasTerms = useMemo(() => shown.nodes.some((n) => n.term), [shown])
   const container = useRef<HTMLDivElement>(null)
   const view = useRef<GraphView | null>(null)
   const flowContainer = useRef<HTMLDivElement>(null)
@@ -424,7 +443,7 @@ function GraphBody(props: GraphBodyProps) {
   return (
     <div data-slot="bdc-graph" className="flex min-h-0 flex-1 flex-col text-xs">
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-3 py-1.5">
-        <Legend related={relationCount > 0} />
+        <Legend related={relationCount > 0} terms={hasTerms} />
         <div className="ml-auto flex min-w-0 items-center gap-3">
           {sources.length > 1 && <SourcePicker sources={sources} source={source} onSource={onSource} />}
           {canShare && (

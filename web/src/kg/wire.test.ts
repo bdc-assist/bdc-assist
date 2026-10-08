@@ -5,6 +5,7 @@ import asthmaCopd from './fixtures/asthma-copd-graph.json'
 import chdKg from './fixtures/chd-kg.json'
 import chd from './fixtures/chd-graph.json'
 import type { KgGraph } from './types'
+import { toElements } from './elements'
 import { fromKgList, kgLabel, kgParts } from './wire'
 
 // *-kg.json: what the API sends today, made by main's interceptor (to_kg in
@@ -58,6 +59,21 @@ describe('fromKgList', () => {
       { id: 'v', label: 'V', type: 'variable', related_concepts_count: 9 },
     ])
     expect(g.edges).toContainEqual({ source: 'C', target: 'D', predicates: ['related_to'] })
+  })
+
+  it('keeps a search term as a concept, marked as just a term (find_cohort_variables)', () => {
+    const g = fromKgList([
+      {
+        tool: 'find_cohort_variables',
+        nodes: [
+          { id: 'v1', name: 'ASTHMA', type: 'variable' },
+          { id: 'COPD', name: 'COPD', type: 'term' },
+        ],
+        edges: [{ subject: 'v1', object: 'COPD' }],
+      },
+    ])!
+    expect(g.nodes.find((n) => n.id === 'COPD')).toEqual({ id: 'COPD', label: 'COPD', type: 'concept', term: true })
+    expect(toElements(g).find((e) => e.data.id === 'COPD')?.data.term).toBe(true)
   })
 
   it('is null for no list, an empty list, or graphs without edges', () => {
