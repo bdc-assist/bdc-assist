@@ -155,12 +155,16 @@ class ScriptedLLM:
 api.graph = build_graph(ScriptedLLM(), SlowAgent(), TOPICS)
 
 if __name__ == "__main__":
+    import logging
     from contextlib import asynccontextmanager
 
     import uvicorn
 
     @asynccontextmanager
     async def noop_lifespan(app):  # skip the real lifespan (needs MCP); graph already set
+        # the keywords, as the docstring lists them (an indented word, then a description)
+        logging.getLogger("uvicorn.error").info(
+            "Stub keywords: %s", " ".join(re.findall(r"^  (\w+) {2,}", __doc__, re.M)))
         yield
     api.app.router.lifespan_context = noop_lifespan
     uvicorn.run(api.app, port=8011)
