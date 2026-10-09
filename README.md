@@ -219,8 +219,12 @@ keywords replay a real Dug result for the tool they're named after, and combine:
 `concept_graph` (congenital heart disease), `concept_graph_2` (asthma and COPD, two calls),
 `concept_connections` (asthma's related concepts), `cohort_variables` (asthma + COPD),
 `search_concepts` (body mass index). Without one, the answer comes with a small made-up graph.
-The stub's docstring has the details. The client's test
-fixtures are made from the Dug results in `tests/fixtures/` (its README says how).
+The stub's docstring has the details.
+
+Each graph keyword's output is `tests/fixtures/kg/<keyword>.json` (the `kg` and Dug `sources` the
+server sends), which the stub serves and the client copies for its tests. After changing the Dug
+interceptor or a Dug fixture, regenerate them with `uv run python tests/make_kg_fixtures.py`; a
+test fails until you do.
 
 ## Test / demo
 

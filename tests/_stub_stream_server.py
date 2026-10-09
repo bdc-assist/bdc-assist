@@ -21,11 +21,10 @@ plus asthma's related concepts.
                        search-term nodes, no concepts
   search_concepts      search_concepts, body mass index (dug_search_concepts_bmi.json): 10 variables
                        each linked to the same 9 concepts, no studies, no seeds
-Their graphs are attached the way the Dug interceptor attaches them (entry() in examples/bdc/interceptors.py).
+Their graphs are tests/fixtures/kg/<keyword>.json, made by tests/make_kg_fixtures.py.
 """
 
 import asyncio
-import importlib.util
 import json
 import re
 import sys
@@ -38,43 +37,21 @@ from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 import r_assist.api as api
 from r_assist import prompts
 from r_assist.graph import build_graph
+from tests.make_kg_fixtures import KEYWORDS, OUT
 
 
 def _has(text: str, word: str) -> bool:
     return word in re.findall(r"\w+", text.lower())
 
 
-# the Dug interceptor's to_kg: what it attaches to a real get_concept_graph result
-_spec = importlib.util.spec_from_file_location("interceptors", Path(__file__).parent.parent / "examples/bdc/interceptors.py")
-_interceptors = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_interceptors)
-_FIXTURES = Path(__file__).parent / "fixtures"
-
-
-def _attach(tool: str, args: dict, result: dict) -> dict:
-    """The structured content the interceptor attaches to a real result (dug_kg): its kg,
-    and the studies dug-mcp cites as sources."""
-    attached = {"kg": _interceptors.entry(tool, args, result, _interceptors.to_kg(tool, result))}
-    if result.get("_sources"):
-        attached["sources"] = {"dug": result["_sources"]}
-    return attached
-
-
-def _saved(tool: str, name: str) -> list[dict]:
-    """A fixture's calls ({args, result}, or a list of them) as the interceptor attaches them."""
-    saved = json.loads((_FIXTURES / name).read_text())
-    return [_attach(tool, c["args"], c["result"]) for c in (saved if isinstance(saved, list) else [saved])]
-
-
-# graph keyword -> the structured content of its calls (see the docstring)
-GRAPHS = {
-    "concept_graph": [_attach("get_concept_graph", {"concept_id": "MONDO:0005453", "expand_depth": 2, "limit": 50},
-                              json.loads((_FIXTURES / "dug_concept_graph_chd.json").read_text()))],
-    "concept_graph_2": _saved("get_concept_graph", "dug_concept_graph_asthma_copd.json"),
-    "concept_connections": _saved("get_concept_connections", "dug_concept_connections_asthma.json"),
-    "cohort_variables": _saved("find_cohort_variables", "dug_find_cohort_variables_asthma_copd.json"),
-    "search_concepts": _saved("search_concepts", "dug_search_concepts_bmi.json"),
-}
+# graph keyword -> the structured content of its calls, from tests/fixtures/kg/ (made by
+# tests/make_kg_fixtures.py: what the Dug interceptor attaches to real Dug results). One kg per
+# call; the cited studies ride on the first, the server merges them anyway.
+GRAPHS = {}
+for _keyword in KEYWORDS:
+    _saved = json.loads((OUT / f"{_keyword}.json").read_text(encoding="utf-8"))
+    GRAPHS[_keyword] = [{"kg": kg, **({"sources": _saved["sources"]} if i == 0 and _saved["sources"] else {})}
+                          for i, kg in enumerate(_saved["kg"])]
 
 
 class SlowAgent:
