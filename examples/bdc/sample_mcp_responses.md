@@ -126,7 +126,7 @@ and fellows are searched only when `doc_type` names them; dated chunks carry the
 ## dug_mcp: the knowledge graph
 
 Each Dug tool returns its own JSON shape in a single block. The two below are the calls the agent made
-for "studies on heart attack" on 2026-10-04; example 10 in [sample_responses.md](sample_responses.md),
+for "studies on heart attack" on 2026-10-04; example 11 in [sample_responses.md](sample_responses.md),
 captured later, made the same two calls (its `search_concepts` added `node_type` and `limit`).
 
 ### search_concepts
@@ -253,4 +253,4 @@ result itself (captured 2026-10-07).
 In every case the agent sees the error text. `prompts.yaml` tells it to say the service is unavailable
 and not guess. It doesn't always comply: on 2026-10-04, with `search_docs` failing as
 above, it still added a general description of BDC to its "I can't access the documentation" answer.
-For the unreachable cases, see example 12 in [sample_responses.md](sample_responses.md).
+For the unreachable cases, see example 13 in [sample_responses.md](sample_responses.md).
