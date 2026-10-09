@@ -34,7 +34,7 @@ r_assist/agent.py    deep agent + MCP client (servers listed in config/mcp_serve
 r_assist/api.py      FastAPI: POST /chat, POST /chat/stream, GET /health
 config/project.yaml              name, short_name, assistant_name — fills the placeholders below
 config/prompts.yaml              all prompt texts, a ${placeholder} template (editable without touching code)
-config/predefined_responses.yaml topic → {response, flag: r|a}
+config/predefined_responses.yaml topic → {response, flag: r|a, link}
 config/mcp_servers.yaml          MCP servers the agent calls (the doc server URL; add a block per extra tool server)
 <config dir>/interceptors.py     optional: tool-call interceptors, named per server in mcp_servers.yaml
 examples/bdc/                    the four files as used for NHLBI BioData Catalyst, plus interceptors.py (Dug knowledge graphs),
@@ -56,7 +56,7 @@ Also optional: COMPLETION_TEMPERATURE (default 0), COMPLETION_REASONING_EFFORT (
 non-reasoning models like gpt-4o-mini, which reject it; `none`/`low`/`medium`/`high` for reasoning models like
 gpt-6-luna; above `none` the temperature is not sent and calls go through the Responses API, the only one where
 gpt-6-luna calls tools while reasoning), LOG_LEVEL (default WARNING), MCP_RETRY_SECONDS (default 300: how often
-unavailable MCP servers are retried and live ones re-checked), and — for the demo scripts — DOC_MCP_DIR (default ../r-doc-mcp) and START_TIMEOUT (default 30 seconds per service).
+unavailable MCP servers are retried and live ones re-checked), and — for the demo scripts — DOC_MCP_DIR (default ../bdc-doc-mcp) and START_TIMEOUT (default 30 seconds per service).
 
 ## Run
 
@@ -75,7 +75,7 @@ Or by hand:
 
 ```bash
 # 1. doc MCP server, port 8001
-cd ../r-doc-mcp && uv run python -m r_doc_mcp.mcp_server --http
+cd ../bdc-doc-mcp && uv run python -m r_doc_mcp.mcp_server --http
 
 # 2. r-assist, port API_PORT (default 8010)
 uv run uvicorn r_assist.api:app --port "${API_PORT:-8010}"
@@ -92,7 +92,7 @@ tool call, coloured by category (hover a node for its details), with the same MC
    `doc_search_tool`/`sources_key` only if your doc server's tool or your client's sources key differ.
 2. `config/prompts.yaml`: read through once; the policy checklist and the agent's house rules
    are where projects differ most. Keep the `{input}`/`{answer}`/`{topics}`/`{date}` slots.
-3. `config/predefined_responses.yaml`: add canned answers (`flag: r`) and disclaimers (`flag: a`).
+3. `config/predefined_responses.yaml`: add canned answers (`flag: r`) and disclaimers (`flag: a`), each with an optional `link`.
 4. `config/mcp_servers.yaml`: point `r_doc_mcp.url` at your r-doc-mcp server; add a block for
    every other MCP server the bot may call.
    Optional per server: `interceptors: [fn, ...]` names functions in `interceptors.py` (same
@@ -173,8 +173,10 @@ the client keeps history. `sources` is the distinct documents behind the agent's
 `{"r-doc": [{title, link, type}]}`, deduplicated on link and in relevance order (empty for canned,
 blocked replies), plus any sources an interceptor attaches to tool results (structured content
 `"sources"`, `{key: [{title, link, type}]}`; BDC: the studies Dug cites, under `"dug"`), listed under
-their key and deduplicated on link; `sources_md` is all of them as one markdown list, worded by
-`sources`/`sources_item` in prompts.yaml. `kg` lists the knowledge graphs attached to the agent's
+their key and deduplicated on link, plus the predefined responses shown (canned answer or disclaimers)
+under `"predefined"` (`type: "predefined"`, `title` and `link` from predefined_responses.yaml; title
+defaults to the topic, link may be empty; none for blocked replies); `sources_md` is all of them as one
+markdown list, worded by `sources`/`sources_item` in prompts.yaml (`sources_item_no_link` for an empty link). `kg` lists the knowledge graphs attached to the agent's
 tool results, one per tool call: `[{tool, args, label, nodes: [{id, name, type, category?, description?, attributes?}],
 edges: [{subject, object, predicate?}]}]` (empty unless a server or interceptor attaches them, and
 for blocked replies). A tool result carries one as its structured content `"kg"`; the LLM never sees it.

@@ -1,12 +1,19 @@
 # flags: r = replace the answer (skip the agent), a = append as disclaimer after the agent answer
+# title, link: listed under the answer's sources (type predefined); title defaults to the topic, link may be empty.
 FISMA:
   response: "NHLBI BioData Catalyst® (BDC) supports data and analysis in a secure, FISMA-moderate environment. BDC security controls adhere to [NIH's Implementation Update for Data Management and Access Practices Under the Genomic Data Sharing Policy (NOT-OD-24-157)](https://grants.nih.gov/grants/guide/notice-files/NOT-OD-24-157.html)."
   flag: "r"
+  title: "FISMA Policy"
+  link: "https://grants.nih.gov/grants/guide/notice-files/NOT-OD-24-157.html"
 
 Covid:
   response: "Covid-19 response placeholder (append)"
   flag: "a"
+  title: "Covid Policy"
+  link: ""
 
 vaccine:
   response: "Vaccine response placeholder (append)"
   flag: "a"
+  title: "Vaccine Policy"
+  link: ""

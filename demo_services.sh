@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Spawn everything demo.ipynb and the web client (bdc-assist-client) need:
-#   1. r-doc-mcp MCP server (HTTP) from DOC_MCP_DIR (./.env, default ../r-doc-mcp) on MCP_PORT
+#   1. r-doc-mcp MCP server (HTTP) from DOC_MCP_DIR (./.env, default ../bdc-doc-mcp) on MCP_PORT
 #      (that repo's .env, default 8001), health-checked at the r_doc_mcp url in
 #      <CONFIG_DIR>/mcp_servers.yaml — the URL r-assist actually connects to
 #   2. r-assist API on API_PORT (./.env, default 8010)
@@ -19,7 +19,7 @@ env_get() {  # env_get <file> <key> <default> — shell env wins, then the .env,
   echo "${v:-$3}"
 }
 
-DOC_MCP_DIR=$(env_get ./.env DOC_MCP_DIR ../r-doc-mcp)
+DOC_MCP_DIR=$(env_get ./.env DOC_MCP_DIR ../bdc-doc-mcp)
 START_TIMEOUT=$(env_get ./.env START_TIMEOUT 30)
 MCP_PORT=$(env_get "$DOC_MCP_DIR/.env" MCP_PORT 8001)
 API_PORT=$(env_get ./.env API_PORT 8010)

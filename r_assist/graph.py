@@ -33,7 +33,8 @@ class BotState(TypedDict, total=False):
     disclaimers: list[str]  # "a"-topic texts to append after the agent answer
     answer: str             # final response (canned, agent, REFUSAL, or REJECT)
     followups: list[str]    # suggested follow-up questions (empty when none needed)
-    sources: dict           # {sources_key: [{title, link, type}]} — distinct documents behind doc_search_tool
+    sources: dict           # {sources_key: [{title, link, type}]} — distinct documents behind doc_search_tool,
+                            # plus {"predefined": [...]} for the predefined responses shown (link may be "")
     sources_md: str         # the same as a markdown list, ready to show under the answer
     kg: list                # knowledge graphs attached to tool results, one per tool call
     blocked: str | None     # which guardrail blocked the run: "input" (question refused) or
@@ -115,7 +116,8 @@ def _attached_sources(messages) -> dict[str, list[dict]]:
 def _sources_md(sources: list[dict]) -> str:
     if not sources:
         return ""
-    return prompts.SOURCES.format(items="\n".join(prompts.SOURCES_ITEM.format(**s) for s in sources))
+    return prompts.SOURCES.format(items="\n".join(
+        (prompts.SOURCES_ITEM if s["link"] else prompts.SOURCES_ITEM_NO_LINK).format(**s) for s in sources))
 
 
 def build_graph(llm, agent, predefined: dict):
@@ -124,7 +126,7 @@ def build_graph(llm, agent, predefined: dict):
     llm: any chat model — runs the guardrail/contextualize/classify prompts.
     agent: has astream({'messages': [...]}, stream_mode=["messages", "values"]) —
         produces the real answer, token-streamable.
-    predefined: lowercased topic → {response, flag}, from config/predefined_responses.yaml.
+    predefined: lowercased topic → {response, flag, link?, title?}, from config/predefined_responses.yaml.
         flag "r" = replace: the canned response IS the answer, agent is skipped.
         flag "a" = append: the response is a disclaimer added after the agent answer.
     """
@@ -178,11 +180,16 @@ def build_graph(llm, agent, predefined: dict):
         matched = [t for t in parsed if t in predefined]
         update: BotState = {"topics": matched}
         if any(predefined[t]["flag"] == "r" for t in matched):
-            update["answer"] = "\n\n".join(predefined[t]["response"] for t in matched)
+            used = matched
+            update["answer"] = "\n\n".join(predefined[t]["response"] for t in used)
         else:
-            update["disclaimers"] = [
-                predefined[t]["response"] for t in matched if predefined[t]["flag"] == "a"
-            ]
+            used = [t for t in matched if predefined[t]["flag"] == "a"]
+            update["disclaimers"] = [predefined[t]["response"] for t in used]
+        # the responses shown are sources too, even without a link; run_agent adds the agent's
+        pre = [{"title": predefined[t].get("title", t), "link": predefined[t].get("link", ""), "type": "predefined"}
+               for t in used]
+        update["sources"] = {"predefined": pre} if pre else {}
+        update["sources_md"] = _sources_md(pre)
         return update
 
     async def run_agent(state: BotState):
@@ -220,9 +227,10 @@ def build_graph(llm, agent, predefined: dict):
                 last_id = msg.id
                 writer({"type": "token", "text": msg.text})
         docs = _doc_sources(result["messages"])
-        attached = _attached_sources(result["messages"])  # e.g. the studies Dug cites
-        sources = ({prompts.SOURCES_KEY: docs} if docs else {}) | attached
-        sources_md = _sources_md(docs + [s for items in attached.values() for s in items])
+        # e.g. the studies Dug cites, then classify's "a" topics
+        extra = _attached_sources(result["messages"]) | state.get("sources", {})
+        sources = ({prompts.SOURCES_KEY: docs} if docs else {}) | extra
+        sources_md = _sources_md(docs + [s for items in extra.values() for s in items])
         kg = _kgs(result["messages"])
         # sources are known once the agent is done: send them now rather than with "done",
         # which waits for the guardrail and follow-up nodes (a block clears them in "done")
