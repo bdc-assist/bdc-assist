@@ -214,10 +214,12 @@ The web chat client, with the knowledge graph views, lives in its own repository
 To work on it without real services, run the stub (`uv run python tests/_stub_stream_server.py`,
 port 8011) and start the client with `VITE_API_URL=http://127.0.0.1:8011`. A keyword in the
 question picks a path: `block` (input guardrail refuses), `reject` (output guardrail replaces the
-draft), `canned` (predefined reply), `nosources`, `crash` (the stream ends with an error), `kg` or
-`kg2` (a real Dug graph for one concept, or for asthma and COPD), `related` (asthma's graph plus
-its related concepts), `cohort` (find_cohort_variables for asthma + COPD), `mesh` (search_concepts
-for body mass index); anything else gets a docs answer with a small graph. The client's test
+draft), `canned` (predefined reply), `nosources`, `crash` (the stream ends with an error). Graph
+keywords replay a real Dug result for the tool they're named after, and combine:
+`concept_graph` (congenital heart disease), `concept_graph_2` (asthma and COPD, two calls),
+`concept_connections` (asthma's related concepts), `cohort_variables` (asthma + COPD),
+`search_concepts` (body mass index). Without one, the answer comes with a small made-up graph.
+The stub's docstring has the details. The client's test
 fixtures are made from the Dug results in `tests/fixtures/` (its README says how).
 
 ## Test / demo

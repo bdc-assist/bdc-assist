@@ -4,27 +4,30 @@ uv run python tests/_stub_stream_server.py, then open tests/ui/demo.html?api=htt
 (or kg_demo.html?api=...), or VITE_API_URL=http://127.0.0.1:8011 npm run dev in bdc-assist-client.
 
 By default: a docs answer with a small knowledge graph and the covid disclaimer appended. A keyword
-anywhere in the question picks another path:
+(a whole word) anywhere in the question picks another path:
   block      input guardrail refuses: canned REFUSAL, blocked
   reject     output guardrail rejects the streamed draft: canned REJECT, blocked
   canned     an "r" topic matches: its canned reply, agent skipped
   nosources  the agent answers without searching: no sources, no graph
   crash      the agent fails mid-answer: the stream ends with {"type": "error"}
-  kg         the graph is a real Dug get_concept_graph result (congenital heart disease,
-             tests/fixtures/dug_concept_graph_chd.json) instead of the small one
-  kg2        the same for two concepts, asthma and COPD (dug_concept_graph_asthma_copd.json)
-  related    asthma's concept graph plus its related concepts, a real Dug get_concept_connections
-             result (dug_concept_connections_asthma.json): concept–concept edges
-  cohort     a real Dug find_cohort_variables result for asthma + COPD
-             (dug_find_cohort_variables_asthma_copd.json): search-term nodes, no concepts
-  mesh       a real Dug search_concepts result for body mass index (dug_search_concepts_bmi.json):
-             10 variables each linked to the same 9 concepts, no studies
-kg/kg2 graphs are made the way the Dug interceptor makes them (to_kg in examples/bdc/interceptors.py).
+Graph keywords are named after the Dug tool whose real result (tests/fixtures/) they replay, and
+combine: each adds its calls, so "concept_graph_2 concept_connections" draws asthma and COPD
+plus asthma's related concepts.
+  concept_graph        get_concept_graph, congenital heart disease (dug_concept_graph_chd.json)
+  concept_graph_2      get_concept_graph twice, asthma and COPD (dug_concept_graph_asthma_copd.json)
+  concept_connections  get_concept_connections, asthma (dug_concept_connections_asthma.json):
+                       concept–concept edges, no variables or studies
+  cohort_variables     find_cohort_variables, asthma + COPD (dug_find_cohort_variables_asthma_copd.json):
+                       search-term nodes, no concepts
+  search_concepts      search_concepts, body mass index (dug_search_concepts_bmi.json): 10 variables
+                       each linked to the same 9 concepts, no studies, no seeds
+Their graphs are attached the way the Dug interceptor attaches them (entry() in examples/bdc/interceptors.py).
 """
 
 import asyncio
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -38,7 +41,7 @@ from r_assist.graph import build_graph
 
 
 def _has(text: str, word: str) -> bool:
-    return word in text.lower()
+    return word in re.findall(r"\w+", text.lower())
 
 
 # the Dug interceptor's to_kg: what it attaches to a real get_concept_graph result
@@ -57,25 +60,21 @@ def _attach(tool: str, args: dict, result: dict) -> dict:
     return attached
 
 
-def _concept_graph(args: dict, result: dict) -> dict:
-    return _attach("get_concept_graph", args, result)
-
-
-KG_CHD = [_concept_graph({"concept_id": "MONDO:0005453", "expand_depth": 2, "limit": 50},
-                         json.loads((_FIXTURES / "dug_concept_graph_chd.json").read_text()))]
-KG_ASTHMA_COPD = [_concept_graph(c["args"], c["result"])
-                  for c in json.loads((_FIXTURES / "dug_concept_graph_asthma_copd.json").read_text())]
-_connections = json.loads((_FIXTURES / "dug_concept_connections_asthma.json").read_text())
-KG_RELATED = [KG_ASTHMA_COPD[0], _attach("get_concept_connections", _connections["args"], _connections["result"])]
-
-
 def _saved(tool: str, name: str) -> list[dict]:
+    """A fixture's calls ({args, result}, or a list of them) as the interceptor attaches them."""
     saved = json.loads((_FIXTURES / name).read_text())
-    return [_attach(tool, saved["args"], saved["result"])]
+    return [_attach(tool, c["args"], c["result"]) for c in (saved if isinstance(saved, list) else [saved])]
 
 
-KG_COHORT = _saved("find_cohort_variables", "dug_find_cohort_variables_asthma_copd.json")
-KG_MESH = _saved("search_concepts", "dug_search_concepts_bmi.json")
+# graph keyword -> the structured content of its calls (see the docstring)
+GRAPHS = {
+    "concept_graph": [_attach("get_concept_graph", {"concept_id": "MONDO:0005453", "expand_depth": 2, "limit": 50},
+                              json.loads((_FIXTURES / "dug_concept_graph_chd.json").read_text()))],
+    "concept_graph_2": _saved("get_concept_graph", "dug_concept_graph_asthma_copd.json"),
+    "concept_connections": _saved("get_concept_connections", "dug_concept_connections_asthma.json"),
+    "cohort_variables": _saved("find_cohort_variables", "dug_find_cohort_variables_asthma_copd.json"),
+    "search_concepts": _saved("search_concepts", "dug_search_concepts_bmi.json"),
+}
 
 
 class SlowAgent:
@@ -120,9 +119,7 @@ class SlowAgent:
                        + [{"subject": "phv1", "object": "phs000007"}, {"subject": "phv2", "object": "phs000007"},
                           {"subject": "phv3", "object": "phs000280"}]}
         # structured content per graph call, as the interceptor attaches it
-        attached = (KG_COHORT if _has(question, "cohort") else KG_MESH if _has(question, "mesh")
-                    else KG_RELATED if _has(question, "related") else KG_ASTHMA_COPD if _has(question, "kg2")
-                    else KG_CHD if _has(question, "kg") else [{"kg": kg}])
+        attached = [a for word, calls in GRAPHS.items() if _has(question, word) for a in calls] or [{"kg": kg}]
         yield "values", {"messages": [
             AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": question}, "id": "t1"}]
                       + [{"name": a["kg"]["tool"], "args": a["kg"]["args"], "id": f"t{i + 2}"} for i, a in enumerate(attached)]),
