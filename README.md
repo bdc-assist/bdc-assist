@@ -177,13 +177,15 @@ their key and deduplicated on link, plus the predefined responses shown (canned 
 under `"predefined"` (`type: "predefined"`, `title` and `link` from predefined_responses.yaml; title
 defaults to the topic, link may be empty; none for blocked replies); `sources_md` is all of them as one
 markdown list, worded by `sources`/`sources_item` in prompts.yaml (`sources_item_no_link` for an empty link). `kg` lists the knowledge graphs attached to the agent's
-tool results, one per tool call: `[{tool, args, label, nodes: [{id, name, type, category?, description?, attributes?}],
+tool results, one per tool call: `[{tool, args, label, seeds?, nodes: [{id, name, type, category?, description?, attributes?}],
 edges: [{subject, object, predicate?}]}]` (empty unless a server or interceptor attaches them, and
 for blocked replies). A tool result carries one as its structured content `"kg"`; the LLM never sees it.
 A node's `type` is its role, set by the interceptor (BDC: `concept`, `variable`, `study`, or `term` for a
 search word standing in for a concept); `category` is the source's own, verbatim, where it gives one;
 `attributes` holds other fields worth keeping (BDC: a variable's `related_concepts_count`).
 `label` names the graph in the user's terms ("asthma concept graph"), for a UI to show instead of a tool name.
+`seeds` (optional) lists the ids of the nodes the call asked about, for a view to centre on (BDC: the concept
+of `get_concept_graph` / `get_concept_connections`, the search words of `find_cohort_variables`; none for searches).
 `mcp_errors` lists the MCP servers currently unavailable (re-checked every `MCP_RETRY_SECONDS`), `"name: error"` each (e.g.
 `"dug_mcp: HTTPStatusError: Client error '403 Forbidden' ..."`); the agent answers without their tools.
 
@@ -214,10 +216,17 @@ The web chat client, with the knowledge graph views, lives in its own repository
 To work on it without real services, run the stub (`uv run python tests/_stub_stream_server.py`,
 port 8011) and start the client with `VITE_API_URL=http://127.0.0.1:8011`. A keyword in the
 question picks a path: `block` (input guardrail refuses), `reject` (output guardrail replaces the
-draft), `canned` (predefined reply), `nosources`, `crash` (the stream ends with an error), `kg` or
-`kg2` (a real Dug graph for one concept, or for asthma and COPD), `related` (asthma's graph plus
-its related concepts); anything else gets a docs answer with a small graph. The client's test
-fixtures are made from the Dug results in `tests/fixtures/` (its README says how).
+draft), `canned` (predefined reply), `nosources`, `crash` (the stream ends with an error). Graph
+keywords replay a real Dug result for the tool they're named after, and combine:
+`concept_graph` (congenital heart disease), `concept_graph_2` (asthma and COPD, two calls),
+`concept_connections` (asthma's related concepts), `cohort_variables` (asthma + COPD),
+`search_concepts` (body mass index). Without one, the answer comes with a small made-up graph.
+The stub's docstring has the details.
+
+Each graph keyword's output is `tests/fixtures/kg/<keyword>.json` (the `kg` and Dug `sources` the
+server sends), which the stub serves and the client copies for its tests. After changing the Dug
+interceptor or a Dug fixture, regenerate them with `uv run python tests/make_kg_fixtures.py`; a
+test fails until you do.
 
 ## Test / demo
 

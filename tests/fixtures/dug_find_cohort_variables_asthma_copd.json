@@ -1,0 +1,451 @@
+{
+ "args": {
+  "concepts": [
+   "asthma",
+   "COPD"
+  ]
+ },
+ "result": {
+  "concepts_searched": [
+   "asthma",
+   "COPD"
+  ],
+  "enrichment_summary": [
+   {
+    "concept": "asthma",
+    "curies_found": 18,
+    "variables_in_kg": 20
+   },
+   {
+    "concept": "COPD",
+    "curies_found": 20,
+    "variables_in_kg": 20
+   }
+  ],
+  "feasible_studies_count": 2,
+  "feasible_studies": [
+   {
+    "study_id": "phs000007.v31.p12",
+    "study_name": "Framingham Cohort",
+    "concepts_found": [
+     "COPD",
+     "asthma"
+    ],
+    "concepts_missing": [],
+    "variables": [
+     {
+      "variable_id": "phv00000484.v1.p12",
+      "variable_name": "MF10",
+      "study_id": "phs000007.v31.p12",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00000603.v1.p12",
+      "variable_name": "MF135",
+      "study_id": "phs000007.v31.p12",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00000701.v1.p12",
+      "variable_name": "MF246",
+      "study_id": "phs000007.v31.p12",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00000789.v1.p12",
+      "variable_name": "MF339",
+      "study_id": "phs000007.v31.p12",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00001099.v1.p12",
+      "variable_name": "FA80",
+      "study_id": "phs000007.v31.p12",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00001118.v1.p12",
+      "variable_name": "FA107",
+      "study_id": "phs000007.v31.p12",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00003015.v1.p12",
+      "variable_name": "FJ72",
+      "study_id": "phs000007.v31.p12",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00003399.v1.p12",
+      "variable_name": "FK151",
+      "study_id": "phs000007.v31.p12",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00003856.v1.p12",
+      "variable_name": "FL212",
+      "study_id": "phs000007.v31.p12",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00056802.v2.p12",
+      "variable_name": "hi201c",
+      "study_id": "phs000007.v31.p12",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "COPD"
+      ]
+     },
+     {
+      "variable_id": "phv00177574.v4.p12",
+      "variable_name": "g3b0600",
+      "study_id": "phs000007.v31.p12",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "COPD"
+      ]
+     },
+     {
+      "variable_id": "phv00251717.v1.p12",
+      "variable_name": "h661",
+      "study_id": "phs000007.v31.p12",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "COPD"
+      ]
+     }
+    ]
+   },
+   {
+    "study_id": "phs000007.v34.p15",
+    "study_name": "Framingham Cohort",
+    "concepts_found": [
+     "COPD",
+     "asthma"
+    ],
+    "concepts_missing": [],
+    "variables": [
+     {
+      "variable_id": "phv00000484.v1.p15",
+      "variable_name": "MF10",
+      "study_id": "phs000007.v34.p15",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00000603.v1.p15",
+      "variable_name": "MF135",
+      "study_id": "phs000007.v34.p15",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00000701.v1.p15",
+      "variable_name": "MF246",
+      "study_id": "phs000007.v34.p15",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00000789.v1.p15",
+      "variable_name": "MF339",
+      "study_id": "phs000007.v34.p15",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00001099.v1.p15",
+      "variable_name": "FA80",
+      "study_id": "phs000007.v34.p15",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00001118.v1.p15",
+      "variable_name": "FA107",
+      "study_id": "phs000007.v34.p15",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00003015.v1.p15",
+      "variable_name": "FJ72",
+      "study_id": "phs000007.v34.p15",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00003399.v1.p15",
+      "variable_name": "FK151",
+      "study_id": "phs000007.v34.p15",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00003856.v1.p15",
+      "variable_name": "FL212",
+      "study_id": "phs000007.v34.p15",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "variable_id": "phv00056802.v4.p15",
+      "variable_name": "hi201c",
+      "study_id": "phs000007.v34.p15",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "COPD"
+      ]
+     },
+     {
+      "variable_id": "phv00177574.v6.p15",
+      "variable_name": "g3b0600",
+      "study_id": "phs000007.v34.p15",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "COPD"
+      ]
+     },
+     {
+      "variable_id": "phv00251717.v2.p15",
+      "variable_name": "h661",
+      "study_id": "phs000007.v34.p15",
+      "study_name": "Framingham Cohort",
+      "matched_concepts": [
+       "COPD"
+      ]
+     }
+    ]
+   }
+  ],
+  "partial_studies": [
+   {
+    "study_id": "phs002752.v1.p1",
+    "study_name": "Clinical Trial of COVID-19 Convalescent Plasma in Outpatients (C3PO)",
+    "concepts_found": [
+     "asthma"
+    ],
+    "concepts_missing": [
+     "COPD"
+    ],
+    "variables": [
+     {
+      "variable_id": "phs002752_F106Q01.v1.p1",
+      "variable_name": "F106Q01",
+      "study_id": "phs002752.v1.p1",
+      "study_name": "Clinical Trial of COVID-19 Convalescent Plasma in Outpatients (C3PO)",
+      "matched_concepts": [
+       "asthma"
+      ]
+     }
+    ]
+   },
+   {
+    "study_id": "phs000209.v13.p3",
+    "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+    "concepts_found": [
+     "COPD"
+    ],
+    "concepts_missing": [
+     "asthma"
+    ],
+    "variables": [
+     {
+      "variable_id": "phv00083602.v1.p3",
+      "variable_name": "copdmoa4",
+      "study_id": "phs000209.v13.p3",
+      "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+      "matched_concepts": [
+       "COPD"
+      ]
+     },
+     {
+      "variable_id": "phv00083832.v2.p3",
+      "variable_name": "copdmoa4",
+      "study_id": "phs000209.v13.p3",
+      "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+      "matched_concepts": [
+       "COPD"
+      ]
+     },
+     {
+      "variable_id": "phv00087828.v1.p3",
+      "variable_name": "copdmoa4",
+      "study_id": "phs000209.v13.p3",
+      "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+      "matched_concepts": [
+       "COPD"
+      ]
+     }
+    ]
+   },
+   {
+    "study_id": "phs000179.v6.p2",
+    "study_name": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
+    "concepts_found": [
+     "COPD"
+    ],
+    "concepts_missing": [
+     "asthma"
+    ],
+    "variables": [
+     {
+      "variable_id": "phv00159844.v4.p2",
+      "variable_name": "Exacerbation_Frequency",
+      "study_id": "phs000179.v6.p2",
+      "study_name": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
+      "matched_concepts": [
+       "COPD"
+      ]
+     },
+     {
+      "variable_id": "phv00169306.v3.p2",
+      "variable_name": "ExclusionaryDisease",
+      "study_id": "phs000179.v6.p2",
+      "study_name": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
+      "matched_concepts": [
+       "COPD"
+      ]
+     },
+     {
+      "variable_id": "phv00278174.v1.p2",
+      "variable_name": "Study_Phase",
+      "study_id": "phs000179.v6.p2",
+      "study_name": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
+      "matched_concepts": [
+       "COPD"
+      ]
+     }
+    ]
+   },
+   {
+    "study_id": "phs000200.v12.p3",
+    "study_name": "Women's Health Initiative Clinical Trial and Observational Study",
+    "concepts_found": [
+     "COPD"
+    ],
+    "concepts_missing": [
+     "asthma"
+    ],
+    "variables": [
+     {
+      "variable_id": "phv00283510.v2.p3",
+      "variable_name": "BRONCHITISHX",
+      "study_id": "phs000200.v12.p3",
+      "study_name": "Women's Health Initiative Clinical Trial and Observational Study",
+      "matched_concepts": [
+       "COPD"
+      ]
+     }
+    ]
+   },
+   {
+    "study_id": "phs001252.v1.p1",
+    "study_name": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
+    "concepts_found": [
+     "COPD"
+    ],
+    "concepts_missing": [
+     "asthma"
+    ],
+    "variables": [
+     {
+      "variable_id": "phv00293470.v1.p1",
+      "variable_name": "CMICS",
+      "study_id": "phs001252.v1.p1",
+      "study_name": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
+      "matched_concepts": [
+       "COPD"
+      ]
+     },
+     {
+      "variable_id": "phv00293731.v1.p1",
+      "variable_name": "CMICS",
+      "study_id": "phs001252.v1.p1",
+      "study_name": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
+      "matched_concepts": [
+       "COPD"
+      ]
+     }
+    ]
+   }
+  ],
+  "_sources": [
+   {
+    "title": "Framingham Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000007",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Clinical Trial of COVID-19 Convalescent Plasma in Outpatients (C3PO)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs002752",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000209",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000179",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Women's Health Initiative Clinical Trial and Observational Study",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000200",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001252",
+    "type": "dbgap-study"
+   }
+  ]
+ }
+}
