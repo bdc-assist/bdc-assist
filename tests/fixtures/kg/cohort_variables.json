@@ -1,0 +1,543 @@
+{
+ "kg": [
+  {
+   "tool": "find_cohort_variables",
+   "args": {
+    "concepts": [
+     "asthma",
+     "COPD"
+    ]
+   },
+   "label": "asthma + COPD cohort variables",
+   "seeds": [
+    "asthma",
+    "COPD"
+   ],
+   "nodes": [
+    {
+     "id": "phv00000484.v1.p12",
+     "name": "MF10",
+     "type": "variable"
+    },
+    {
+     "id": "phs000007.v31.p12",
+     "name": "Framingham Cohort",
+     "type": "study"
+    },
+    {
+     "id": "asthma",
+     "name": "asthma",
+     "type": "term"
+    },
+    {
+     "id": "phv00000603.v1.p12",
+     "name": "MF135",
+     "type": "variable"
+    },
+    {
+     "id": "phv00000701.v1.p12",
+     "name": "MF246",
+     "type": "variable"
+    },
+    {
+     "id": "phv00000789.v1.p12",
+     "name": "MF339",
+     "type": "variable"
+    },
+    {
+     "id": "phv00001099.v1.p12",
+     "name": "FA80",
+     "type": "variable"
+    },
+    {
+     "id": "phv00001118.v1.p12",
+     "name": "FA107",
+     "type": "variable"
+    },
+    {
+     "id": "phv00003015.v1.p12",
+     "name": "FJ72",
+     "type": "variable"
+    },
+    {
+     "id": "phv00003399.v1.p12",
+     "name": "FK151",
+     "type": "variable"
+    },
+    {
+     "id": "phv00003856.v1.p12",
+     "name": "FL212",
+     "type": "variable"
+    },
+    {
+     "id": "phv00056802.v2.p12",
+     "name": "hi201c",
+     "type": "variable"
+    },
+    {
+     "id": "COPD",
+     "name": "COPD",
+     "type": "term"
+    },
+    {
+     "id": "phv00177574.v4.p12",
+     "name": "g3b0600",
+     "type": "variable"
+    },
+    {
+     "id": "phv00251717.v1.p12",
+     "name": "h661",
+     "type": "variable"
+    },
+    {
+     "id": "phv00000484.v1.p15",
+     "name": "MF10",
+     "type": "variable"
+    },
+    {
+     "id": "phs000007.v34.p15",
+     "name": "Framingham Cohort",
+     "type": "study"
+    },
+    {
+     "id": "phv00000603.v1.p15",
+     "name": "MF135",
+     "type": "variable"
+    },
+    {
+     "id": "phv00000701.v1.p15",
+     "name": "MF246",
+     "type": "variable"
+    },
+    {
+     "id": "phv00000789.v1.p15",
+     "name": "MF339",
+     "type": "variable"
+    },
+    {
+     "id": "phv00001099.v1.p15",
+     "name": "FA80",
+     "type": "variable"
+    },
+    {
+     "id": "phv00001118.v1.p15",
+     "name": "FA107",
+     "type": "variable"
+    },
+    {
+     "id": "phv00003015.v1.p15",
+     "name": "FJ72",
+     "type": "variable"
+    },
+    {
+     "id": "phv00003399.v1.p15",
+     "name": "FK151",
+     "type": "variable"
+    },
+    {
+     "id": "phv00003856.v1.p15",
+     "name": "FL212",
+     "type": "variable"
+    },
+    {
+     "id": "phv00056802.v4.p15",
+     "name": "hi201c",
+     "type": "variable"
+    },
+    {
+     "id": "phv00177574.v6.p15",
+     "name": "g3b0600",
+     "type": "variable"
+    },
+    {
+     "id": "phv00251717.v2.p15",
+     "name": "h661",
+     "type": "variable"
+    },
+    {
+     "id": "phs002752_F106Q01.v1.p1",
+     "name": "F106Q01",
+     "type": "variable"
+    },
+    {
+     "id": "phs002752.v1.p1",
+     "name": "Clinical Trial of COVID-19 Convalescent Plasma in Outpatients (C3PO)",
+     "type": "study"
+    },
+    {
+     "id": "phv00083602.v1.p3",
+     "name": "copdmoa4",
+     "type": "variable"
+    },
+    {
+     "id": "phs000209.v13.p3",
+     "name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+     "type": "study"
+    },
+    {
+     "id": "phv00083832.v2.p3",
+     "name": "copdmoa4",
+     "type": "variable"
+    },
+    {
+     "id": "phv00087828.v1.p3",
+     "name": "copdmoa4",
+     "type": "variable"
+    },
+    {
+     "id": "phv00159844.v4.p2",
+     "name": "Exacerbation_Frequency",
+     "type": "variable"
+    },
+    {
+     "id": "phs000179.v6.p2",
+     "name": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
+     "type": "study"
+    },
+    {
+     "id": "phv00169306.v3.p2",
+     "name": "ExclusionaryDisease",
+     "type": "variable"
+    },
+    {
+     "id": "phv00278174.v1.p2",
+     "name": "Study_Phase",
+     "type": "variable"
+    },
+    {
+     "id": "phv00283510.v2.p3",
+     "name": "BRONCHITISHX",
+     "type": "variable"
+    },
+    {
+     "id": "phs000200.v12.p3",
+     "name": "Women's Health Initiative Clinical Trial and Observational Study",
+     "type": "study"
+    },
+    {
+     "id": "phv00293470.v1.p1",
+     "name": "CMICS",
+     "type": "variable"
+    },
+    {
+     "id": "phs001252.v1.p1",
+     "name": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
+     "type": "study"
+    },
+    {
+     "id": "phv00293731.v1.p1",
+     "name": "CMICS",
+     "type": "variable"
+    }
+   ],
+   "edges": [
+    {
+     "subject": "phv00000484.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00000484.v1.p12",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00000603.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00000603.v1.p12",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00000701.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00000701.v1.p12",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00000789.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00000789.v1.p12",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00001099.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00001099.v1.p12",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00001118.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00001118.v1.p12",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00003015.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00003015.v1.p12",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00003399.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00003399.v1.p12",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00003856.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00003856.v1.p12",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00056802.v2.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00056802.v2.p12",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00177574.v4.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00177574.v4.p12",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00251717.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00251717.v1.p12",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00000484.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00000484.v1.p15",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00000603.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00000603.v1.p15",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00000701.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00000701.v1.p15",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00000789.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00000789.v1.p15",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00001099.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00001099.v1.p15",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00001118.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00001118.v1.p15",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00003015.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00003015.v1.p15",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00003399.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00003399.v1.p15",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00003856.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00003856.v1.p15",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00056802.v4.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00056802.v4.p15",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00177574.v6.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00177574.v6.p15",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00251717.v2.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00251717.v2.p15",
+     "object": "COPD"
+    },
+    {
+     "subject": "phs002752_F106Q01.v1.p1",
+     "object": "phs002752.v1.p1"
+    },
+    {
+     "subject": "phs002752_F106Q01.v1.p1",
+     "object": "asthma"
+    },
+    {
+     "subject": "phv00083602.v1.p3",
+     "object": "phs000209.v13.p3"
+    },
+    {
+     "subject": "phv00083602.v1.p3",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00083832.v2.p3",
+     "object": "phs000209.v13.p3"
+    },
+    {
+     "subject": "phv00083832.v2.p3",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00087828.v1.p3",
+     "object": "phs000209.v13.p3"
+    },
+    {
+     "subject": "phv00087828.v1.p3",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00159844.v4.p2",
+     "object": "phs000179.v6.p2"
+    },
+    {
+     "subject": "phv00159844.v4.p2",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00169306.v3.p2",
+     "object": "phs000179.v6.p2"
+    },
+    {
+     "subject": "phv00169306.v3.p2",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00278174.v1.p2",
+     "object": "phs000179.v6.p2"
+    },
+    {
+     "subject": "phv00278174.v1.p2",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00283510.v2.p3",
+     "object": "phs000200.v12.p3"
+    },
+    {
+     "subject": "phv00283510.v2.p3",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00293470.v1.p1",
+     "object": "phs001252.v1.p1"
+    },
+    {
+     "subject": "phv00293470.v1.p1",
+     "object": "COPD"
+    },
+    {
+     "subject": "phv00293731.v1.p1",
+     "object": "phs001252.v1.p1"
+    },
+    {
+     "subject": "phv00293731.v1.p1",
+     "object": "COPD"
+    }
+   ]
+  }
+ ],
+ "sources": {
+  "dug": [
+   {
+    "title": "Framingham Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000007",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Clinical Trial of COVID-19 Convalescent Plasma in Outpatients (C3PO)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs002752",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000209",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000179",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Women's Health Initiative Clinical Trial and Observational Study",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000200",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001252",
+    "type": "dbgap-study"
+   }
+  ]
+ }
+}

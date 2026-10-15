@@ -1,0 +1,1563 @@
+{
+ "kg": [
+  {
+   "tool": "get_concept_graph",
+   "args": {
+    "concept_id": "MONDO:0004979",
+    "expand_depth": 2,
+    "limit": 50
+   },
+   "label": "asthma concept graph",
+   "seeds": [
+    "MONDO:0004979"
+   ],
+   "nodes": [
+    {
+     "id": "phv00123418.v1.p1",
+     "name": "KIDASTHM",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "MONDO:0004979",
+     "name": "asthma",
+     "type": "concept",
+     "category": "biolink:NamedThing"
+    },
+    {
+     "id": "phs000284.v2.p1",
+     "name": "NHLBI Cleveland Family Study (CFS) Candidate Gene Association Resource (CARe)",
+     "type": "study"
+    },
+    {
+     "id": "phv00009088.v9.p15",
+     "name": "D360",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phs000007.v34.p15",
+     "name": "Framingham Cohort",
+     "type": "study"
+    },
+    {
+     "id": "phv00545640.v1.p15",
+     "name": "K1420",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 34
+     }
+    },
+    {
+     "id": "phv00424036.v1.p1",
+     "name": "ASTHMA",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 19
+     }
+    },
+    {
+     "id": "phs001682.v3.p1",
+     "name": "NHLBI TOPMed: Pulmonary Hypertension and the Hypoxic Response in SCD (PUSH)",
+     "type": "study"
+    },
+    {
+     "id": "phv00175381.v1.p3",
+     "name": "oaia5c",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 34
+     }
+    },
+    {
+     "id": "phs000209.v13.p3",
+     "name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+     "type": "study"
+    },
+    {
+     "id": "phv00105885.v1.p1",
+     "name": "ASTHMA",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phs000287.v7.p1",
+     "name": "Cardiovascular Health Study (CHS) Cohort: an NHLBI-funded observational study of risk factors for cardiovascular disease in adults 65 years or older",
+     "type": "study"
+    },
+    {
+     "id": "phv00461208.v2.p15",
+     "name": "g3a540",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phv00159705.v4.p2",
+     "name": "AsthmaStillHave",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phs000179.v6.p2",
+     "name": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
+     "type": "study"
+    },
+    {
+     "id": "phv00087756.v1.p3",
+     "name": "qastha4",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phv00254260.v2.p12",
+     "name": "j421",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phs000007.v31.p12",
+     "name": "Framingham Cohort",
+     "type": "study"
+    },
+    {
+     "id": "phv00298008.v2.p2",
+     "name": "RSE14a",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 10
+     }
+    },
+    {
+     "id": "phs000280.v8.p2",
+     "name": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+     "type": "study"
+    },
+    {
+     "id": "phv00114600.v2.p2",
+     "name": "B12ASTHM",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phs000285.v3.p2",
+     "name": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+     "type": "study"
+    },
+    {
+     "id": "phv00072313.v5.p12",
+     "name": "H359",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00106407.v1.p1",
+     "name": "ASTHCUR",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 19
+     }
+    },
+    {
+     "id": "phv00007085.v1.p12",
+     "name": "FS525",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 12
+     }
+    },
+    {
+     "id": "phv00083134.v1.p3",
+     "name": "oaia1c",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 34
+     }
+    },
+    {
+     "id": "phv00006650.v1.p12",
+     "name": "FR425",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phv00117450.v2.p2",
+     "name": "D09ASNM",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 22
+     }
+    },
+    {
+     "id": "phv00010489.v9.p15",
+     "name": "G418",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phv00117045.v2.p2",
+     "name": "D08ASTH",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phv00435946.v1.p1",
+     "name": "steroids_yes12mo",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 42
+     }
+    },
+    {
+     "id": "phs001661.v3.p1",
+     "name": "NHLBI TOPMed: Genetic Causes of Complex Pediatric Disorders - Asthma (GCPD-A)",
+     "type": "study"
+    },
+    {
+     "id": "phv00083536.v1.p3",
+     "name": "qasnsaa4",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 20
+     }
+    },
+    {
+     "id": "phv00104144.v1.p1",
+     "name": "ATH37",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phv00072491.v5.p12",
+     "name": "H652",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 21
+     }
+    },
+    {
+     "id": "phv00461499.v2.p15",
+     "name": "e340",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 27
+     }
+    },
+    {
+     "id": "phv00430345.v1.p1",
+     "name": "asthma_hospital_Yes12mo",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 24
+     }
+    },
+    {
+     "id": "phs001732.v2.p1",
+     "name": "NHLBI TOPMed: TReating Children to Prevent EXacerbations of Asthma (TREXA)",
+     "type": "study"
+    },
+    {
+     "id": "phv00056977.v2.p12",
+     "name": "OAIA2",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 24
+     }
+    },
+    {
+     "id": "phv00226388.v1.p1",
+     "name": "RSEA34",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 13
+     }
+    },
+    {
+     "id": "phs000810.v1.p1",
+     "name": "Hispanic Community Health Study /Study of Latinos (HCHS/SOL)",
+     "type": "study"
+    },
+    {
+     "id": "phv00274124.v1.p15",
+     "name": "g3a544",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 21
+     }
+    },
+    {
+     "id": "phv00009293.v6.p12",
+     "name": "E340",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 18
+     }
+    },
+    {
+     "id": "phv00209067.v2.p2",
+     "name": "PHXB6E",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00462115.v2.p15",
+     "name": "G3C0835",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 19
+     }
+    },
+    {
+     "id": "phv00526878.v1.p2",
+     "name": "RSEA36",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 23
+     }
+    },
+    {
+     "id": "phs000810.v2.p2",
+     "name": "Hispanic Community Health Study /Study of Latinos (HCHS/SOL)",
+     "type": "study"
+    },
+    {
+     "id": "phv00226387.v2.p2",
+     "name": "RSEA32",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00430220.v1.p1",
+     "name": "Affection_Status",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 17
+     }
+    },
+    {
+     "id": "phs001728.v3.p1",
+     "name": "NHLBI TOPMed: Best ADd-on Therapy Giving Effective Response (BADGER)",
+     "type": "study"
+    },
+    {
+     "id": "phv00008470.v6.p12",
+     "name": "C95",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 20
+     }
+    },
+    {
+     "id": "phv00056804.v2.p12",
+     "name": "hi201e",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00429126.v1.p1",
+     "name": "PMH_ASTHMA_MD",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 14
+     }
+    },
+    {
+     "id": "phs001662.v2.p1",
+     "name": "NHLBI TOPMed: Lung Tissue Research Consortium (LTRC)",
+     "type": "study"
+    },
+    {
+     "id": "phv00114602.v2.p2",
+     "name": "B12ASDOC",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00107852.v1.p1",
+     "name": "ASLAST56",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 19
+     }
+    },
+    {
+     "id": "phv00175368.v1.p3",
+     "name": "istrd5c",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 14
+     }
+    },
+    {
+     "id": "phv00128346.v2.p2",
+     "name": "RPAA16",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 19
+     }
+    },
+    {
+     "id": "phs000286.v7.p2",
+     "name": "Jackson Heart Study (JHS) Cohort",
+     "type": "study"
+    },
+    {
+     "id": "phv00427613.v1.p1",
+     "name": "Affection_Status",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 19
+     }
+    },
+    {
+     "id": "phs001604.v2.p1",
+     "name": "NHLBI TOPMed: Children's Health Study (CHS) Effects of Air Pollution on the Development of Obesity in Children (Meta-AIR)",
+     "type": "study"
+    },
+    {
+     "id": "phv00420871.v2.p2",
+     "name": "N_ICUAsthLstYear",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 16
+     }
+    },
+    {
+     "id": "phs001446.v3.p2",
+     "name": "NHLBI TOPMed: Severe Asthma Research Program (SARP)",
+     "type": "study"
+    },
+    {
+     "id": "phs003708_MHASTH.v1.p1",
+     "name": "Asthmaт",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 10
+     }
+    },
+    {
+     "id": "phs003708.v1.p1",
+     "name": "CONNECTS Master Protocol for Clinical Trials targeting Macro- and Micro-Immuno-Thrombosis, Vascular Hyperinflammation, and Hypercoagulability and Renin-Angiotensin-Aldosterone System (RAAS) in Hospitalized Patients with COVID-19 (ACTIV-4 Host Tissue)",
+     "type": "study"
+    },
+    {
+     "id": "phv00293273.v1.p1",
+     "name": "ATS5G4N",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 18
+     }
+    },
+    {
+     "id": "phs001252.v1.p1",
+     "name": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
+     "type": "study"
+    },
+    {
+     "id": "phv00005285.v1.p12",
+     "name": "FO489",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00121585.v2.p2",
+     "name": "Y01ASTMD",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 10
+     }
+    },
+    {
+     "id": "phv00274120.v1.p12",
+     "name": "g3a540",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phv00176725.v1.p3",
+     "name": "recuryr5",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 38
+     }
+    }
+   ],
+   "edges": [
+    {
+     "subject": "phv00123418.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00123418.v1.p1",
+     "object": "phs000284.v2.p1"
+    },
+    {
+     "subject": "phv00009088.v9.p15",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00009088.v9.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00545640.v1.p15",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00545640.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00424036.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00424036.v1.p1",
+     "object": "phs001682.v3.p1"
+    },
+    {
+     "subject": "phv00175381.v1.p3",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00175381.v1.p3",
+     "object": "phs000209.v13.p3"
+    },
+    {
+     "subject": "phv00105885.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00105885.v1.p1",
+     "object": "phs000287.v7.p1"
+    },
+    {
+     "subject": "phv00461208.v2.p15",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00461208.v2.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00159705.v4.p2",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00159705.v4.p2",
+     "object": "phs000179.v6.p2"
+    },
+    {
+     "subject": "phv00087756.v1.p3",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00087756.v1.p3",
+     "object": "phs000209.v13.p3"
+    },
+    {
+     "subject": "phv00254260.v2.p12",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00254260.v2.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00298008.v2.p2",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00298008.v2.p2",
+     "object": "phs000280.v8.p2"
+    },
+    {
+     "subject": "phv00114600.v2.p2",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00114600.v2.p2",
+     "object": "phs000285.v3.p2"
+    },
+    {
+     "subject": "phv00072313.v5.p12",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00072313.v5.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00106407.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00106407.v1.p1",
+     "object": "phs000287.v7.p1"
+    },
+    {
+     "subject": "phv00007085.v1.p12",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00007085.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00083134.v1.p3",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00083134.v1.p3",
+     "object": "phs000209.v13.p3"
+    },
+    {
+     "subject": "phv00006650.v1.p12",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00006650.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00117450.v2.p2",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00117450.v2.p2",
+     "object": "phs000285.v3.p2"
+    },
+    {
+     "subject": "phv00010489.v9.p15",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00010489.v9.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00117045.v2.p2",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00117045.v2.p2",
+     "object": "phs000285.v3.p2"
+    },
+    {
+     "subject": "phv00435946.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00435946.v1.p1",
+     "object": "phs001661.v3.p1"
+    },
+    {
+     "subject": "phv00083536.v1.p3",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00083536.v1.p3",
+     "object": "phs000209.v13.p3"
+    },
+    {
+     "subject": "phv00104144.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00104144.v1.p1",
+     "object": "phs000287.v7.p1"
+    },
+    {
+     "subject": "phv00072491.v5.p12",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00072491.v5.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00461499.v2.p15",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00461499.v2.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00430345.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00430345.v1.p1",
+     "object": "phs001732.v2.p1"
+    },
+    {
+     "subject": "phv00056977.v2.p12",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00056977.v2.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00226388.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00226388.v1.p1",
+     "object": "phs000810.v1.p1"
+    },
+    {
+     "subject": "phv00274124.v1.p15",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00274124.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00009293.v6.p12",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00009293.v6.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00209067.v2.p2",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00209067.v2.p2",
+     "object": "phs000280.v8.p2"
+    },
+    {
+     "subject": "phv00462115.v2.p15",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00462115.v2.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00526878.v1.p2",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00526878.v1.p2",
+     "object": "phs000810.v2.p2"
+    },
+    {
+     "subject": "phv00226387.v2.p2",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00226387.v2.p2",
+     "object": "phs000810.v2.p2"
+    },
+    {
+     "subject": "phv00430220.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00430220.v1.p1",
+     "object": "phs001728.v3.p1"
+    },
+    {
+     "subject": "phv00008470.v6.p12",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00008470.v6.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00056804.v2.p12",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00056804.v2.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00429126.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00429126.v1.p1",
+     "object": "phs001662.v2.p1"
+    },
+    {
+     "subject": "phv00114602.v2.p2",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00114602.v2.p2",
+     "object": "phs000285.v3.p2"
+    },
+    {
+     "subject": "phv00107852.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00107852.v1.p1",
+     "object": "phs000287.v7.p1"
+    },
+    {
+     "subject": "phv00175368.v1.p3",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00175368.v1.p3",
+     "object": "phs000209.v13.p3"
+    },
+    {
+     "subject": "phv00128346.v2.p2",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00128346.v2.p2",
+     "object": "phs000286.v7.p2"
+    },
+    {
+     "subject": "phv00427613.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00427613.v1.p1",
+     "object": "phs001604.v2.p1"
+    },
+    {
+     "subject": "phv00420871.v2.p2",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00420871.v2.p2",
+     "object": "phs001446.v3.p2"
+    },
+    {
+     "subject": "phs003708_MHASTH.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phs003708_MHASTH.v1.p1",
+     "object": "phs003708.v1.p1"
+    },
+    {
+     "subject": "phv00293273.v1.p1",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00293273.v1.p1",
+     "object": "phs001252.v1.p1"
+    },
+    {
+     "subject": "phv00005285.v1.p12",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00005285.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00121585.v2.p2",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00121585.v2.p2",
+     "object": "phs000285.v3.p2"
+    },
+    {
+     "subject": "phv00274120.v1.p12",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00274120.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00176725.v1.p3",
+     "object": "MONDO:0004979"
+    },
+    {
+     "subject": "phv00176725.v1.p3",
+     "object": "phs000209.v13.p3"
+    }
+   ]
+  },
+  {
+   "tool": "get_concept_graph",
+   "args": {
+    "concept_id": "MONDO:0005002",
+    "expand_depth": 2,
+    "limit": 50
+   },
+   "label": "chronic obstructive pulmonary disease concept graph",
+   "seeds": [
+    "MONDO:0005002"
+   ],
+   "nodes": [
+    {
+     "id": "phv00002837.v1.p15",
+     "name": "FI217",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "MONDO:0005002",
+     "name": "chronic obstructive pulmonary disease",
+     "type": "concept",
+     "category": "biolink:NamedThing"
+    },
+    {
+     "id": "phs000007.v34.p15",
+     "name": "Framingham Cohort",
+     "type": "study"
+    },
+    {
+     "id": "phv00251719.v1.p12",
+     "name": "h663",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 26
+     }
+    },
+    {
+     "id": "phs000007.v31.p12",
+     "name": "Framingham Cohort",
+     "type": "study"
+    },
+    {
+     "id": "phv00003655.v1.p15",
+     "name": "FK444",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00251718.v1.p12",
+     "name": "h662",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 10
+     }
+    },
+    {
+     "id": "phv00515927.v1.p2",
+     "name": "FDI33",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 27
+     }
+    },
+    {
+     "id": "phs000280.v8.p2",
+     "name": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+     "type": "study"
+    },
+    {
+     "id": "phv00002393.v1.p12",
+     "name": "FG287",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00177574.v4.p12",
+     "name": "g3b0600",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 17
+     }
+    },
+    {
+     "id": "phv00251718.v2.p15",
+     "name": "h662",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 10
+     }
+    },
+    {
+     "id": "phv00298000.v2.p2",
+     "name": "RSE11",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 24
+     }
+    },
+    {
+     "id": "phv00251717.v2.p15",
+     "name": "h661",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 15
+     }
+    },
+    {
+     "id": "phv00275389.v1.p15",
+     "name": "fy602",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 16
+     }
+    },
+    {
+     "id": "phv00056802.v4.p15",
+     "name": "hi201c",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 5
+     }
+    },
+    {
+     "id": "phv00492692.v1.p2",
+     "name": "COPD",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phs001644.v3.p2",
+     "name": "NHLBI TOPMed - NHGRI CCDG: The BioMe Biobank at Mount Sinai (BioMe_HMB-NPU)",
+     "type": "study"
+    },
+    {
+     "id": "phv00275055.v1.p12",
+     "name": "FX602",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 16
+     }
+    },
+    {
+     "id": "phv00177574.v6.p15",
+     "name": "g3b0600",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 17
+     }
+    },
+    {
+     "id": "phv00003655.v1.p12",
+     "name": "FK444",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00251719.v2.p15",
+     "name": "h663",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 26
+     }
+    },
+    {
+     "id": "phv00002631.v1.p12",
+     "name": "FH306",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00251717.v1.p12",
+     "name": "h661",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 15
+     }
+    },
+    {
+     "id": "phv00007944.v6.p12",
+     "name": "B325",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phv00275389.v1.p12",
+     "name": "fy602",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 16
+     }
+    },
+    {
+     "id": "phv00002837.v1.p12",
+     "name": "FI217",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00056802.v2.p12",
+     "name": "hi201c",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 5
+     }
+    },
+    {
+     "id": "phv00003236.v1.p12",
+     "name": "FJ348",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 14
+     }
+    },
+    {
+     "id": "phv00255330.v1.p15",
+     "name": "fw602",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 26
+     }
+    },
+    {
+     "id": "phv00002393.v1.p15",
+     "name": "FG287",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00275055.v1.p15",
+     "name": "FX602",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 16
+     }
+    },
+    {
+     "id": "phv00255330.v1.p12",
+     "name": "fw602",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 26
+     }
+    },
+    {
+     "id": "phv00002631.v1.p15",
+     "name": "FH306",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 11
+     }
+    },
+    {
+     "id": "phv00007944.v9.p15",
+     "name": "B325",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 9
+     }
+    },
+    {
+     "id": "phv00003236.v1.p15",
+     "name": "FJ348",
+     "type": "variable",
+     "attributes": {
+      "related_concepts_count": 14
+     }
+    }
+   ],
+   "edges": [
+    {
+     "subject": "phv00002837.v1.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00002837.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00251719.v1.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00251719.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00003655.v1.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00003655.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00251718.v1.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00251718.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00515927.v1.p2",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00515927.v1.p2",
+     "object": "phs000280.v8.p2"
+    },
+    {
+     "subject": "phv00002393.v1.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00002393.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00177574.v4.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00177574.v4.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00251718.v2.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00251718.v2.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00298000.v2.p2",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00298000.v2.p2",
+     "object": "phs000280.v8.p2"
+    },
+    {
+     "subject": "phv00251717.v2.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00251717.v2.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00275389.v1.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00275389.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00056802.v4.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00056802.v4.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00492692.v1.p2",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00492692.v1.p2",
+     "object": "phs001644.v3.p2"
+    },
+    {
+     "subject": "phv00275055.v1.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00275055.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00177574.v6.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00177574.v6.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00003655.v1.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00003655.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00251719.v2.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00251719.v2.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00002631.v1.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00002631.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00251717.v1.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00251717.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00007944.v6.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00007944.v6.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00275389.v1.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00275389.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00002837.v1.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00002837.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00056802.v2.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00056802.v2.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00003236.v1.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00003236.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00255330.v1.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00255330.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00002393.v1.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00002393.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00275055.v1.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00275055.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00255330.v1.p12",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00255330.v1.p12",
+     "object": "phs000007.v31.p12"
+    },
+    {
+     "subject": "phv00002631.v1.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00002631.v1.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00007944.v9.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00007944.v9.p15",
+     "object": "phs000007.v34.p15"
+    },
+    {
+     "subject": "phv00003236.v1.p15",
+     "object": "MONDO:0005002"
+    },
+    {
+     "subject": "phv00003236.v1.p15",
+     "object": "phs000007.v34.p15"
+    }
+   ]
+  }
+ ],
+ "sources": {
+  "dug": [
+   {
+    "title": "NHLBI Cleveland Family Study (CFS) Candidate Gene Association Resource (CARe)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000284",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Framingham Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000007",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Pulmonary Hypertension and the Hypoxic Response in SCD (PUSH)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001682",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000209",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Cardiovascular Health Study (CHS) Cohort: an NHLBI-funded observational study of risk factors for cardiovascular disease in adults 65 years or older",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000287",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000179",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Atherosclerosis Risk in Communities (ARIC) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000280",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Coronary Artery Risk Development in Young Adults (CARDIA) Study - Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000285",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Genetic Causes of Complex Pediatric Disorders - Asthma (GCPD-A)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001661",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: TReating Children to Prevent EXacerbations of Asthma (TREXA)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001732",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Hispanic Community Health Study /Study of Latinos (HCHS/SOL)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000810",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Best ADd-on Therapy Giving Effective Response (BADGER)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001728",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Lung Tissue Research Consortium (LTRC)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001662",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Jackson Heart Study (JHS) Cohort",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs000286",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Children's Health Study (CHS) Effects of Air Pollution on the Development of Obesity in Children (Meta-AIR)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001604",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed: Severe Asthma Research Program (SARP)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001446",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "CONNECTS Master Protocol for Clinical Trials targeting Macro- and Micro-Immuno-Thrombosis, Vascular Hyperinflammation, and Hypercoagulability and Renin-Angiotensin-Aldosterone System (RAAS) in Hospitalized Patients with COVID-19 (ACTIV-4 Host Tissue)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs003708",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001252",
+    "type": "dbgap-study"
+   },
+   {
+    "title": "NHLBI TOPMed - NHGRI CCDG: The BioMe Biobank at Mount Sinai (BioMe_HMB-NPU)",
+    "link": "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001644",
+    "type": "dbgap-study"
+   }
+  ]
+ }
+}
