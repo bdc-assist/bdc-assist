@@ -24,6 +24,9 @@ CHUNKS = [
 SOURCES = {prompts.SOURCES_KEY: [{"title": "FAQ title", "link": "https://x/faq", "type": "faq"},
                                  {"title": "Data Access", "link": "https://x/doc", "type": "docs"}]}
 SOURCES_MD = "**Sources**\n- [FAQ title](https://x/faq) (faq)\n- [Data Access](https://x/doc) (docs)"
+# plus the "covid" disclaimer, when classify matches it (PREDEFINED gives it no title or link)
+COVID_SOURCES = SOURCES | {"predefined": [{"title": "covid", "link": "", "type": "predefined"}]}
+COVID_SOURCES_MD = SOURCES_MD + "\n- covid (predefined)"
 # what an interceptor attached to the fake agent's second tool call (structured content "kg")
 KG = {"tool": "get_concept_graph", "args": {"concept_id": "MONDO:1"},
       "nodes": [{"id": "MONDO:1", "name": "mi"}, {"id": "phv1", "name": "MI_EVER"}],
@@ -126,9 +129,28 @@ def test_regular_question_appends_disclaimer():
     assert agent.called
     assert state["answer"] == "Agent answer about BDC.\n\nCovid disclaimer."
     assert state["followups"] == ["What is BDC?", "How do I get access?", "Where are the docs?"]
-    assert state["sources"] == SOURCES
-    assert state["sources_md"] == SOURCES_MD
+    assert state["sources"] == COVID_SOURCES
+    assert state["sources_md"] == COVID_SOURCES_MD
     assert state["kg"] == [KG]
+
+
+def test_predefined_links_join_the_sources(monkeypatch):
+    linked = {"fisma": {"response": "FISMA canned answer.", "flag": "r", "title": "FISMA", "link": "https://x/fisma"},
+              "covid": {"response": "Covid disclaimer.", "flag": "a", "title": "Covid", "link": "https://x/covid"},
+              "flu": {"response": "Flu disclaimer.", "flag": "a", "title": "Flu", "link": ""}}
+    monkeypatch.setitem(globals(), "PREDEFINED", linked)  # run() reads it
+    # canned: llm calls guardrail "No", classifier "- fisma"
+    state, _ = run(["No", "- fisma"])
+    assert state["sources"] == {"predefined": [{"title": "FISMA", "link": "https://x/fisma", "type": "predefined"}]}
+    assert state["sources_md"] == "**Sources**\n- [FISMA](https://x/fisma) (predefined)"
+    # disclaimers: after the agent's sources; an empty link is listed without one
+    state, _ = run(["No", "- covid\n- flu", "Yes", "- none"])
+    assert state["sources"] == SOURCES | {"predefined": [{"title": "Covid", "link": "https://x/covid", "type": "predefined"},
+                                                         {"title": "Flu", "link": "", "type": "predefined"}]}
+    assert state["sources_md"] == SOURCES_MD + "\n- [Covid](https://x/covid) (predefined)\n- Flu (predefined)"
+    # a rejected answer drops them with its disclaimers
+    state, _ = run(["No", "- covid", "No"])
+    assert state["sources"] == {} and state["sources_md"] == ""
 
 
 def test_sources_follow_project_and_prompts_yaml(monkeypatch):
@@ -169,7 +191,7 @@ def test_stream_chat_emits_progress_tokens_and_done():
     # the agent's tool call surfaces as a status event
     assert {"type": "status", "text": "calling search_docs"} in events
     # sources go out as soon as the agent node ends, before output_guardrail starts
-    i_sources = events.index({"type": "sources", "sources": SOURCES, "sources_md": SOURCES_MD, "kg": [KG]})
+    i_sources = events.index({"type": "sources", "sources": COVID_SOURCES, "sources_md": COVID_SOURCES_MD, "kg": [KG]})
     i_guard = events.index({"type": "node", "node": "output_guardrail"})
     assert i_sources < i_guard
     # tokens after the last reset are exactly the agent's final response —
@@ -179,7 +201,7 @@ def test_stream_chat_emits_progress_tokens_and_done():
     assert "".join(tokens) == "Agent answer about BDC."  # no guardrail/classifier chatter mixed in
     assert events[-1] == {"type": "done", "answer": "Agent answer about BDC.\n\nCovid disclaimer.",
                           "blocked": None, "topics": ["covid"], "followups": [],
-                          "sources": SOURCES, "sources_md": SOURCES_MD, "kg": [KG], "mcp_errors": []}
+                          "sources": COVID_SOURCES, "sources_md": COVID_SOURCES_MD, "kg": [KG], "mcp_errors": []}
 
 
 def test_blocked_answer_gets_reject_reply_without_disclaimer():

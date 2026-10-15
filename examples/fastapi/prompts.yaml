@@ -121,3 +121,4 @@ sources: |-
   **Sources**
   {items}
 sources_item: "- [{title}]({link}) ({type})"
+sources_item_no_link: "- {title} ({type})"  # a predefined response with an empty link

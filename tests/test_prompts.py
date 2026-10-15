@@ -46,6 +46,8 @@ def test_bdc_example_loads_and_fills_predefined():
     assert "NHLBI BioData Catalyst" in p.REFUSAL or "BDC" in p.REFUSAL
     predefined = p.load_predefined_responses()
     assert predefined["fisma"]["flag"] == "r" and "${" not in predefined["fisma"]["response"]
+    assert predefined["fisma"]["title"] == "FISMA Policy" and predefined["fisma"]["link"].startswith("https://")
+    assert predefined["covid"]["link"] == "", "link may be empty"
 
 
 def test_unknown_placeholder_fails_loudly(tmp_path):

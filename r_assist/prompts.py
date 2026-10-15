@@ -47,6 +47,7 @@ REFUSAL = _P["refusal"]
 REJECT = _P["reject"]
 SOURCES = _P["sources"]  # {items}
 SOURCES_ITEM = _P["sources_item"]  # {title}, {link}, {type}
+SOURCES_ITEM_NO_LINK = _P["sources_item_no_link"]  # {title}, {type}: a predefined response with an empty link
 
 
 def topic_classifier_system(topics: list[str]) -> str:
@@ -59,8 +60,10 @@ def agent_system() -> str:
 
 
 def load_predefined_responses(path=None) -> dict:
-    """lowercased topic -> {response, flag}; responses may use the ${...} placeholders too."""
+    """lowercased topic -> {response, flag, link, title}; responses may use the ${...} placeholders too.
+    title defaults to the topic as written; link may be empty."""
     with open(path or DATA_DIR / "predefined_responses.yaml", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
-    return {k.lower(): {**v, "response": _fill(str(v["response"]), f"predefined_responses.yaml [{k}]")}
+    return {k.lower(): {**v, "title": str(v.get("title") or k), "link": str(v.get("link") or ""),
+                        "response": _fill(str(v["response"]), f"predefined_responses.yaml [{k}]")}
             for k, v in data.items()}
