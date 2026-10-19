@@ -1,7 +1,7 @@
 """Loads the prompt texts from <config dir>/prompts.yaml (kept there for non-technical review).
 
 prompts.yaml is a template: ${name}, ${short_name}, ${assistant_name}, ${followups} come from project.yaml
-in the same folder and are filled here at import. {input}/{answer}/{topics}/{date} are
+in the same folder and are filled here at import. {input}/{answer}/{topics}/{date}/{tools} are
 filled at the call sites (graph.py and the functions below).
 CONFIG_DIR (default ./config) picks the folder, e.g. examples/bdc.
 """
@@ -55,8 +55,17 @@ def topic_classifier_system(topics: list[str]) -> str:
 
 
 def agent_system() -> str:
+    """{tools} = each server's `prompt:` in mcp_servers.yaml (how to use its tools), in that file's order,
+    each in a <tools server="..."> tag so its rules read as that server's only."""
+    tools = "\n".join(f'<tools server="{name}">\n{_fill(conn["prompt"], f"mcp_servers.yaml [{name}.prompt]").rstrip()}\n</tools>'
+                      for name, conn in _load_yaml("mcp_servers.yaml").items() if conn.get("prompt"))
+    text = _P["agent_system"]
+    if tools and "{tools}" not in text:
+        raise ValueError("prompts.yaml [agent_system]: no {tools} slot for the servers' prompt: texts")
+    if not tools:  # no tool guidance: drop the whole {tools} line, its intro included
+        text = re.sub(r"[^\n]*\{tools\}[^\n]*\n?", "", text)
     # date lives here because small models ignore date rules in tool docstrings
-    return _P["agent_system"].format(date=datetime.date.today().isoformat())
+    return text.format(date=datetime.date.today().isoformat(), tools="\n" + tools)
 
 
 def load_predefined_responses(path=None) -> dict:

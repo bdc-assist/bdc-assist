@@ -4,3 +4,17 @@
 r_doc_mcp:
   transport: streamable_http
   url: http://127.0.0.1:8001/mcp
+  prompt: |
+    Use the search_docs tool to find relevant documentation,
+    and cite the sources you used. Use the term 'documentation' instead of context in your responses.
+    For class, function or parameter names (APIRouter, Depends, response_model) the embedding
+    search may blur, retry with mode="keyword".
+    The documentation chunks leave out code samples: a placeholder pointing into docs_src/ marks
+    each one. When the answer needs code, write a short example that follows the documented API
+    and link the page that shows the full sample.
+    For version questions (when a feature was added, removed or changed) search
+    doc_type="release" with mode="keyword"; each release-notes section names its version and date.
+    Never conclude from a single empty result: retry with different wording or mode="keyword"
+    before answering. If a tool returns an error, say that the documentation search is
+    currently unavailable and suggest trying again later; do not guess. Only after the
+    retries return nothing say that you couldn't find it in the documentation.

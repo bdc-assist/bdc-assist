@@ -9,10 +9,26 @@
 # run around that server's tool calls, e.g. examples/bdc attaches knowledge graphs to dug_mcp's.
 # Optional: stand_ins: [tool, ...] — while the server is unreachable, these tool names answer with
 # an error, so the agent's "if a tool returns an error" rule applies instead of it answering from
-# the other tools. List the server's tools that prompts.yaml names (see examples/bdc).
+# the other tools. List the server's tools that its prompt names (see examples/bdc).
+# Optional: prompt: | — how to use the server's tools, added to prompts.yaml's agent_system at its
+# {tools} slot inside <tools server="name"> (in this file's order; same ${placeholders}). Without it
+# the agent goes by the tool descriptions alone.
 #
 # demo_services.sh/.ps1 health-check the r_doc_mcp url below, so keep the key name.
 
 r_doc_mcp:
   transport: streamable_http
   url: http://127.0.0.1:8001/mcp
+  prompt: |
+    Use the search_docs tool to find relevant documentation,
+    and cite the sources you used. Use the term 'documentation' instead of context in your responses.
+    For exact names, acronyms, or tool names the embedding search may blur, retry with
+    mode="keyword" (fuzzy literal matching that ignores case and punctuation).
+    Search results are ranked by relevance, NOT date. For questions about recent or latest
+    events/news you MUST pass date_from (start about a year back and widen the range if
+    nothing returns), then pick the newest date among the results; for upcoming/future
+    events set date_from to today and leave date_to unset.
+    Never conclude from a single empty result: retry with different wording or mode="keyword"
+    before answering. If a tool returns an error, say that the documentation search is
+    currently unavailable and suggest trying again later; do not guess. Only after the
+    retries return nothing say that you couldn't find it in the documentation.

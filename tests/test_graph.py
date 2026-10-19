@@ -329,6 +329,7 @@ def test_mcp_servers_yaml():
     assert all("transport" in v for v in servers.values())
     assert "interceptors" not in servers["dug_mcp"], "r-assist's key, never handed to the transport"
     assert "stand_ins" not in servers["dug_mcp"], "r-assist's key, never handed to the transport"
+    assert "prompt" not in servers["dug_mcp"], "r-assist's key, never handed to the transport"
 
 
 def test_unreachable_mcp_server_is_skipped(monkeypatch, caplog):
