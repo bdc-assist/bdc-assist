@@ -87,9 +87,10 @@ def _servers_yaml(data_dir: Path | None) -> dict:
 def load_mcp_servers(data_dir: Path | None = None) -> dict:
     """<config dir>/mcp_servers.yaml -> the MultiServerMCPClient connections dict. Same folder as
     prompts.yaml (CONFIG_DIR), so examples/bdc carries its own server list. A server's optional
-    `interceptors:` and `stand_ins:` are r-assist's (see load_interceptors, _stand_in), not
-    connection settings, so they are dropped here: the adapter hands every other key to the transport."""
-    return {name: {k: v for k, v in conn.items() if k not in ("interceptors", "stand_ins")}
+    `interceptors:`, `stand_ins:` and `prompt:` are r-assist's (see load_interceptors, _stand_in,
+    prompts.agent_system), not connection settings, so they are dropped here: the adapter hands
+    every other key to the transport."""
+    return {name: {k: v for k, v in conn.items() if k not in ("interceptors", "stand_ins", "prompt")}
             for name, conn in _servers_yaml(data_dir).items()}
 
 

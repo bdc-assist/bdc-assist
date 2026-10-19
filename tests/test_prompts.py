@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 from r_assist import config, prompts
 
@@ -72,6 +73,25 @@ def test_agent_prompt_has_failure_rules():
     assert "currently unavailable" in text and "do not guess" in text
     assert "NEVER invent placeholder text" in text
     assert "counts as helpful" in prompts.OUTPUT_GUARDRAIL_HUMAN
+
+
+def test_agent_system_takes_server_prompts_from_mcp_servers_yaml(tmp_path):
+    bdc = ROOT / "examples" / "bdc"
+    text = _reload(bdc).agent_system()
+    assert "search_docs searches" in text and "search_concepts" in text and "{tools}" not in text
+    assert text.index("search_docs searches") < text.index("search_concepts"), "mcp_servers.yaml order"
+    assert 'answering. \n<tools server="r_doc_mcp">\n- search_docs' in text, "each server's prompt in its own tag"
+    assert 'not catalog results), and do not guess.\n</tools>\nNever conclude' in text
+    for f in ("project.yaml", "prompts.yaml"):
+        (tmp_path / f).write_text((bdc / f).read_text(encoding="utf-8"), encoding="utf-8")
+    servers = yaml.safe_load((bdc / "mcp_servers.yaml").read_text(encoding="utf-8"))
+    (tmp_path / "mcp_servers.yaml").write_text(yaml.safe_dump({"r_doc_mcp": servers["r_doc_mcp"]}), encoding="utf-8")
+    text = _reload(tmp_path).agent_system()
+    assert "search_docs searches" in text and "search_concepts" not in text, "dug_mcp's prompt leaves with it"
+    (tmp_path / "mcp_servers.yaml").write_text("r_doc_mcp: {transport: sse}\n", encoding="utf-8")
+    text = _reload(tmp_path).agent_system()
+    assert "You have these tools" not in text and "{tools}" not in text, "no prompt: -> no tools line"
+    assert "not other organizations.\nNever conclude" in text, "and no blank line left behind"
 
 
 def test_followups_count_comes_from_project_yaml():

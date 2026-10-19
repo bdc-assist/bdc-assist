@@ -33,9 +33,9 @@ r_assist/graph.py    the LangGraph workflow
 r_assist/agent.py    deep agent + MCP client (servers listed in config/mcp_servers.yaml)
 r_assist/api.py      FastAPI: POST /chat, POST /chat/stream, GET /health
 config/project.yaml              name, short_name, assistant_name — fills the placeholders below
-config/prompts.yaml              all prompt texts, a ${placeholder} template (editable without touching code)
+config/prompts.yaml              all prompt texts but the per-server tool guidance, a ${placeholder} template (editable without touching code)
 config/predefined_responses.yaml topic → {response, flag: r|a, link}
-config/mcp_servers.yaml          MCP servers the agent calls (the doc server URL; add a block per extra tool server)
+config/mcp_servers.yaml          MCP servers the agent calls and how to use each one's tools (add a block per extra tool server)
 <config dir>/interceptors.py     optional: tool-call interceptors, named per server in mcp_servers.yaml
 examples/bdc/                    the four files as used for NHLBI BioData Catalyst, plus interceptors.py (Dug knowledge graphs),
                                  sample_questions.yaml, sample_responses.md (what the API returned for them) and
@@ -91,10 +91,14 @@ tool call, coloured by category (hover a node for its details), with the same MC
 1. `config/project.yaml`: set `name`, `short_name`, `assistant_name`, and `followups` (how many follow-up questions to suggest);
    `doc_search_tool`/`sources_key` only if your doc server's tool or your client's sources key differ.
 2. `config/prompts.yaml`: read through once; the policy checklist and the agent's house rules
-   are where projects differ most. Keep the `{input}`/`{answer}`/`{topics}`/`{date}` slots.
+   are where projects differ most. Keep the `{input}`/`{answer}`/`{topics}`/`{date}`/`{tools}` slots.
+   `agent_system`'s `{tools}` gets each server's `prompt:` from `mcp_servers.yaml` (step 4); with none,
+   the whole line holding `{tools}` is left out, so put the sentence introducing the tools on it.
 3. `config/predefined_responses.yaml`: add canned answers (`flag: r`) and disclaimers (`flag: a`), each with an optional `link`.
 4. `config/mcp_servers.yaml`: point `r_doc_mcp.url` at your r-doc-mcp server; add a block for
-   every other MCP server the bot may call.
+   every other MCP server the bot may call. Its `prompt: |` tells the agent when and how to use the
+   server's tools (same `${placeholders}` as prompts.yaml); it goes into `agent_system` at `{tools}`
+   inside `<tools server="name">`, in this file's order, so removing a server removes its instructions too.
    Optional per server: `interceptors: [fn, ...]` names functions in `interceptors.py` (same
    folder; langchain-mcp-adapters tool interceptors, `async (request, handler)`) that wrap that
    server's tool calls, so a project can reshape a server's results without changing the server
