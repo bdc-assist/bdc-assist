@@ -4,6 +4,7 @@
 r_doc_mcp:
   transport: streamable_http
   url: http://127.0.0.1:8001/mcp
+  stand_ins: [search_docs]  # while doc-mcp is down, say so instead of answering without the docs
   prompt: |
     - search_docs searches the BDC documentation (guides, website pages, FAQs, videos, news,
       events). Use it for what BDC is, how to use it, policies, tools, and events, and cite
@@ -23,37 +24,28 @@ dug_mcp:
   # the tools its prompt names: while dug is down (e.g. off the RENCI VPN) each answers with an
   # error, so a study/variable question gets "service unavailable" instead of doc-search guesses
   stand_ins: [search_concepts, find_cohort_variables, get_concept_graph, get_concept_connections,
-              picsure_search, search_variables_by_name]
+              find_variables, search_variables_by_name]
   prompt: |
-    - The knowledge-graph tools (search_concepts, find_cohort_variables, get_concept_graph,
-      get_concept_connections, picsure_search, search_variables_by_name, and the rest) search
-      the BDC data catalog: studies (phs IDs), study variables (phv IDs), biomedical concepts,
-      and PIC-SURE paths. Use them for which studies or variables cover a disease, phenotype,
-      measurement, or cohort. They expand synonyms for you ("heart attack" also finds
-      "myocardial infarction").
-      - Variables for one concept: search_concepts with find_variables=true, or picsure_search
-        with a keyword.
-      - Studies on a specific concept or term (e.g. "list studies on heart attack") take two
-        calls. First search_concepts with search_term="heart attack" and find_variables=true;
-        from its enrichment.curies pick the concept ID that names the condition itself,
-        preferring a MONDO ID (here MONDO:0005068, myocardial infarction), and note the
-        concept_ids in matched_concepts. Then get_concept_graph with that concept_id,
-        expand_depth=2 and limit=50: every row carries study_id and study_name. Collect the
-        distinct studies and answer with study_id, study_name and one or two example
-        variables each. If a MONDO ID gives few studies, repeat get_concept_graph for another
-        matched concept_id. Keep limit at 50 or below; larger responses arrive truncated.
+    - The knowledge-graph tools (search_concepts, find_variables, find_cohort_variables,
+      get_concept_graph, search_variables_by_name, and the rest) search the BDC data catalog:
+      studies (phs IDs), study variables (phv IDs), biomedical concepts, and PIC-SURE paths.
+      Use them for which studies or variables cover a disease, phenotype, measurement, or
+      cohort. They expand synonyms for you ("heart attack" also finds "myocardial infarction").
+      - Studies on one concept (e.g. "list studies on heart attack"): search_concepts with
+        search_term="heart attack", find_variables=true and limit=10. Its _sources lists every
+        study linked to the concept (title, and the phs ID in the link): list them all. Its
+        variables don't say which study they belong to; don't look that up. Keep limit at 10:
+        larger results arrive truncated and lose _sources.
       - Studies covering several terms at once (a cohort, e.g. asthma AND obesity):
         find_cohort_variables with concepts=["asthma", "obesity"]; feasible_studies lists
-        studies that have variables for every term. Its study grouping depends on a PIC-SURE
-        lookup, so when it returns zero studies fall back to the two-call path above for
-        each term instead of concluding that nothing exists.
+        studies that have variables for every term.
       - There is no study-by-name search: a study appears only when one of its variables is
         linked to the concept, so say so if a user asks for a study by title.
       Answer with the study and variable names and IDs the tools returned. Omit any field a
       tool did not return: for example, do not add a Description line for a variable that
       has no description, and never write placeholders such as "not provided".
-      If the first tool returns no studies or variables, try the other path above before
-      answering. If a knowledge-graph tool returns an error, say that the study and variable
+      If a search returns no studies or variables, retry with other wording before saying
+      none were found. If a knowledge-graph tool returns an error, say that the study and variable
       search service is currently unavailable and suggest trying again later. Do not list
       studies or variables from search_docs instead (studies the documentation mentions are
       not catalog results), and do not guess.

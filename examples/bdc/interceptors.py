@@ -70,17 +70,17 @@ def to_kg(tool: str, data: dict) -> dict | None:
             category = r.get("connected_type")
             edge(node(data.get("concept_id")),
                  node(r.get("connected_id"), r.get("connected_name"), _role(category), category), r.get("relationship"))
-    elif tool in ("picsure_search", "find_cohort_variables"):  # study - variable - matched concepts
+    elif tool in ("find_variables", "find_cohort_variables"):  # study - variable - matched concepts
+        # find_variables lists variables flat, find_cohort_variables nests them under studies
         studies = data.get("feasible_studies", []) + data.get("partial_studies", [])
         for v in data.get("variables") or [v for s in studies for v in s.get("variables", [])]:
-            # picsure_search rows say phv_id/study, find_cohort_variables rows variable_id/study_id/study_name
-            var = node(v.get("phv_id") or v.get("variable_id"), v.get("variable_name"), "variable")
-            edge(var, node(v.get("study") or v.get("study_id"), v.get("study_name"), "study"))
+            var = node(v.get("variable_id"), v.get("variable_name"), "variable")
+            edge(var, node(v.get("study_id"), v.get("study_name"), "study"))
             for c in v.get("matched_concepts", []):
-                if isinstance(c, str):  # find_cohort_variables lists the searched term, not a concept ID
-                    edge(var, node(c, c, "term"))
-                else:
-                    edge(var, node(c.get("concept_id"), c.get("concept_name"), category=c.get("concept_type")))
+                if "concept_id" in c:
+                    edge(var, node(c["concept_id"], c.get("concept_name"), category=c.get("concept_type")))
+                else:  # find_cohort_variables: {concept: the searched term, curies}, not a concept node
+                    edge(var, node(c.get("concept"), c.get("concept"), "term"))
 
     return {"nodes": list(nodes.values()), "edges": list(edges.values())} if edges else None
 
@@ -101,7 +101,7 @@ def label(tool: str, args: dict, kg: dict) -> str:
         "get_concept_connections": f"{concept} related concepts",
         "find_cohort_variables": f"{words(args.get('concepts'))} cohort variables",
         "search_concepts": f"{words(args.get('search_term'))} concept search",
-        "picsure_search": f"{words(next((v for v in args.values() if isinstance(v, str)), ''))} PIC-SURE variables",
+        "find_variables": f"{words(args.get('keyword'))} variables",
     }.get(tool, "")
     return text if text.split(" ", 1)[0] else tool.replace("_", " ")  # nothing to name it by: the tool
 

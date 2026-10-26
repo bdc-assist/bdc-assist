@@ -1,12 +1,17 @@
 """The r-assist LangGraph workflow.
 
-    START → input_guardrail ──blocked──────────────────────→ END (REFUSAL)
-                │ ok
-            contextualize → classify ──"r" topic matched───→ END (canned answer)
-                                │ regular
-                              agent → output_guardrail ──blocked──────────────→ END (REJECT)
-                                            │ disclaimers queued └──done──────┐
-                                      append_disclaimer ─────→ suggest_followups ─→ END
+    START → contextualize ─┬→ input_guardrail ─┐
+                           └→ classify ─────────┴→ gate ──blocked──────────→ END (REFUSAL)
+                                                     │──"r" topic matched──→ END (canned answer)
+                                                     │ regular
+                                                   agent → output_guardrail ──blocked──────────────→ END (REJECT)
+                                                                 │ disclaimers queued └──done──────┐
+                                                           append_disclaimer ─────→ suggest_followups ─→ END
+
+input_guardrail and classify run side by side: one LLM round trip before the agent instead of two
+(~1.6 s a chat, measured). gate joins them, and a blocked input wins over anything classify matched.
+contextualize goes first so classify gets the standalone question; it calls the LLM only when there
+is chat history.
 
 Both guardrails are hard blocks: the agent's tokens stream as a provisional answer, but a
 blocked answer ends the run with the canned reply and blocked="input" or "output" (which
@@ -148,9 +153,8 @@ def build_graph(llm, agent, predefined: dict):
             if "content_filter" not in repr(e):
                 raise
             blocked = True
-        if blocked:
-            return {"blocked": "input", "answer": REFUSAL}
-        return {"blocked": None}
+        # just the verdict: classify may set a canned answer in this same step, so gate writes the refusal
+        return {"blocked": "input" if blocked else None}
 
     async def contextualize(state: BotState):
         """
@@ -159,11 +163,18 @@ def build_graph(llm, agent, predefined: dict):
         history = state.get("chat_history") or []
         if not history:
             return {"question": state["input"]}
-        resp = await llm.ainvoke([
-            ("system", prompts.CONTEXTUALIZE_SYSTEM),
-            *history,
-            ("human", state["input"]),
-        ])
+        try:
+            resp = await llm.ainvoke([
+                ("system", prompts.CONTEXTUALIZE_SYSTEM),
+                *history,
+                ("human", state["input"]),
+            ])
+        except Exception as e:
+            # runs before the input guardrail: a provider content filter rejecting the conversation is
+            # the guardrail's block to report (its own check is filtered too), not a crash
+            if "content_filter" not in repr(e):
+                raise
+            return {"question": state["input"]}
         return {"question": resp.text.strip()}
 
     async def classify(state: BotState):
@@ -172,11 +183,18 @@ def build_graph(llm, agent, predefined: dict):
         list of names). Any "r" match → canned answer, run ends; "a" matches
         queue their responses as disclaimers and the agent runs normally.
         """
-        resp = await llm.ainvoke([
-            ("system", prompts.topic_classifier_system(topic_names)),
-            ("human", state["question"]),
-        ])
-        parsed = [t.strip().lower() for t in MarkdownListOutputParser().parse(resp.text)]
+        try:
+            resp = await llm.ainvoke([
+                ("system", prompts.topic_classifier_system(topic_names)),
+                ("human", state["question"]),
+            ])
+            text = resp.text
+        except Exception as e:
+            # alongside the input guardrail: a filtered question is its block to report, not a crash
+            if "content_filter" not in repr(e):
+                raise
+            text = ""
+        parsed = [t.strip().lower() for t in MarkdownListOutputParser().parse(text)]
         matched = [t for t in parsed if t in predefined]
         update: BotState = {"topics": matched}
         if any(predefined[t]["flag"] == "r" for t in matched):
@@ -281,6 +299,15 @@ def build_graph(llm, agent, predefined: dict):
             parsed = []
         return {"followups": [q for q in parsed if q.lower() != "none"][:prompts.FOLLOWUPS]}
 
+    async def gate(state: BotState):
+        """
+        Join of input_guardrail and classify, which run side by side: a blocked input gets the
+        refusal and nothing classify found (canned answer, disclaimers, their sources).
+        """
+        if state.get("blocked"):
+            return {"answer": REFUSAL, "topics": [], "disclaimers": [], "sources": {}, "sources_md": ""}
+        return {}
+
     def announce(name, fn):
         # emit {"type": "node"} on the custom stream when the node starts, so a
         # streaming client can show progress; no-op writer under plain ainvoke
@@ -296,17 +323,18 @@ def build_graph(llm, agent, predefined: dict):
                      ("output_guardrail", output_guardrail), ("append_disclaimer", append_disclaimer),
                      ("suggest_followups", suggest_followups)]:
         g.add_node(name, announce(name, fn))
+    g.add_node("gate", gate)  # not announced: instant, no step a user would wait on
 
-    g.add_edge(START, "input_guardrail")
-    # explicit path_maps: runtime doesn't need them, but get_graph()/draw can't see
-    # through a bare lambda and would render no edges at all
-    g.add_conditional_edges("input_guardrail",
-                            lambda s: "blocked" if s["blocked"] else "ok",
-                            {"blocked": END, "ok": "contextualize"})
+    g.add_edge(START, "contextualize")
+    g.add_edge("contextualize", "input_guardrail")
     g.add_edge("contextualize", "classify")
-    g.add_conditional_edges("classify",
-                            lambda s: "predefined" if s.get("answer") else "regular",
-                            {"predefined": END, "regular": "agent"})
+    g.add_edge(["input_guardrail", "classify"], "gate")  # waits for both
+    # explicit path_maps: runtime doesn't need them, but get_graph()/draw can't see
+    # through a bare lambda and would render no edges at all. After gate an answer exists only if
+    # the input was refused or matched an "r" topic; one key, as a drawing shows one edge per target
+    g.add_conditional_edges("gate",
+                            lambda s: "refused or canned" if s.get("answer") else "regular",
+                            {"refused or canned": END, "regular": "agent"})
     g.add_edge("agent", "output_guardrail")
     # blocked ends the run: no point appending disclaimers to "I couldn't answer"
     g.add_conditional_edges("output_guardrail",

@@ -39,7 +39,16 @@
       "study_id": "phs000007.v31.p12",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -48,7 +57,16 @@
       "study_id": "phs000007.v31.p12",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -57,7 +75,16 @@
       "study_id": "phs000007.v31.p12",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -66,7 +93,16 @@
       "study_id": "phs000007.v31.p12",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -75,7 +111,16 @@
       "study_id": "phs000007.v31.p12",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -84,7 +129,16 @@
       "study_id": "phs000007.v31.p12",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -93,7 +147,16 @@
       "study_id": "phs000007.v31.p12",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -102,7 +165,16 @@
       "study_id": "phs000007.v31.p12",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -111,7 +183,16 @@
       "study_id": "phs000007.v31.p12",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -120,7 +201,16 @@
       "study_id": "phs000007.v31.p12",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      },
      {
@@ -129,7 +219,16 @@
       "study_id": "phs000007.v31.p12",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      },
      {
@@ -138,7 +237,16 @@
       "study_id": "phs000007.v31.p12",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      }
     ]
@@ -158,7 +266,16 @@
       "study_id": "phs000007.v34.p15",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -167,7 +284,16 @@
       "study_id": "phs000007.v34.p15",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -176,7 +302,16 @@
       "study_id": "phs000007.v34.p15",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -185,7 +320,16 @@
       "study_id": "phs000007.v34.p15",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -194,7 +338,16 @@
       "study_id": "phs000007.v34.p15",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -203,7 +356,16 @@
       "study_id": "phs000007.v34.p15",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -212,7 +374,16 @@
       "study_id": "phs000007.v34.p15",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -221,7 +392,16 @@
       "study_id": "phs000007.v34.p15",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -230,7 +410,16 @@
       "study_id": "phs000007.v34.p15",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      },
      {
@@ -239,7 +428,16 @@
       "study_id": "phs000007.v34.p15",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      },
      {
@@ -248,7 +446,16 @@
       "study_id": "phs000007.v34.p15",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      },
      {
@@ -257,7 +464,16 @@
       "study_id": "phs000007.v34.p15",
       "study_name": "Framingham Cohort",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      }
     ]
@@ -280,7 +496,16 @@
       "study_id": "phs002752.v1.p1",
       "study_name": "Clinical Trial of COVID-19 Convalescent Plasma in Outpatients (C3PO)",
       "matched_concepts": [
-       "asthma"
+       {
+        "concept": "asthma",
+        "curies": [
+         "MONDO:0004979",
+         "MONDO:0004784",
+         "MONDO:0001491",
+         "MONDO:0004765",
+         "MONDO:0022742"
+        ]
+       }
       ]
      }
     ]
@@ -301,7 +526,16 @@
       "study_id": "phs000209.v13.p3",
       "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      },
      {
@@ -310,7 +544,16 @@
       "study_id": "phs000209.v13.p3",
       "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      },
      {
@@ -319,7 +562,16 @@
       "study_id": "phs000209.v13.p3",
       "study_name": "Multi-Ethnic Study of Atherosclerosis (MESA) Cohort",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      }
     ]
@@ -340,7 +592,16 @@
       "study_id": "phs000179.v6.p2",
       "study_name": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      },
      {
@@ -349,7 +610,16 @@
       "study_id": "phs000179.v6.p2",
       "study_name": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      },
      {
@@ -358,7 +628,16 @@
       "study_id": "phs000179.v6.p2",
       "study_name": "Genetic Epidemiology of COPD (COPDGene) Funded by the National Heart, Lung, and Blood Institute",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      }
     ]
@@ -379,7 +658,16 @@
       "study_id": "phs000200.v12.p3",
       "study_name": "Women's Health Initiative Clinical Trial and Observational Study",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      }
     ]
@@ -400,7 +688,16 @@
       "study_id": "phs001252.v1.p1",
       "study_name": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      },
      {
@@ -409,7 +706,16 @@
       "study_id": "phs001252.v1.p1",
       "study_name": "Evaluation of COPD Longitudinally to Identify Predictive Surrogate Endpoints (ECLIPSE)",
       "matched_concepts": [
-       "COPD"
+       {
+        "concept": "COPD",
+        "curies": [
+         "NCBIGene:61526495",
+         "NCBIGene:46429195",
+         "NCBIGene:92898067",
+         "NCBIGene:34793035",
+         "NCBIGene:44135476"
+        ]
+       }
       ]
      }
     ]

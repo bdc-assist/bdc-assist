@@ -12,10 +12,15 @@ Sibling repos: **r-doc-mcp** (the doc search MCP server) and **r-doc-builder** (
 
 ![r-assist workflow](docs/workflow.png)
 
+- `contextualize` rewrites follow-ups into standalone questions using `chat_history` (no LLM call
+  without history)
 - `input_guardrail` yes/no LLM check of the raw message against the policy checklist in
   `config/prompts.yaml` (on-topic only, no jailbreaks/abuse/etc.); blocked → canned refusal
-- `contextualize` rewrites follow-ups into standalone questions using `chat_history`
 - `classify` sends flag-r topics straight to a canned response; flag-a topics get a disclaimer appended after the answer
+- `input_guardrail` and `classify` run side by side, one LLM round trip instead of two (about 1.6 s
+  off every chat); `gate` joins them, and a blocked input gets the refusal whatever `classify` matched.
+  A provider content filter that rejects `contextualize` or `classify` (e.g. on a jailbreak) is left to
+  the guardrail, whose check is filtered too, to report as a block
 - `agent` calls tools on the doc MCP server (MCP over HTTP)
 - `output_guardrail` self-checks the answer against the question; a hard block like the input
   guardrail (a "No" or a provider content filter → canned reject reply, `blocked: "output"`, run ends,
@@ -195,7 +200,8 @@ of `get_concept_graph` / `get_concept_connections`, the search words of `find_co
 
 `POST /chat/stream` takes the same body and answers as SSE, one JSON object per event:
 
-- `{"type": "node", "node"}` — a workflow node started (progress)
+- `{"type": "node", "node"}` — a workflow node started (progress); `input_guardrail` and `classify`
+  run side by side and start together, in either order
 - `{"type": "status", "text"}` — what the agent is doing (tool calls)
 - `{"type": "token", "text"}` — one token of the agent's provisional answer
 - `{"type": "reset"}` — new model turn: discard the tokens streamed so far
@@ -207,9 +213,18 @@ of `get_concept_graph` / `get_concept_connections`, the search words of `find_co
   `blocked` says which guardrail stopped it: `"input"` (the question was refused) or `"output"` (the
   streamed answer was rejected and replaced), else `null`)
 - `{"type": "error"}` — the run failed (an LLM or gateway error mid-answer); the last event, no `done`
-  follows, the server log has the details. Discard the streamed text and say so.
+  follows, the server log has the details. Discard the streamed text and say so. With `"busy": true`
+  it never ran: the server was over capacity (see below); try again shortly.
 
 `GET /health` returns `{"status": "ok", "mcp_errors"}`, so a UI can warn before the first question.
+
+**Over capacity.** With `MAX_RUNNING_CHATS` set (`.env`; 0 = no cap), at most that many chats run at
+once and up to `MAX_WAITING_CHATS` more wait in line, first come first served. A waiting `/chat/stream`
+gets `{"type": "status", "text": "Busy: you're number 3 in line, about 4 s"}` events as it moves up (the
+wait estimate appears once a chat has finished); `/chat` just waits. Beyond that, both answer `503` with a
+`Retry-After` header at once (a stream from a burst that got past that check ends with
+`{"type": "error", "busy": true}` instead). Size the cap with the load test below: the most chats that still run
+about as fast as one alone, on the real backends (`.env.server.example` has the measured values).
 
 ## Web UI
 
@@ -240,3 +255,15 @@ uv run pytest                      # graph routes, streaming, prompt template �
 
 `demo.ipynb` runs every route (regular, follow-up, predefined, disclaimer, blocked) over HTTP
 against the running services; its questions target `examples/bdc`.
+
+Load test, against the running services with the real models (questions from `sample_questions.yaml`):
+
+```bash
+uv run python tests/loadtest.py search                          # 1, 10, 50, 100 users; r-doc-mcp search_docs: real embeddings (e.g. remote Ollama), no LLM cost
+uv run python tests/loadtest.py chat --users 50 100 --requests 1  # /chat/stream end to end: real LLM calls, 150 chats' worth of tokens
+```
+
+Per level of concurrent users it prints throughput, latency p50/p95/max (chat: time to first token
+too) and failures. Latency that climbs with users while req/s stays flat means something serves them
+one at a time; failures that start at a level mark the capacity limit. `--api-url` `:8011` runs chat
+against the stub for free.

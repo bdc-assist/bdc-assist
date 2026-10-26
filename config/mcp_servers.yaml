@@ -13,12 +13,14 @@
 # Optional: prompt: | — how to use the server's tools, added to prompts.yaml's agent_system at its
 # {tools} slot inside <tools server="name"> (in this file's order; same ${placeholders}). Without it
 # the agent goes by the tool descriptions alone.
+# A <NAME>_URL env var (e.g. R_DOC_MCP_URL) overrides a server's url: — for containers.
 #
 # demo_services.sh/.ps1 health-check the r_doc_mcp url below, so keep the key name.
 
 r_doc_mcp:
   transport: streamable_http
   url: http://127.0.0.1:8001/mcp
+  stand_ins: [search_docs]  # while doc-mcp is down, say so instead of answering without the docs
   prompt: |
     Use the search_docs tool to find relevant documentation,
     and cite the sources you used. Use the term 'documentation' instead of context in your responses.

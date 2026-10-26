@@ -19,6 +19,11 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "WARNING")  # api.py's root log level: DEBUG|
 # seconds between MCP server re-checks (api.retry_mcp): a down server's tools come back, one gone
 # down mid-session drops out. A tool call that fails twice re-checks at once.
 MCP_RETRY_SECONDS = float(os.getenv("MCP_RETRY_SECONDS", "300"))
+# admission (api.Admission): chats that run at once, and how many more may wait in line, told their
+# place, before new ones get a 503. 0 running = no cap. Size it with tests/loadtest.py on the real
+# backends: the most chats that still run about as fast as one alone (README: Load test)
+MAX_RUNNING_CHATS = int(os.getenv("MAX_RUNNING_CHATS", "0"))
+MAX_WAITING_CHATS = int(os.getenv("MAX_WAITING_CHATS", "0"))
 
 # folder with the yaml files (project, prompts, predefined_responses, mcp_servers); examples/bdc runs the BDC bot
 CONFIG_DIR = Path(os.getenv("CONFIG_DIR") or Path(__file__).resolve().parent.parent / "config")
