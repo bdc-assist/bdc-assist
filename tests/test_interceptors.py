@@ -133,10 +133,10 @@ def test_real_search_concepts():
 
 
 # made-up rows in each tool's shape (dug-mcp redismcp_server.py): find_cohort_variables nests them
-# under studies keyed variable_id/study_id, picsure_search lists them flat keyed phv_id/study
+# under studies and matches them to the searched term, find_variables lists them flat matched to concepts
 COHORT = {"feasible_studies": [{"study_id": "s1", "variables": [
-    {"variable_id": "v1", "study_id": "s1", "matched_concepts": ["c1"]}]}]}
-PICSURE = {"variables": [{"phv_id": "v1", "study": "s1", "matched_concepts": [{"concept_id": "c1"}]}]}
+    {"variable_id": "v1", "study_id": "s1", "matched_concepts": [{"concept": "c1", "curies": ["MONDO:1"]}]}]}]}
+FIND_VARIABLES = {"variables": [{"variable_id": "v1", "study_id": "s1", "matched_concepts": [{"concept_id": "c1"}]}]}
 # get_concept_graph at expand_depth 1 and get_concept_connections: neighbour rows keyed connected_*
 NEIGHBOURS = {"concept_id": "c1", "graph": [{"connected_id": "c2", "connected_type": "biolink.Disease"}]}
 CONNECTIONS = {"concept_id": "c1", "connections": [{"connected_id": "c2", "relationship": "biolink:related_to"}]}
@@ -145,7 +145,7 @@ CONNECTIONS = {"concept_id": "c1", "connections": [{"connected_id": "c2", "relat
 def test_each_graph_tool_gets_a_kg():
     """Each call's graph comes back labelled with the tool that was called. find_cohort_variables
     rows drew nothing while the interceptor read only picsure_search's field names."""
-    for tool, reply in [("find_cohort_variables", COHORT), ("picsure_search", PICSURE),
+    for tool, reply in [("find_cohort_variables", COHORT), ("find_variables", FIND_VARIABLES),
                         ("get_concept_graph", NEIGHBOURS), ("get_concept_connections", CONNECTIONS)]:
         kg = call(tool, reply)
         assert kg and kg["tool"] == tool and kg["edges"], tool
@@ -175,6 +175,7 @@ def test_each_graph_is_labelled_in_plain_words():
     assert label("get_concept_graph", CONCEPT_GRAPH, {"concept_id": "MONDO:0005068"}) == "myocardial infarction concept graph"
     assert label("find_cohort_variables", COHORT, {"concepts": ["asthma", "copd"]}) == "asthma + copd cohort variables"
     assert label("search_concepts", SEARCH_CONCEPTS, {"search_term": "heart attack"}) == "heart attack concept search"
+    assert label("find_variables", FIND_VARIABLES, {"keyword": "heart attack"}) == "heart attack variables"
     # dug doesn't name the concept get_concept_connections was asked about: its id
     assert label("get_concept_connections", CONNECTIONS, {"concept_id": "c1"}) == "c1 related concepts"
     assert label("find_cohort_variables", COHORT, {}) == "find cohort variables"  # nothing to name it by

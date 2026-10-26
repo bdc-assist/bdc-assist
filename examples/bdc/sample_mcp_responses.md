@@ -22,7 +22,7 @@ Both are listed in [mcp_servers.yaml](mcp_servers.yaml); the agent gets every to
 | | `find_concept_paths` | `source_id*`, `target_id*`, `max_path_length`, `limit` |
 | | `search_variables_by_name` | `search_term*`, `limit` |
 | | `find_highly_connected_variables` | `min_connections`, `limit` |
-| | `picsure_search` | `phv_ids`, `keyword`, `semantic`, `limit` |
+| | `find_variables` | `phv_ids`, `keyword`, `semantic`, `limit` |
 | | `find_cohort_variables` | `concepts*`, `require_all`, `variables_per_concept`, `limit` |
 | | `list_graph_schema` | `show_counts` |
 | | `trapi_query` | `qgraph*`, `limit` |
