@@ -6,4 +6,5 @@ CLAUDE.md
 /.*
 !/.gitignore
 !/.env.example
+!/.env.server.example
 !/.gitattributes

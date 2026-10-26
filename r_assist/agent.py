@@ -2,6 +2,7 @@ import asyncio
 import importlib.util
 import json
 import logging
+import os
 from pathlib import Path
 
 import yaml
@@ -89,9 +90,14 @@ def load_mcp_servers(data_dir: Path | None = None) -> dict:
     prompts.yaml (CONFIG_DIR), so examples/bdc carries its own server list. A server's optional
     `interceptors:`, `stand_ins:` and `prompt:` are r-assist's (see load_interceptors, _stand_in,
     prompts.agent_system), not connection settings, so they are dropped here: the adapter hands
-    every other key to the transport."""
-    return {name: {k: v for k, v in conn.items() if k not in ("interceptors", "stand_ins", "prompt")}
-            for name, conn in _servers_yaml(data_dir).items()}
+    every other key to the transport. A <SERVER>_URL env var (e.g. R_DOC_MCP_URL) replaces that
+    server's url:, so a container reaches http://doc-mcp:8001/mcp without editing the yaml."""
+    servers = {name: {k: v for k, v in conn.items() if k not in ("interceptors", "stand_ins", "prompt")}
+               for name, conn in _servers_yaml(data_dir).items()}
+    for name, conn in servers.items():
+        if url := os.getenv(f"{name.upper()}_URL"):
+            conn["url"] = url
+    return servers
 
 
 def _stand_in(name: str, server: str):

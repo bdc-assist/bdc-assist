@@ -4,6 +4,7 @@
 r_doc_mcp:
   transport: streamable_http
   url: http://127.0.0.1:8001/mcp
+  stand_ins: [search_docs]  # while doc-mcp is down, say so instead of answering without the docs
   prompt: |
     Use the search_docs tool to find relevant documentation,
     and cite the sources you used. Use the term 'documentation' instead of context in your responses.

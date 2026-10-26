@@ -439,9 +439,9 @@ The same request body, answered as server-sent events (`data: {json}` lines). `"
 data?"` produced 93 events in 24.3 s, in this order:
 
 ```jsonc
-{"type": "node", "node": "input_guardrail"}    // a workflow step started (show as progress)
-{"type": "node", "node": "contextualize"}
-{"type": "node", "node": "classify"}
+{"type": "node", "node": "contextualize"}      // a workflow step started (show as progress)
+{"type": "node", "node": "input_guardrail"}    // these two run side by side (since 2026-10-21):
+{"type": "node", "node": "classify"}           // they start together, in either order
 {"type": "node", "node": "agent"}
 {"type": "status", "text": "calling search_docs"}      // the agent called a tool
 {"type": "status", "text": "calling search_concepts"}  // a second tool, before any answer text

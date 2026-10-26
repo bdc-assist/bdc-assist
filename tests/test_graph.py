@@ -1,7 +1,7 @@
 import asyncio
 import json
+import time
 
-from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 
 from r_assist import prompts
@@ -67,8 +67,36 @@ class FakeAgent:
             AIMessage(content=self.wrap(self.reply))]}
 
 
+class StepLLM:
+    """Fake completion LLM answering by workflow step, not call order: the input guardrail and the
+    classifier run side by side, so which calls first varies. replies are in workflow order (input
+    guardrail, contextualize when there is history, classifier, output check, follow-ups); a step
+    past the end gets "". wrap: e.g. _blocks, for Responses API content."""
+    STEPS = ["guardrail", "contextualize", "classify", "output", "followups"]
+
+    def __init__(self, replies, wrap=lambda text: text):
+        self.replies, self.wrap, self.contextualized = list(replies), wrap, False
+
+    def step(self, messages):
+        role, text = messages[0]
+        if text == prompts.INPUT_GUARDRAIL_SYSTEM:
+            return "guardrail"
+        if text == prompts.CONTEXTUALIZE_SYSTEM:
+            return "contextualize"
+        if role == "system":
+            return "classify"
+        return "output" if text.startswith(prompts.OUTPUT_GUARDRAIL_HUMAN.split("{")[0]) else "followups"
+
+    async def ainvoke(self, messages):
+        step = self.step(messages)
+        self.contextualized |= step == "contextualize"  # it runs a step before the others
+        order = [s for s in self.STEPS if s != "contextualize" or self.contextualized]
+        i = order.index(step)
+        return AIMessage(content=self.wrap(self.replies[i] if i < len(self.replies) else ""))
+
+
 def run(llm_responses, **state):
-    llm = FakeListChatModel(responses=llm_responses)
+    llm = StepLLM(llm_responses)
     agent = FakeAgent()
     graph = build_graph(llm, agent, PREDEFINED)
     result = asyncio.run(graph.ainvoke({"input": "q", "chat_history": [], **state}))
@@ -95,24 +123,49 @@ def test_mcp_tool_retry():
 
 
 def test_blocked_input_skips_everything():
-    # llm calls: input guardrail ("Yes" = block)
+    # llm calls: input guardrail ("Yes" = block), and the classifier alongside it (reply discarded)
     state, agent = run(["Yes"])
     assert state["blocked"] == "input"
     assert state["answer"] == REFUSAL
     assert not agent.called
 
 
+def test_a_blocked_input_wins_over_a_canned_topic():
+    # the classifier matches "fisma" (flag r) in the same step the guardrail blocks: the refusal
+    # stands, with none of the canned answer's topics or sources
+    state, agent = run(["Yes", "- fisma"])
+    assert state["blocked"] == "input" and state["answer"] == REFUSAL and not agent.called
+    assert state["topics"] == [] and state["sources"] == {} and state["sources_md"] == ""
+
+
+def test_guardrail_and_classifier_run_side_by_side():
+    # each model call takes 0.3s; one after the other the two would take 0.6s before the agent
+    class SlowStepLLM(StepLLM):
+        async def ainvoke(self, messages):
+            await asyncio.sleep(0.3)
+            return await super().ainvoke(messages)
+
+    graph = build_graph(SlowStepLLM(["No", "- fisma"]), FakeAgent(), PREDEFINED)  # canned: ends after them
+    start = time.monotonic()
+    state = asyncio.run(graph.ainvoke({"input": "q", "chat_history": []}))
+    assert state["answer"] == "FISMA canned answer."
+    assert time.monotonic() - start < 0.5, "the guardrail and the classifier ran one after the other"
+
+
 def test_provider_content_filter_counts_as_block():
-    # Azure's jailbreak filter 400s the guardrail call itself — that verdict is a block
+    # Azure's jailbreak filter 400s the guardrail call itself — that verdict is a block. The
+    # classifier (and contextualize, with history) sends the same text and is filtered too: they
+    # run before or beside the guardrail now, so that must not crash the run
     class FilteredLLM:
         async def ainvoke(self, messages):
             raise ValueError("Error code: 400 - {'code': 'content_filter', ...}")
 
     agent = FakeAgent()
     graph = build_graph(FilteredLLM(), agent, PREDEFINED)
-    state = asyncio.run(graph.ainvoke({"input": "jailbreak attempt", "chat_history": []}))
-    assert state["blocked"] == "input"
-    assert state["answer"] == REFUSAL
+    for history in ([], [("user", "hi"), ("assistant", "hello")]):
+        state = asyncio.run(graph.ainvoke({"input": "jailbreak attempt", "chat_history": history}))
+        assert state["blocked"] == "input"
+        assert state["answer"] == REFUSAL
     assert not agent.called
 
 
@@ -177,17 +230,17 @@ def test_stream_chat_emits_progress_tokens_and_done():
     from r_assist.api import stream_chat
 
     # llm calls: guardrail "No", classifier "- covid", output check "Yes", followups "- none"
-    llm = FakeListChatModel(responses=["No", "- covid", "Yes", "- none"])
+    llm = StepLLM(["No", "- covid", "Yes", "- none"])
     graph = build_graph(llm, FakeAgent(), PREDEFINED)
 
     async def collect():
         return [e async for e in stream_chat(graph, "q", [])]
 
     events = [json.loads(line.removeprefix("data: ")) for line in asyncio.run(collect())]
-    # every node start is announced, in workflow order
-    assert [e["node"] for e in events if e["type"] == "node"] == [
-        "input_guardrail", "contextualize", "classify", "agent",
-        "output_guardrail", "append_disclaimer", "suggest_followups"]
+    # every node start is announced, in workflow order; the guardrail and classifier start together
+    nodes = [e["node"] for e in events if e["type"] == "node"]
+    assert nodes[0] == "contextualize" and set(nodes[1:3]) == {"input_guardrail", "classify"}, nodes
+    assert nodes[3:] == ["agent", "output_guardrail", "append_disclaimer", "suggest_followups"], nodes
     # the agent's tool call surfaces as a status event
     assert {"type": "status", "text": "calling search_docs"} in events
     # sources go out as soon as the agent node ends, before output_guardrail starts
@@ -235,7 +288,7 @@ def test_stream_blocked_answer_replaced_in_done():
     from r_assist.api import stream_chat
 
     # llm calls: guardrail "No", classifier "- covid", output check "No"
-    graph = build_graph(FakeListChatModel(responses=["No", "- covid", "No"]), FakeAgent(), PREDEFINED)
+    graph = build_graph(StepLLM(["No", "- covid", "No"]), FakeAgent(), PREDEFINED)
 
     async def collect():
         return [json.loads(e.removeprefix("data: ")) async for e in stream_chat(graph, "q", [])]
@@ -260,7 +313,7 @@ def test_stream_reports_a_failed_run(caplog):
             raise RuntimeError("model gateway down")
 
     # llm calls: input guardrail, classifier (no history: contextualize makes none)
-    graph = build_graph(FakeListChatModel(responses=["No", "- none"]), FailingAgent(), PREDEFINED)
+    graph = build_graph(StepLLM(["No", "- none"]), FailingAgent(), PREDEFINED)
 
     async def collect():
         return [json.loads(e.removeprefix("data: ")) async for e in stream_chat(graph, "q", [])]
@@ -279,7 +332,7 @@ def test_chat_endpoint_with_history(monkeypatch):
 
     agent = FakeAgent()
     # llm calls: input guardrail, contextualize (history present), classifier, output check, follow-ups
-    llm = FakeListChatModel(responses=["No", "How do I get access to PIC-SURE?", "- other", "Yes", "- none"])
+    llm = StepLLM(["No", "How do I get access to PIC-SURE?", "- other", "Yes", "- none"])
     monkeypatch.setattr(api, "graph", build_graph(llm, agent, PREDEFINED))
     monkeypatch.setattr(api, "mcp_errors", ["dug_mcp: ConnectError: x"])
     history = [{"role": "user", "content": "What is PIC-SURE?"}, {"role": "assistant", "content": "A BDC tool."}]
@@ -292,16 +345,56 @@ def test_chat_endpoint_with_history(monkeypatch):
                           "mcp_errors": ["dug_mcp: ConnectError: x"]}
 
 
+def test_many_users_at_once_run_in_parallel_and_never_mix(monkeypatch):
+    """One server, many users: every step awaits the LLM or a tool, so concurrent /chat/stream
+    requests overlap instead of queuing, and the one shared graph keeps each run's state its own."""
+    import time
+
+    import httpx
+
+    from r_assist import api
+
+    class SlowLLM:  # every model call takes 0.2s: input guardrail "No", the rest "Yes" (no topics, no followups)
+        async def ainvoke(self, messages):
+            await asyncio.sleep(0.2)
+            return AIMessage(content="No" if messages[0] == ("system", prompts.INPUT_GUARDRAIL_SYSTEM) else "Yes")
+
+    class EchoAgent:  # its tool calls take 0.2s too; answers name the question asked
+        async def astream(self, payload, stream_mode=None):
+            question = payload["messages"][0]["content"]
+            await asyncio.sleep(0.2)
+            yield "messages", (AIMessageChunk(content=f"answer to {question}", id=question), {})
+            yield "values", {"messages": [AIMessage(content=f"answer to {question}")]}
+
+    monkeypatch.setattr(api, "graph", build_graph(SlowLLM(), EchoAgent(), PREDEFINED))
+    monkeypatch.setattr(api, "admission", api.Admission(0, 0))  # no cap, whatever .env sets
+
+    async def user(client, n):
+        res = await client.post("/chat/stream", json={"input": f"question {n}", "chat_history": []})
+        events = [json.loads(line.removeprefix("data: ")) for line in res.text.split("\n\n") if line]
+        return "".join(e["text"] for e in events if e["type"] == "token"), events[-1]["answer"]
+
+    async def everyone():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=api.app), base_url="http://t") as client:
+            await user(client, "warm-up")  # first-run imports must not count as waiting
+            start = time.monotonic()
+            results = await asyncio.gather(*(user(client, n) for n in range(20)))
+            return results, time.monotonic() - start
+
+    results, elapsed = asyncio.run(everyone())
+    # one user alone takes ~1s (four model calls + the agent); queued, 20 would take ~20s
+    assert elapsed < 2.5, f"20 users took {elapsed:.1f}s: requests ran one after another"
+    assert results == [(f"answer to question {n}",) * 2 for n in range(20)], "a user got another user's answer"
+
+
 def test_responses_api_content_blocks():
     """COMPLETION_REASONING_EFFORT above none puts the model on the Responses API, where message
     content is a list of blocks (reasoning, text, function_call), not a string. Guardrail verdicts,
     topics, the answer and the streamed tokens all come from the text blocks."""
-    from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
-
     from r_assist.api import stream_chat
 
     replies = ["No", "- covid", "Yes", "- none"]  # input guardrail, classifier, output check, follow-ups
-    llm = GenericFakeChatModel(messages=iter([AIMessage(content=_blocks(r)) for r in replies]))
+    llm = StepLLM(replies, wrap=_blocks)
     graph = build_graph(llm, FakeAgent(blocks=True), PREDEFINED)
 
     async def collect():
@@ -330,6 +423,17 @@ def test_mcp_servers_yaml():
     assert "interceptors" not in servers["dug_mcp"], "r-assist's key, never handed to the transport"
     assert "stand_ins" not in servers["dug_mcp"], "r-assist's key, never handed to the transport"
     assert "prompt" not in servers["dug_mcp"], "r-assist's key, never handed to the transport"
+
+
+def test_mcp_server_url_from_env(monkeypatch):
+    from pathlib import Path
+
+    from r_assist.agent import load_mcp_servers
+
+    monkeypatch.setenv("R_DOC_MCP_URL", "http://doc-mcp:8001/mcp")
+    servers = load_mcp_servers(Path("examples/bdc"))
+    assert servers["r_doc_mcp"]["url"] == "http://doc-mcp:8001/mcp"
+    assert servers["dug_mcp"]["url"] == "https://dug-mcp.apps.renci.org/sse", "no env var: the yaml's url"
 
 
 def test_unreachable_mcp_server_is_skipped(monkeypatch, caplog):
@@ -462,7 +566,7 @@ def test_attached_sources_join_the_doc_sources():
                         msgs[-1]]}
                 yield mode, chunk
 
-    llm = FakeListChatModel(responses=["No", "- none", "Yes", "- none"])
+    llm = StepLLM(["No", "- none", "Yes", "- none"])
     state = asyncio.run(build_graph(llm, CitingAgent(), PREDEFINED).ainvoke({"input": "q", "chat_history": []}))
     assert state["sources"] == {**SOURCES, "dug": [fhs, aric]}
     assert state["sources_md"] == (SOURCES_MD + "\n- [Framingham Cohort](https://x/study?phs000007) (dbgap-study)"

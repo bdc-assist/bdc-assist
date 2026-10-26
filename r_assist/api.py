@@ -3,16 +3,18 @@
 import asyncio
 import json
 import logging
-from contextlib import asynccontextmanager
+import time
+from collections import deque
+from contextlib import aclosing, asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from . import prompts
 from .agent import build_agent, recheck
-from .config import CORS_ORIGINS, LOG_LEVEL, MCP_RETRY_SECONDS, get_llm
+from .config import CORS_ORIGINS, LOG_LEVEL, MAX_RUNNING_CHATS, MAX_WAITING_CHATS, MCP_RETRY_SECONDS, get_llm
 from .graph import build_graph
 from .prompts import load_predefined_responses
 
@@ -40,8 +42,96 @@ class ChatResponse(BaseModel):
 
 log = logging.getLogger(__name__)
 
+
+class Full(Exception):
+    """No free chat slot and no place left in line."""
+
+
+class Admission:
+    """At most `running` chats at once; up to `waiting` more wait in line, first come first served, and
+    hear their place in it; beyond that a chat is refused. Sized to the slowest backend: a chat let in
+    beyond what that serves only waits there instead, where nobody can tell it how long. 0 running =
+    no cap."""
+
+    def __init__(self, running: int, waiting: int):
+        self.running, self.waiting = running, waiting
+        self.busy, self.line = 0, deque()
+        self.avg = None  # moving average of the seconds a chat holds its slot: the wait estimate
+
+    def full(self) -> bool:
+        return bool(self.running) and self.busy >= self.running and len(self.line) >= self.waiting
+
+    def eta(self, place: int) -> float | None:
+        """Seconds until the chat at this place in line starts: a slot frees every avg/running seconds."""
+        return None if self.avg is None else place * self.avg / self.running
+
+    async def wait_turn(self):
+        """Ends holding a slot (hand it back with release); until then, yields the place in line
+        whenever it changes. Raises Full if the line is full: checked as it joins, with no await in
+        between, so a burst of requests can't all pass a check made before any of them joined."""
+        if not self.running:
+            return
+        if self.busy < self.running and not self.line:
+            self.busy += 1
+            return
+        if len(self.line) >= self.waiting:
+            raise Full
+        turn = asyncio.get_running_loop().create_future()
+        self.line.append(turn)
+        try:
+            shown = None
+            while not turn.done():
+                place = self.line.index(turn) + 1
+                if place != shown:
+                    shown = place
+                    yield place
+                await asyncio.wait({turn}, timeout=1)
+        except BaseException:  # gave up waiting (client gone): leave the line, or pass on a slot just handed over
+            if turn.done():
+                self.release()
+            else:
+                self.line.remove(turn)
+            raise
+
+    def release(self, held: float | None = None):
+        if not self.running:
+            return
+        if held is not None:
+            self.avg = held if self.avg is None else 0.8 * self.avg + 0.2 * held
+        if self.line:
+            self.line.popleft().set_result(None)  # the slot passes straight to the next in line
+        else:
+            self.busy -= 1
+
+
+def _busy():
+    eta = admission.eta(admission.waiting + 1)  # about when the line's next place would start
+    return HTTPException(503, "busy: every chat slot and place in line is taken; try again shortly",
+                         headers={"Retry-After": str(round(eta or 30))})
+
+
+async def in_turn(events):
+    """The SSE lines of events, once a chat slot is free; until then, status events with the place in line."""
+    try:
+        async with aclosing(admission.wait_turn()) as places:
+            async for place in places:
+                eta = admission.eta(place)
+                text = f"Busy: you're number {place} in line" + (f", about {eta:.0f} s" if eta else "")
+                yield f"data: {json.dumps({'type': 'status', 'text': text})}\n\n"
+    except Full:  # one of a burst that got past chat_stream's check: the 200 is sent, so say it here
+        yield f"data: {json.dumps({'type': 'error', 'busy': True})}\n\n"
+        return
+    start = time.monotonic()
+    try:
+        async for event in events:
+            yield event
+    finally:
+        admission.release(time.monotonic() - start)
+
+
 graph = None
 mcp_errors: list[str] = []  # from build_agent: startup, then each re-check
+admission = Admission(MAX_RUNNING_CHATS, MAX_WAITING_CHATS)
 
 
 async def retry_mcp(llm, predefined):
@@ -94,13 +184,15 @@ async def health():
 async def stream_chat(graph, input: str, chat_history: list):
     """SSE events, one JSON object each:
       {"type": "node", "node"}    a graph node started (progress)
-      {"type": "status", "text"}  what the agent is doing (tool calls)
+      {"type": "status", "text"}  what the agent is doing (tool calls); before the run, if it waits
+                                  for a slot (see Admission), its place in line
       {"type": "token", "text"}   one token of the agent's provisional answer
       {"type": "reset"}           new model turn — discard tokens so far
       {"type": "sources", sources, sources_md, kg}  the agent finished; its doc sources and graphs
       {"type": "done", answer, blocked, topics, followups, sources, sources_md, kg, mcp_errors}
         final state — the done answer is authoritative (blocks, disclaimers, canned replies).
-      {"type": "error"}           the run failed (details in the server log); last event, no done
+      {"type": "error"}           the run failed (details in the server log); last event, no done.
+                                  "busy": true: never ran, the line was full (see in_turn)
     Custom-stream events come only from graph.py nodes, so guardrail/classifier
     LLM chatter never leaks."""
     state = {}
@@ -129,17 +221,29 @@ async def stream_chat(graph, input: str, chat_history: list):
 
 @app.post("/chat/stream")
 async def chat_stream(req: ChatRequest):
+    if admission.full():
+        raise _busy()
     history = [(m.role, m.content) for m in req.chat_history]
-    return StreamingResponse(stream_chat(graph, req.input, history),
+    return StreamingResponse(in_turn(stream_chat(graph, req.input, history)),
                              media_type="text/event-stream")
 
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest) -> ChatResponse:
-    state = await graph.ainvoke({
-        "input": req.input,
-        "chat_history": [(m.role, m.content) for m in req.chat_history],
-    })
+    try:
+        async with aclosing(admission.wait_turn()) as places:
+            async for _ in places:
+                pass
+    except Full:
+        raise _busy()
+    start = time.monotonic()
+    try:
+        state = await graph.ainvoke({
+            "input": req.input,
+            "chat_history": [(m.role, m.content) for m in req.chat_history],
+        })
+    finally:
+        admission.release(time.monotonic() - start)
     return ChatResponse(answer=state["answer"], blocked=state.get("blocked"),
                         topics=state.get("topics", []), followups=state.get("followups", []),
                         sources=state.get("sources", {}), sources_md=state.get("sources_md", ""),
