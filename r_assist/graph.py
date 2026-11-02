@@ -1,24 +1,34 @@
 """The r-assist LangGraph workflow.
 
     START → contextualize ─┬→ input_guardrail ─┐
-                           └→ classify ─────────┴→ gate ──blocked──────────→ END (REFUSAL)
-                                                     │──"r" topic matched──→ END (canned answer)
-                                                     │ regular
-                                                   agent → output_guardrail ──blocked──────────────→ END (REJECT)
-                                                                 │ disclaimers queued └──done──────┐
-                                                           append_disclaimer ─────→ suggest_followups ─→ END
+                           └→ classify ─────────┴→ gate ─┬─ blocked ────────────→ END (REFUSAL)
+                                                         ├─ "r" topic matched ──→ END (canned answer)
+                                                         └─ regular ────────────→ main_agent
+
+    main_agent ─┬→ output_guardrail ──┐
+                ├→ suggest_followups ─┼→ finish ─┬─ disclaimer ──────→ append_disclaimer → END (answer + disclaimers)
+                └→ related_work ──────┘          └─ done or blocked ─→ END (answer, or REJECT)
 
 input_guardrail and classify run side by side: one LLM round trip before the agent instead of two
 (~1.6 s a chat, measured). gate joins them, and a blocked input wins over anything classify matched.
 contextualize goes first so classify gets the standalone question; it calls the LLM only when there
-is chat history.
+is chat history. output_guardrail and suggest_followups run side by side too; finish joins them, and
+a rejected answer drops the follow-ups and related papers (wasted calls, on a rare path). An answer
+that passed gets its "a"-topic disclaimers in append_disclaimer, after the join.
+
+related_work runs beside them only when project.yaml names a related_tool that is among the agent's
+tools and not a stand-in (BDC: artie-mcp's search_publications): papers on the question's topic,
+asked for or not.
+finish merges them into the sources; like the follow-ups they are extras, and a failure drops them.
 
 Both guardrails are hard blocks: the agent's tokens stream as a provisional answer, but a
 blocked answer ends the run with the canned reply and blocked="input" or "output" (which
 guardrail) in the final state.
 """
 
+import asyncio
 import json
+import logging
 from typing import TypedDict
 
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
@@ -28,6 +38,11 @@ from langgraph.graph import END, START, StateGraph
 
 from . import prompts
 from .prompts import REJECT, REFUSAL  # canned answers live in config/prompts.yaml
+
+log = logging.getLogger(__name__)
+
+RELATED_TIMEOUT = 8  # seconds related_work waits on its tool: finish (and "done") waits on related_work
+RELATED_PAPERS = 3  # related papers kept per sources key: results come ranked by word matches, the tail is noise
 
 
 class BotState(TypedDict, total=False):
@@ -42,6 +57,7 @@ class BotState(TypedDict, total=False):
                             # plus {"predefined": [...]} for the predefined responses shown (link may be "")
     sources_md: str         # the same as a markdown list, ready to show under the answer
     kg: list                # knowledge graphs attached to tool results, one per tool call
+    related: dict           # {key: [{title, link, type}]} — related_work's papers; finish merges them into sources
     blocked: str | None     # which guardrail blocked the run: "input" (question refused) or
                             # "output" (answer rejected); None when neither did
 
@@ -125,7 +141,7 @@ def _sources_md(sources: list[dict]) -> str:
         (prompts.SOURCES_ITEM if s["link"] else prompts.SOURCES_ITEM_NO_LINK).format(**s) for s in sources))
 
 
-def build_graph(llm, agent, predefined: dict):
+def build_graph(llm, agent, predefined: dict, tools=()):
     """Compile the workflow.
 
     llm: any chat model — runs the guardrail/contextualize/classify prompts.
@@ -134,8 +150,16 @@ def build_graph(llm, agent, predefined: dict):
     predefined: lowercased topic → {response, flag, link?, title?}, from config/predefined_responses.yaml.
         flag "r" = replace: the canned response IS the answer, agent is skipped.
         flag "a" = append: the response is a disclaimer added after the agent answer.
+    tools: the agent's tools; the one named prompts.RELATED_TOOL, if any, is related_work's. It is
+        called with {"keywords": [...]} and its results' attached sources are the related papers.
     """
     topic_names = list(predefined)
+    related = next((t for t in tools if t.name == prompts.RELATED_TOOL), None)
+    if prompts.RELATED_TOOL and not related:
+        log.warning("related_tool %r is not among the loaded tools (misspelled, or its server is down "
+                    "without stand-ins): no related_work step", prompts.RELATED_TOOL)
+    if related and (related.metadata or {}).get("stand_in"):
+        related = None  # its server is down: the stand-in only says so, not worth an LLM call a chat
 
     async def input_guardrail(state: BotState):
         """
@@ -250,16 +274,17 @@ def build_graph(llm, agent, predefined: dict):
         sources = ({prompts.SOURCES_KEY: docs} if docs else {}) | extra
         sources_md = _sources_md(docs + [s for items in extra.values() for s in items])
         kg = _kgs(result["messages"])
-        # sources are known once the agent is done: send them now rather than with "done",
-        # which waits for the guardrail and follow-up nodes (a block clears them in "done")
+        # the agent's sources are known now: send them rather than wait for "done", which waits for
+        # the guardrail, follow-up and related_work nodes (a block clears them in "done", where
+        # related_work's papers join them)
         writer({"type": "sources", "sources": sources, "sources_md": sources_md, "kg": kg})
         return {"answer": result["messages"][-1].text, "sources": sources, "sources_md": sources_md, "kg": kg}
 
     async def output_guardrail(state: BotState):
         """
         LLM self-check that the answer addresses the question; anything but "yes"
-        → replace the streamed answer with REJECT (its sources and kg go with it)
-        and end the run.
+        → replace the streamed answer with REJECT (its sources and kg go with it;
+        finish drops the follow-ups and related papers, and no disclaimers follow).
         """
         # no deterministic name-normalising pass — the agent prompt already enforces the short name
         try:
@@ -276,17 +301,11 @@ def build_graph(llm, agent, predefined: dict):
             return {"blocked": "output", "answer": REJECT, "sources": {}, "sources_md": "", "kg": []}
         return {"blocked": None}
 
-    async def append_disclaimer(state: BotState):
-        """
-        Tack queued "a"-topic disclaimers onto the final answer.
-        """
-        return {"answer": "\n\n".join([state["answer"], *state["disclaimers"]])}
-
     async def suggest_followups(state: BotState):
         """
         Decide if follow-up questions would help; if so, suggest
         prompts.FOLLOWUPS of them (LLM returns a markdown list, or "- none"
-        when nothing is needed).
+        when nothing is needed). Sees the agent's answer, without disclaimers.
         """
         try:
             resp = await llm.ainvoke([
@@ -299,6 +318,31 @@ def build_graph(llm, agent, predefined: dict):
             parsed = []
         return {"followups": [q for q in parsed if q.lower() != "none"][:prompts.FOLLOWUPS]}
 
+    async def related_work(state: BotState):
+        """
+        Papers on the question's topic, asked for or not: the LLM picks up to 4 search terms from the
+        question and answer (a markdown list, or "- none" when it isn't about research), and the
+        related tool is called with them. Its attached sources wait in "related" for finish.
+        """
+        try:
+            resp = await llm.ainvoke([
+                ("human", prompts.RELATED_KEYWORDS_HUMAN.format(input=state["question"], answer=state["answer"])),
+            ])
+            terms = [t.strip(" \"'.") for t in MarkdownListOutputParser().parse(resp.text)]  # '- "asthma"', '- none.'
+            terms = [t for t in terms if t and t.lower() != "none"][:3]  # the prompt asks for 1 to 3
+            if not terms:
+                return {}
+            # a tool call, not plain args: only a ToolMessage carries the artifact the papers ride in
+            msg = await asyncio.wait_for(related.ainvoke({"type": "tool_call", "id": "related_work",
+                                                          "name": related.name, "args": {"keywords": terms}}),
+                                         RELATED_TIMEOUT)
+        except Exception as e:
+            # related papers are extras, like follow-ups — never lose a good answer over them; but say
+            # why, or a bad related_tool argument or prompt placeholder turns the step off unseen
+            log.warning("related_work skipped: %s: %s", type(e).__name__, e)
+            return {}
+        return {"related": {key: items[:RELATED_PAPERS] for key, items in _attached_sources([msg]).items()}}
+
     async def gate(state: BotState):
         """
         Join of input_guardrail and classify, which run side by side: a blocked input gets the
@@ -307,6 +351,34 @@ def build_graph(llm, agent, predefined: dict):
         if state.get("blocked"):
             return {"answer": REFUSAL, "topics": [], "disclaimers": [], "sources": {}, "sources_md": ""}
         return {}
+
+    async def finish(state: BotState):
+        """
+        Join of output_guardrail, suggest_followups and related_work, which run side by side: a
+        rejected answer gets no follow-ups (nor related papers: its sources are gone); otherwise
+        related papers join the sources, each link once, and an answer with "a"-topic
+        disclaimers goes on to append_disclaimer.
+        """
+        if state["blocked"]:
+            return {"followups": []}
+        update: BotState = {}
+        if state.get("related"):
+            sources = {key: list(items) for key, items in state["sources"].items()}
+            seen = {s["link"] for items in sources.values() for s in items}
+            for key, items in state["related"].items():
+                for s in items:
+                    if s["link"] not in seen:
+                        seen.add(s["link"])
+                        sources.setdefault(key, []).append(s)
+            update["sources"] = sources
+            update["sources_md"] = _sources_md([s for items in sources.values() for s in items])
+        return update
+
+    async def append_disclaimer(state: BotState):
+        """
+        Add the queued "a"-topic disclaimers to an answer that passed the output check.
+        """
+        return {"answer": "\n\n".join([state["answer"], *state["disclaimers"]])}
 
     def announce(name, fn):
         # emit {"type": "node"} on the custom stream when the node starts, so a
@@ -318,12 +390,15 @@ def build_graph(llm, agent, predefined: dict):
 
     # Build the graph.
     g = StateGraph(BotState)
+    after_agent = [("output_guardrail", output_guardrail), ("suggest_followups", suggest_followups)]
+    if related:
+        after_agent.append(("related_work", related_work))
     for name, fn in [("input_guardrail", input_guardrail), ("contextualize", contextualize),
-                     ("classify", classify), ("agent", run_agent),
-                     ("output_guardrail", output_guardrail), ("append_disclaimer", append_disclaimer),
-                     ("suggest_followups", suggest_followups)]:
+                     ("classify", classify), ("main_agent", run_agent), *after_agent,
+                     ("append_disclaimer", append_disclaimer)]:
         g.add_node(name, announce(name, fn))
     g.add_node("gate", gate)  # not announced: instant, no step a user would wait on
+    g.add_node("finish", finish)  # same
 
     g.add_edge(START, "contextualize")
     g.add_edge("contextualize", "input_guardrail")
@@ -333,15 +408,40 @@ def build_graph(llm, agent, predefined: dict):
     # through a bare lambda and would render no edges at all. After gate an answer exists only if
     # the input was refused or matched an "r" topic; one key, as a drawing shows one edge per target
     g.add_conditional_edges("gate",
-                            lambda s: "refused or canned" if s.get("answer") else "regular",
-                            {"refused or canned": END, "regular": "agent"})
-    g.add_edge("agent", "output_guardrail")
-    # blocked ends the run: no point appending disclaimers to "I couldn't answer"
-    g.add_conditional_edges("output_guardrail",
-                            lambda s: "blocked" if s["blocked"]
-                            else "disclaimer" if s.get("disclaimers") else "done",
-                            {"blocked": END, "disclaimer": "append_disclaimer",
-                             "done": "suggest_followups"})
-    g.add_edge("append_disclaimer", "suggest_followups")
-    g.add_edge("suggest_followups", END)
+                            lambda s: "blocked or canned" if s.get("answer") else "regular",
+                            {"blocked or canned": END, "regular": "main_agent"})
+    for name, _ in after_agent:
+        g.add_edge("main_agent", name)
+    g.add_edge([name for name, _ in after_agent], "finish")  # waits for all of them
+    # one key per target, as at gate: a drawing shows one edge to END, so a separate "rejected" key would vanish
+    g.add_conditional_edges("finish",
+                            lambda s: "disclaimer" if not s["blocked"] and s.get("disclaimers") else "done or blocked",
+                            {"disclaimer": "append_disclaimer", "done or blocked": END})
+    g.add_edge("append_disclaimer", END)
     return g.compile()
+
+
+def drawing(graph, agent, servers: dict) -> str:
+    """For docs/workflow_detailed.png, as mermaid text: graph.get_graph() with the main_agent node
+    drawn as a box holding the agent's own model ⇄ tools loop (agent.get_graph()) and the MCP servers
+    its tools call (mcp_servers.yaml entries, each labelled with its interceptors). The agent runs
+    inside main_agent's function, so get_graph(xray=True) can't see it. Edges go to and from the box itself, so it
+    sits in the main flow like a node; deepagents' middleware hooks ("X.before_agent") and the
+    model's self-loop are internals, left out."""
+    from langchain_core.runnables.graph import Edge, Node
+    from langchain_core.runnables.graph_mermaid import draw_mermaid
+
+    outer, inner = graph.get_graph(), agent.get_graph()
+    nodes = {k: n for k, n in outer.nodes.items() if k != "main_agent"}  # main_agent becomes the box
+    keep = {k for k in inner.nodes if k not in (START, END) and "." not in k}  # model, tools
+    nodes |= {f"main_agent:{k}": inner.nodes[k]._replace(id=f"main_agent:{k}", name=k) for k in keep}
+    edges = list(outer.edges)
+    edges += [e._replace(source=f"main_agent:{e.source}", target=f"main_agent:{e.target}") for e in inner.edges
+              if {e.source, e.target} <= keep and e.source != e.target]
+    for name, conn in servers.items():
+        label = " + ".join([name, *(conn.get("interceptors") or [])])
+        nodes[f"main_agent:{name}"] = Node(id=f"main_agent:{name}", name=label, data=None, metadata=None)
+        edges.append(Edge("main_agent:tools", f"main_agent:{name}", conditional=True))
+    # shortcut: draw_mermaid, not Graph.draw_mermaid, which rejects edges to a box; if a langchain
+    # upgrade breaks it, test_drawing_shows_the_agent_inside fails
+    return draw_mermaid(nodes, edges, first_node=START, last_node=END)

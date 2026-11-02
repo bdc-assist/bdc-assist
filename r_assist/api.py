@@ -13,7 +13,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from . import prompts
-from .agent import build_agent, recheck
+from .agent import build_agent, close_sessions, recheck
 from .config import CORS_ORIGINS, LOG_LEVEL, MAX_RUNNING_CHATS, MAX_WAITING_CHATS, MCP_RETRY_SECONDS, get_llm
 from .graph import build_graph
 from .prompts import load_predefined_responses
@@ -147,7 +147,7 @@ async def retry_mcp(llm, predefined):
             pass
         recheck.clear()
         try:
-            agent, errors = await build_agent(llm)
+            agent, tools, errors = await build_agent(llm)
         except Exception:  # e.g. mcp_servers.yaml edited into a broken state: keep what runs
             log.exception("MCP reload failed, keeping the current tools")
             continue
@@ -155,18 +155,19 @@ async def retry_mcp(llm, predefined):
         if back:
             # warning, not info: the default LOG_LEVEL must show the "unavailable" lines end
             log.warning("MCP server back, its tools loaded: %s", ", ".join(sorted(back)))
-        graph, mcp_errors = build_graph(llm, agent, predefined), errors
+        graph, mcp_errors = build_graph(llm, agent, predefined, tools), errors
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global graph, mcp_errors
     llm, predefined = get_llm(), load_predefined_responses()
-    agent, mcp_errors = await build_agent(llm)
-    graph = build_graph(llm, agent, predefined)
+    agent, tools, mcp_errors = await build_agent(llm)
+    graph = build_graph(llm, agent, predefined, tools)
     retry = asyncio.create_task(retry_mcp(llm, predefined))
     yield
     retry.cancel()
+    close_sessions()
 
 
 # app loggers (e.g. MCP tool failures in agent.py) print alongside uvicorn's own lines

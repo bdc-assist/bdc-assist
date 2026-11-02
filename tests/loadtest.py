@@ -1,6 +1,6 @@
 """Load test: many users at once against the running services, with the real models.
 
-  search  r-doc-mcp's search_docs over MCP, the way r-assist's agent calls it (a session per call).
+  search  r-doc-mcp's search_docs over MCP, the way r-assist's agent calls it (one kept session).
           Each search embeds the query on r-doc-mcp's embedding server (its EMBEDDING_URL, e.g. a
           remote Ollama), which is most of the time, then queries Chroma. No LLM: costs nothing.
   dug     the Dug MCP server (mcp_servers.yaml's dug_mcp): search_concepts with find_variables, the
@@ -30,21 +30,17 @@ from pathlib import Path
 
 import httpx
 import yaml
-from mcp import ClientSession
-from mcp.client.streamable_http import streamable_http_client
 
+from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import create_session
 
 sys.path.insert(0, str(Path(__file__).parent.parent))  # runnable from anywhere
 from r_assist import prompts
-from r_assist.agent import _root, load_mcp_servers
+from r_assist.agent import _kept_session, _root, load_mcp_servers
 
 
 async def search(client, args, question):
-    async with streamable_http_client(args.mcp_url) as (read, write, _):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            res = await session.call_tool("search_docs", {"query": question})
+    res = await (await _kept_session(args.docs, "r_doc_mcp")).call_tool("search_docs", {"query": question})
     if res.isError:
         raise RuntimeError(res.content[0].text[:200] if res.content else "search_docs failed")
     return None
@@ -117,6 +113,8 @@ async def run_level(target, client, args, questions, users):
 
 async def run(args):
     target = {"search": search, "dug": dug, "chat": chat}[args.target]
+    # search: r-assist's kept session to r-doc-mcp (keep_session in mcp_servers.yaml), at --mcp-url
+    args.docs = MultiServerMCPClient({"r_doc_mcp": {**load_mcp_servers()["r_doc_mcp"], "url": args.mcp_url}})
     with open(prompts.DATA_DIR / "sample_questions.yaml", encoding="utf-8") as f:
         questions = DUG_TERMS if args.target == "dug" else [str(q) for q in yaml.safe_load(f)]
     # no connection cap: a pooled client would queue the users itself

@@ -49,7 +49,8 @@ topic_classifier_system: |
   Return ONLY the topic name(s) from the list, or "other" with no additional text or explanation.
   The response can ONLY be a markdown list of topic names ("- topic1 \n- topic2") from the list or "- other". Always use "- " for the list prefix even when the length is 1.
 
-# System prompt for the main answering agent (searches the docs and the data catalog, writes the answer).
+# System prompt for the main answering agent (searches the docs, the data catalog and the publication list,
+# writes the answer).
 # {tools} = each server's prompt: in mcp_servers.yaml, in a <tools server="..."> tag, starting on a new
 # line. With no prompt: there, the whole line holding {tools} is left out, so introduce the tools on it.
 agent_system: |
@@ -58,7 +59,7 @@ agent_system: |
   NHLBI BioData Catalyst® (BDC). BDC only stands for BioData Catalyst, not other organizations.
   You have these tools; always use a tool before answering. {tools}
   Never conclude from a single empty result. Only after every path above returns nothing
-  say that you couldn't find it in the documentation or the data catalog.
+  say that you couldn't find it in the documentation, the data catalog, or the publication list.
   Keep the answer concise, prioritize using 1 paragraph, and include the most relevant
   information, unless a lengthier answer is required or otherwise specified. You can use
   bullet points and markdown formatting if needed.
@@ -124,3 +125,23 @@ sources: |-
   {items}
 sources_item: "- [{title}]({link}) ({type})"
 sources_item_no_link: "- {title} ({type})"  # a predefined response with an empty link
+
+related_keywords_human: |
+  You pick search terms for the curated list of published papers that used ${short_name}.
+  Given the user question and the answer below, list 1 to 3 short, specific terms a related paper would mention,
+  the question's main topic first: a disease or trait (e.g. sickle cell, asthma), a cohort or dataset (e.g. MESA,
+  COPDGene), or a research method (e.g. GWAS).
+  The search matches every word of every term, so leave out generic words (data, study, disease, cohort, analysis),
+  spelled-out names of acronyms you already listed, and broad programs such as TOPMed unless the question is about
+  that program itself.
+  Never list BDC or BioData Catalyst itself as a term: every paper in the list used it, so it matches them all.
+  If the question is not about a research topic (e.g. accounts, login, costs, how to use a tool), return ONLY "- none".
+  The response can ONLY be a markdown list ("- term1 \n- term2") or "- none", with no additional text or explanation.
+
+  <question>
+  {input}
+  </question>
+
+  <answer>
+  {answer}
+  </answer>
