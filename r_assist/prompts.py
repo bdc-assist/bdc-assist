@@ -22,10 +22,12 @@ def _load_yaml(name):
         return yaml.safe_load(f) or {}
 
 
-PROJECT = _load_yaml("project.yaml")  # name, short_name, assistant_name, followups, doc_search_tool, sources_key
+PROJECT = _load_yaml("project.yaml")  # name, short_name, assistant_name, followups, doc_search_tool, sources_key,
+                                      # related_tool
 FOLLOWUPS = int(PROJECT.get("followups", 3))  # how many follow-ups to ask for and to keep
 DOC_SEARCH_TOOL = PROJECT.get("doc_search_tool", "search_docs")  # its results become the answer's sources
 SOURCES_KEY = PROJECT.get("sources_key", "r-doc")  # key of those sources in the API response
+RELATED_TOOL = PROJECT.get("related_tool")  # MCP tool related_work calls after each answer; None = no such step
 
 
 def _fill(text, where):
@@ -43,6 +45,10 @@ INPUT_GUARDRAIL_HUMAN = _P["input_guardrail_human"]
 CONTEXTUALIZE_SYSTEM = _P["contextualize_system"]
 OUTPUT_GUARDRAIL_HUMAN = _P["output_guardrail_human"]
 SUGGEST_FOLLOWUPS_HUMAN = _P["suggest_followups_human"]
+RELATED_KEYWORDS_HUMAN = _P.get("related_keywords_human")  # {input}, {answer}; only with RELATED_TOOL
+if RELATED_TOOL and not RELATED_KEYWORDS_HUMAN:
+    raise ValueError(f"project.yaml names related_tool {RELATED_TOOL!r}: add related_keywords_human to "
+                     f"{DATA_DIR / 'prompts.yaml'}")
 REFUSAL = _P["refusal"]
 REJECT = _P["reject"]
 SOURCES = _P["sources"]  # {items}

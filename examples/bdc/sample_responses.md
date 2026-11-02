@@ -442,7 +442,7 @@ data?"` produced 93 events in 24.3 s, in this order:
 {"type": "node", "node": "contextualize"}      // a workflow step started (show as progress)
 {"type": "node", "node": "input_guardrail"}    // these two run side by side (since 2026-10-21):
 {"type": "node", "node": "classify"}           // they start together, in either order
-{"type": "node", "node": "agent"}
+{"type": "node", "node": "main_agent"}
 {"type": "status", "text": "calling search_docs"}      // the agent called a tool
 {"type": "status", "text": "calling search_concepts"}  // a second tool, before any answer text
 {"type": "token", "text": "Yes"}               // the answer as it is written: 82 token events
@@ -450,9 +450,11 @@ data?"` produced 93 events in 24.3 s, in this order:
 {"type": "sources", "sources": {"bdc-doc": [/* … 5 */]}, "sources_md": "…", "kg": [{"tool": "search_concepts" /* … */}]}
                                                // the agent finished: its sources and graphs, sent early
                                                // so a page can show them while the steps below run
-{"type": "node", "node": "output_guardrail"}
-{"type": "node", "node": "append_disclaimer"}
+{"type": "node", "node": "output_guardrail"}   // these run side by side too (since 2026-10-28),
 {"type": "node", "node": "suggest_followups"}
+{"type": "node", "node": "related_work"}       // and related_work with them (added 2026-10-30, after this
+                                               // recording: its papers, if any, join "sources" in done)
+{"type": "node", "node": "append_disclaimer"}  // after them: the covid topic's disclaimer goes on
 {"type": "done", "answer": "Yes. BDC includes COVID-19-related datasets, including CONNECTS … Covid-19 response placeholder (append)",
  "blocked": false, "topics": ["covid"], "followups": [/* … 3 */], "sources": {"bdc-doc": [/* … 5 */]}, "sources_md": "…",
  "kg": [/* … 1 */], "mcp_errors": []}

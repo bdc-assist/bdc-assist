@@ -12,6 +12,12 @@ Sibling repos: **r-doc-mcp** (the doc search MCP server) and **r-doc-builder** (
 
 ![r-assist workflow](docs/workflow.png)
 
+The BDC config. [docs/workflow_detailed.png](docs/workflow_detailed.png) also draws inside
+`main_agent`: the agent's own `model ⇄ tools` loop and the MCP servers its tools call. Redraw both
+with `uv run python docs/draw_workflow.py` (rendered by mermaid.ink). Not drawn: deepagents'
+middleware hooks, per-call tool wrappers (one retry, stand-ins for a server that is down), admission
+and the MCP re-check loop in `api.py`.
+
 - `contextualize` rewrites follow-ups into standalone questions using `chat_history` (no LLM call
   without history)
 - `input_guardrail` yes/no LLM check of the raw message against the policy checklist in
@@ -21,13 +27,26 @@ Sibling repos: **r-doc-mcp** (the doc search MCP server) and **r-doc-builder** (
   off every chat); `gate` joins them, and a blocked input gets the refusal whatever `classify` matched.
   A provider content filter that rejects `contextualize` or `classify` (e.g. on a jailbreak) is left to
   the guardrail, whose check is filtered too, to report as a block
-- `agent` calls tools on the doc MCP server (MCP over HTTP)
+- `main_agent` calls tools on the MCP servers in `mcp_servers.yaml` (MCP over HTTP; BDC: docs, Dug,
+  publications)
 - `output_guardrail` self-checks the answer against the question; a hard block like the input
-  guardrail (a "No" or a provider content filter → canned reject reply, `blocked: "output"`, run ends,
-  no disclaimers appended)
+  guardrail (a "No" or a provider content filter → canned reject reply, `blocked: "output"`, no
+  disclaimers, follow-ups or related papers; drawn as `finish`'s "done or blocked" edge)
 - `suggest_followups` decides if follow-up questions would help and suggests as many as
   `followups` in `config/project.yaml` (default 3; list of strings in the `followups` response
-  field; skipped on refusals/rejects/canned answers)
+  field; skipped on refusals/canned answers, dropped on rejects)
+- `related_work` (only when `project.yaml` names a `related_tool` that loaded; BDC:
+  `search_publications`) asks the LLM for 1 to 3 search terms from the question and answer
+  (`related_keywords_human` in prompts.yaml; "- none" for non-research questions) and calls that
+  tool with `{"keywords": [...]}`; the sources its result attaches are related papers, asked for or
+  not, the top 3 kept. A failure or an 8 s timeout means no papers (logged as a warning); a server
+  down at startup (its stand-in loaded) means no `related_work` step until it is back, and a
+  `related_tool` not among the tools is logged as a warning.
+- `output_guardrail`, `suggest_followups` and `related_work` run side by side; `finish` joins them
+  and merges the related papers into `sources` (deduplicated on link; in the `done` event only, not
+  the earlier `sources` one)
+- `append_disclaimer` appends the flag-a disclaimers to an answer that passed (only when a flag-a
+  topic matched)
 
 All guardrail/classifier checks use the single completion LLM.
 
@@ -94,7 +113,8 @@ tool call, coloured by category (hover a node for its details), with the same MC
 ## Configure for your project
 
 1. `config/project.yaml`: set `name`, `short_name`, `assistant_name`, and `followups` (how many follow-up questions to suggest);
-   `doc_search_tool`/`sources_key` only if your doc server's tool or your client's sources key differ.
+   `doc_search_tool`/`sources_key` only if your doc server's tool or your client's sources key differ;
+   `related_tool` (optional) for the `related_work` step, with `related_keywords_human` in prompts.yaml.
 2. `config/prompts.yaml`: read through once; the policy checklist and the agent's house rules
    are where projects differ most. Keep the `{input}`/`{answer}`/`{topics}`/`{date}`/`{tools}` slots.
    `agent_system`'s `{tools}` gets each server's `prompt:` from `mcp_servers.yaml` (step 4); with none,
@@ -114,6 +134,9 @@ tool call, coloured by category (hover a node for its details), with the same MC
    agent just has fewer tools, and when the prompt names the missing ones it answers from the rest
    (BDC with dug down: release-note study lists presented as catalog results); a system-prompt
    note did not stop that with gpt-4o-mini. List the server's tools your prompt names.
+   Optional `keep_session: true`: call that server over one MCP session kept open instead of a new
+   session per call. Only for a stateless server (r-doc-mcp is): a stateful one forgets the session
+   when it restarts. A call that fails on the kept session is retried on a fresh one.
 5. Declare the doc types in r-doc-mcp's `config/doc_types.yaml` and list the sources in
    r-doc-builder's `config/sources.yaml`.
 
@@ -181,7 +204,8 @@ returns `{"answer", "blocked", "topics", "followups", "sources", "sources_md", "
 the client keeps history. `sources` is the distinct documents behind the agent's `search_docs` chunks,
 `{"r-doc": [{title, link, type}]}`, deduplicated on link and in relevance order (empty for canned,
 blocked replies), plus any sources an interceptor attaches to tool results (structured content
-`"sources"`, `{key: [{title, link, type}]}`; BDC: the studies Dug cites, under `"dug"`), listed under
+`"sources"`, `{key: [{title, link, type}]}`; BDC: the studies Dug cites, under `"dug"`, and papers
+from artie-mcp, under `"artie"`, whether the agent or `related_work` searched), listed under
 their key and deduplicated on link, plus the predefined responses shown (canned answer or disclaimers)
 under `"predefined"` (`type: "predefined"`, `title` and `link` from predefined_responses.yaml; title
 defaults to the topic, link may be empty; none for blocked replies); `sources_md` is all of them as one
@@ -206,8 +230,8 @@ of `get_concept_graph` / `get_concept_connections`, the search words of `find_co
 - `{"type": "token", "text"}` — one token of the agent's provisional answer
 - `{"type": "reset"}` — new model turn: discard the tokens streamed so far
 - `{"type": "sources", sources, sources_md, kg}` — the agent finished; its documentation sources and graphs
-  (same values as in `done` unless the answer is blocked, sent early so a UI can show them
-  while the guardrail and follow-up steps still run)
+  (sent early so a UI can show them while the guardrail and follow-up steps still run; `done`
+  has the final values: cleared if the answer is blocked, plus any papers `related_work` found)
 - `{"type": "done", answer, blocked, topics, followups, sources, sources_md, kg, mcp_errors}` — final state; the done answer is
   authoritative (an output-guardrail block, disclaimers, canned replies may replace the streamed text;
   `blocked` says which guardrail stopped it: `"input"` (the question was refused) or `"output"` (the

@@ -2,6 +2,7 @@ import asyncio
 import json
 import time
 
+import pytest
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 
 from r_assist import prompts
@@ -70,9 +71,9 @@ class FakeAgent:
 class StepLLM:
     """Fake completion LLM answering by workflow step, not call order: the input guardrail and the
     classifier run side by side, so which calls first varies. replies are in workflow order (input
-    guardrail, contextualize when there is history, classifier, output check, follow-ups); a step
-    past the end gets "". wrap: e.g. _blocks, for Responses API content."""
-    STEPS = ["guardrail", "contextualize", "classify", "output", "followups"]
+    guardrail, contextualize when there is history, classifier, output check, follow-ups, related
+    terms); a step past the end gets "". wrap: e.g. _blocks, for Responses API content."""
+    STEPS = ["guardrail", "contextualize", "classify", "output", "followups", "related"]
 
     def __init__(self, replies, wrap=lambda text: text):
         self.replies, self.wrap, self.contextualized = list(replies), wrap, False
@@ -85,6 +86,8 @@ class StepLLM:
             return "contextualize"
         if role == "system":
             return "classify"
+        if prompts.RELATED_KEYWORDS_HUMAN and text.startswith(prompts.RELATED_KEYWORDS_HUMAN.split("{")[0]):
+            return "related"
         return "output" if text.startswith(prompts.OUTPUT_GUARDRAIL_HUMAN.split("{")[0]) else "followups"
 
     async def ainvoke(self, messages):
@@ -237,10 +240,12 @@ def test_stream_chat_emits_progress_tokens_and_done():
         return [e async for e in stream_chat(graph, "q", [])]
 
     events = [json.loads(line.removeprefix("data: ")) for line in asyncio.run(collect())]
-    # every node start is announced, in workflow order; the guardrail and classifier start together
+    # every node start is announced, in workflow order; the guardrail and classifier start together,
+    # and so do the output check and follow-ups; the covid disclaimer is appended after both
     nodes = [e["node"] for e in events if e["type"] == "node"]
     assert nodes[0] == "contextualize" and set(nodes[1:3]) == {"input_guardrail", "classify"}, nodes
-    assert nodes[3:] == ["agent", "output_guardrail", "append_disclaimer", "suggest_followups"], nodes
+    assert nodes[3] == "main_agent" and set(nodes[4:6]) == {"output_guardrail", "suggest_followups"}, nodes
+    assert nodes[6:] == ["append_disclaimer"], nodes
     # the agent's tool call surfaces as a status event
     assert {"type": "status", "text": "calling search_docs"} in events
     # sources go out as soon as the agent node ends, before output_guardrail starts
@@ -284,18 +289,33 @@ def test_output_content_filter_counts_as_block():
     assert state["answer"] == REJECT
 
 
+def test_no_disclaimer_no_append_step():
+    from r_assist.api import stream_chat
+
+    # llm calls: guardrail "No", classifier "- none" (no "a" topic), output check "Yes", followups "- none"
+    graph = build_graph(StepLLM(["No", "- none", "Yes", "- none"]), FakeAgent(), PREDEFINED)
+
+    async def collect():
+        return [json.loads(e.removeprefix("data: ")) async for e in stream_chat(graph, "q", [])]
+
+    events = asyncio.run(collect())
+    assert "append_disclaimer" not in [e.get("node") for e in events]
+    assert events[-1]["answer"] == "Agent answer about BDC."
+
+
 def test_stream_blocked_answer_replaced_in_done():
     from r_assist.api import stream_chat
 
-    # llm calls: guardrail "No", classifier "- covid", output check "No"
-    graph = build_graph(StepLLM(["No", "- covid", "No"]), FakeAgent(), PREDEFINED)
+    # llm calls: guardrail "No", classifier "- covid", output check "No", follow-ups (dropped with the answer)
+    graph = build_graph(StepLLM(["No", "- covid", "No", "- Another question?"]), FakeAgent(), PREDEFINED)
 
     async def collect():
         return [json.loads(e.removeprefix("data: ")) async for e in stream_chat(graph, "q", [])]
 
     events = asyncio.run(collect())
     assert any(e["type"] == "token" for e in events)  # the provisional answer did stream
-    assert events[-2] == {"type": "node", "node": "output_guardrail"}  # nothing runs after the block
+    # follow-ups ran alongside the output check; nothing else runs after the block
+    assert {e["node"] for e in events[-3:-1]} == {"output_guardrail", "suggest_followups"}, events
     assert events[-1] == {"type": "done", "answer": REJECT, "blocked": "output", "topics": ["covid"],
                           "followups": [], "sources": {}, "sources_md": "", "kg": [],
                           "mcp_errors": []}
@@ -425,6 +445,79 @@ def test_mcp_servers_yaml():
     assert "prompt" not in servers["dug_mcp"], "r-assist's key, never handed to the transport"
 
 
+def test_mcp_clients_share_one_ssl_context():
+    """Each MCP tool call opens a fresh session, so a new HTTP client: by default httpx reloads the
+    certificate bundle for every one (~95 ms with the event loop blocked)."""
+    from pathlib import Path
+
+    from r_assist.agent import load_mcp_servers
+
+    servers = load_mcp_servers(Path("examples/bdc"))
+    a, b = servers["r_doc_mcp"]["httpx_client_factory"](), servers["dug_mcp"]["httpx_client_factory"]()
+    assert a._transport._pool._ssl_context is b._transport._pool._ssl_context
+
+
+def test_keep_session_server(monkeypatch):
+    """A keep_session server (a real stateless FastMCP one, in process) is called over one kept session:
+    one request per call. A failed request closes that session without cancelling the task that opened
+    it; the call retries on a fresh session, and recheck's rebuild opens a new kept one."""
+    import httpx
+    from mcp.server.fastmcp import FastMCP
+
+    from r_assist import agent
+
+    server = FastMCP("t", stateless_http=True, json_response=True)
+
+    @server.tool()
+    def echo(text: str) -> str:
+        return text
+
+    app = server.streamable_http_app()
+    sent, down = [], {"once": False}
+
+    async def hook(request):  # records each JSON-RPC method sent; fails one request when asked
+        sent.append(json.loads(request.content).get("method") if request.method == "POST" else request.method)
+        if down["once"]:
+            down["once"] = False
+            raise httpx.ConnectError("All connection attempts failed")
+
+    def http_client(headers=None, timeout=None, auth=None):
+        return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://127.0.0.1:8001",
+                                 headers=headers, timeout=timeout, auth=auth, event_hooks={"request": [hook]})
+
+    monkeypatch.setattr(agent, "_http_client", http_client)
+    monkeypatch.setattr(agent, "_servers_yaml", lambda data_dir: {
+        "docs": {"transport": "streamable_http", "url": "http://127.0.0.1:8001/mcp", "keep_session": True}})
+    monkeypatch.setattr(agent, "create_deep_agent", lambda llm, tools, **kw: tools)
+
+    async def scenario():
+        async with server.session_manager.run():
+            _, (tool,), errors = await agent.build_agent(None)
+            assert errors == []
+            sent.clear()
+            results = await asyncio.gather(*(tool.ainvoke({"text": f"q{n}"}) for n in range(5)))
+            assert [r[0]["text"] for r in results] == [f"q{n}" for n in range(5)], results
+            assert sent == ["tools/call"] * 5, f"one request per call over the kept session, got {sent}"
+
+            agent.recheck.clear()
+            down["once"] = True  # the kept session's next request fails, which closes it
+            assert (await tool.ainvoke({"text": "after"}))[0]["text"] == "after", "retried on a fresh session"
+            await asyncio.sleep(0)
+            assert agent._kept["docs"][1].done() and agent.recheck.is_set()
+
+            _, (tool,), _ = await agent.build_agent(None)  # recheck's rebuild
+            sent.clear()
+            assert (await tool.ainvoke({"text": "again"}))[0]["text"] == "again"
+            assert sent == ["tools/call"], sent
+
+    try:
+        # wait_for: a call left waiting on the closed session would hang the test instead of failing it
+        asyncio.run(asyncio.wait_for(scenario(), 30))  # reaching the end: the closing session cancelled nothing here
+    finally:
+        agent.close_sessions()
+        agent.recheck.clear()
+
+
 def test_mcp_server_url_from_env(monkeypatch):
     from pathlib import Path
 
@@ -456,7 +549,7 @@ def test_unreachable_mcp_server_is_skipped(monkeypatch, caplog):
         "r_doc_mcp": {}, "dug_mcp": {"stand_ins": ["search_concepts", "get_concept_graph"]}})
     monkeypatch.setattr(agent, "create_deep_agent", lambda llm, tools, **kw: tools)
 
-    tools, errors = asyncio.run(agent.build_agent(None))
+    _, tools, errors = asyncio.run(agent.build_agent(None))
     assert errors == ["dug_mcp: ConnectionError: Client error '403 Forbidden'"]
     assert "dug_mcp" in caplog.text
     # the prompt names dug's tools: their stand-ins error, so the agent says the service is down
@@ -476,8 +569,8 @@ def test_mcp_servers_rechecked(monkeypatch, caplog):
 
     recheck = asyncio.Event()
     builds = iter([ValueError("bad yaml"),
-                   ("agent1", ["r_doc_mcp: ConnectError: x"]),  # went down mid-session
-                   ("agent2", [])])                              # back
+                   ("agent1", [], ["r_doc_mcp: ConnectError: x"]),  # went down mid-session
+                   ("agent2", [], [])])                              # back
 
     async def build_agent(llm):
         result = next(builds, None)
@@ -489,7 +582,7 @@ def test_mcp_servers_rechecked(monkeypatch, caplog):
         return result
 
     monkeypatch.setattr(api, "build_agent", build_agent)
-    monkeypatch.setattr(api, "build_graph", lambda llm, agent, predefined: agent)
+    monkeypatch.setattr(api, "build_graph", lambda llm, agent, predefined, tools=(): agent)
     monkeypatch.setattr(api, "recheck", recheck)
     monkeypatch.setattr(api, "MCP_RETRY_SECONDS", 3600)
     monkeypatch.setattr(api, "graph", "agent0")
@@ -571,3 +664,152 @@ def test_attached_sources_join_the_doc_sources():
     assert state["sources"] == {**SOURCES, "dug": [fhs, aric]}
     assert state["sources_md"] == (SOURCES_MD + "\n- [Framingham Cohort](https://x/study?phs000007) (dbgap-study)"
                                                "\n- [ARIC](https://x/study?phs000280) (dbgap-study)")
+
+
+# related_work: papers on the question's topic from the related tool (BDC: artie-mcp's search_publications)
+P1 = {"title": "Asthma paper", "link": "https://p/1", "type": "publication"}
+
+
+@pytest.fixture
+def related(monkeypatch):
+    monkeypatch.setattr(prompts, "RELATED_TOOL", "search_publications")
+    monkeypatch.setattr(prompts, "RELATED_KEYWORDS_HUMAN", "Related terms for {input} / {answer}")
+
+
+def paper_tool(found, raises=None, delay=0):
+    """A stand-in search_publications: (tool, the kwargs of each call). Like an MCP tool, it returns
+    (text, artifact) with the papers as structured content "sources"."""
+    from langchain_core.tools import StructuredTool
+
+    calls = []
+
+    async def search(**kwargs):
+        calls.append(kwargs)
+        await asyncio.sleep(delay)
+        if raises:
+            raise raises
+        return json.dumps({"total": len(found)}), {"structured_content": {"sources": {"artie": found}}}
+
+    tool = StructuredTool.from_function(
+        coroutine=search, name="search_publications", description="d", response_format="content_and_artifact",
+        args_schema={"type": "object", "properties": {"keywords": {"type": "array", "items": {"type": "string"}}}})
+    return tool, calls
+
+
+def invoke(replies, tools=()):
+    graph = build_graph(StepLLM(replies), FakeAgent(), PREDEFINED, tools=tools)
+    return asyncio.run(graph.ainvoke({"input": "q", "chat_history": []}))
+
+
+def test_related_papers_join_the_sources_once(related):
+    # replies: guardrail, classify, output check, follow-ups, related terms
+    tool, calls = paper_tool([P1, {"title": "FAQ title", "link": "https://x/faq", "type": "publication"}])
+    state = invoke(["No", "- none", "Yes", "- none", "- asthma\n- microbiome"], tools=[tool])
+    assert calls == [{"keywords": ["asthma", "microbiome"]}]
+    assert state["sources"] == SOURCES | {"artie": [P1]}  # https://x/faq is already listed
+    assert state["sources_md"] == SOURCES_MD + "\n- [Asthma paper](https://p/1) (publication)"
+
+
+def test_related_terms_capped_and_none_skips(related):
+    tool, calls = paper_tool([P1])
+    invoke(["No", "- none", "Yes", "- none", "- a\n- b\n- c\n- d"], tools=[tool])
+    assert calls == [{"keywords": ["a", "b", "c"]}]  # the prompt asks for 1 to 3
+    tool, calls = paper_tool([P1])
+    state = invoke(["No", "- none", "Yes", "- none", "- none"], tools=[tool])
+    assert calls == [] and state["sources"] == SOURCES
+
+
+def test_rejected_answer_drops_related_papers(related):
+    tool, _ = paper_tool([P1])
+    state = invoke(["No", "- none", "No", "- none", "- asthma"], tools=[tool])
+    assert state["blocked"] == "output" and state["sources"] == {} and state["sources_md"] == ""
+
+
+def test_related_work_failure_keeps_the_answer(related):
+    from r_assist.agent import _stand_in
+
+    # the tool raising, and artie-mcp down (its stand-in: no related_work step at all)
+    for tool in (paper_tool([], raises=ConnectionError("down"))[0], _stand_in("search_publications", "artie_mcp")):
+        state = invoke(["No", "- none", "Yes", "- none", "- asthma"], tools=[tool])
+        assert state["answer"] == "Agent answer about BDC." and state["sources"] == SOURCES
+
+
+def test_no_related_node_without_its_tool(related, monkeypatch):
+    tool, _ = paper_tool([])
+    assert "related_work" not in build_graph(StepLLM([]), FakeAgent(), PREDEFINED).nodes
+    assert "related_work" in build_graph(StepLLM([]), FakeAgent(), PREDEFINED, tools=[tool]).nodes
+    monkeypatch.setattr(prompts, "RELATED_TOOL", None)  # the default config names no related tool
+    assert "related_work" not in build_graph(StepLLM([]), FakeAgent(), PREDEFINED, tools=[tool]).nodes
+
+
+def test_slow_related_tool_does_not_hold_up_the_answer(related, monkeypatch):
+    from r_assist import graph
+
+    # e.g. the artie API hanging: finish (and so "done") must not wait on an extra
+    monkeypatch.setattr(graph, "RELATED_TIMEOUT", 0.2)
+    tool, _ = paper_tool([P1], delay=3)
+    start = time.monotonic()
+    state = invoke(["No", "- none", "Yes", "- none", "- asthma"], tools=[tool])
+    assert time.monotonic() - start < 2 and state["sources"] == SOURCES
+
+
+def test_related_papers_capped_at_three(related):
+    # ranked by word matches, so the tail is the noise: keep the top 3
+    papers = [{"title": f"P{n}", "link": f"https://p/{n}", "type": "publication"} for n in range(5)]
+    tool, _ = paper_tool(papers)
+    state = invoke(["No", "- none", "Yes", "- none", "- asthma"], tools=[tool])
+    assert state["sources"]["artie"] == papers[:3]
+
+
+def test_drawing_shows_the_agent_inside():
+    from deepagents import create_deep_agent
+    from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
+
+    from r_assist.graph import drawing
+
+    # the agent runs inside the agent node's function, so get_graph(xray=True) can't see it
+    agent = create_deep_agent(GenericFakeChatModel(messages=iter([])), [], system_prompt="")
+    m = drawing(build_graph(None, agent, PREDEFINED), agent,
+                {"r_doc_mcp": {}, "dug_mcp": {"interceptors": ["dug_kg"]}})
+    # the agent is a box in the main flow: edges go to and from the box, not into its steps
+    assert "subgraph main_agent" in m and ".-> main_agent;" in m and "main_agent --> output_guardrail;" in m
+    # inside: model and tools calling each other, and the servers the tools call
+    assert r"main_agent\3amodel -.-> main_agent\3atools;" in m and r"main_agent\3atools -.-> main_agent\3amodel;" in m
+    assert r"main_agent\3atools -.-> main_agent\3ar_doc_mcp;" in m and "(dug_mcp + dug_kg)" in m
+    # deepagents' middleware hooks and the model's self-loop are internals, left out
+    assert "Middleware" not in m and r"main_agent\3amodel -.-> main_agent\3amodel;" not in m
+    assert "__end__([<p>__end__</p>]):::last" in m  # still styled as the end
+    # both guardrails' exits say "blocked", as the state's blocked field does
+    assert "&nbsp;blocked or canned&nbsp;" in m and "&nbsp;done or blocked&nbsp;" in m
+
+
+def test_related_terms_lose_quotes_and_dots(related):
+    tool, calls = paper_tool([P1])
+    invoke(["No", "- none", "Yes", "- none", '- "asthma"\n- none.'], tools=[tool])
+    assert calls == [{"keywords": ["asthma"]}]
+
+
+def test_prose_or_empty_reply_skips_search(related):
+    for reply in ("Asthma is a lung disease.", ""):
+        tool, calls = paper_tool([P1])
+        state = invoke(["No", "- none", "Yes", "- none", reply], tools=[tool])
+        assert calls == [] and state["sources"] == SOURCES
+
+
+def test_related_work_failure_is_logged(related, caplog):
+    tool, _ = paper_tool([], raises=ConnectionError("artie down"))
+    invoke(["No", "- none", "Yes", "- none", "- asthma"], tools=[tool])
+    assert "related_work" in caplog.text and "ConnectionError: artie down" in caplog.text
+
+
+def test_no_related_node_for_a_stand_in(related):
+    from r_assist.agent import _stand_in
+
+    # artie-mcp down at startup: its stand-in only says so, not worth an LLM call per chat
+    tool = _stand_in("search_publications", "artie_mcp")
+    assert "related_work" not in build_graph(StepLLM([]), FakeAgent(), PREDEFINED, tools=[tool]).nodes
+
+
+def test_missing_related_tool_is_logged(related, caplog):
+    build_graph(StepLLM([]), FakeAgent(), PREDEFINED, tools=[])
+    assert "related_tool 'search_publications'" in caplog.text

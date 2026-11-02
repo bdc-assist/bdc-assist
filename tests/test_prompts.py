@@ -81,7 +81,9 @@ def test_agent_system_takes_server_prompts_from_mcp_servers_yaml(tmp_path):
     assert "search_docs searches" in text and "search_concepts" in text and "{tools}" not in text
     assert text.index("search_docs searches") < text.index("search_concepts"), "mcp_servers.yaml order"
     assert 'answering. \n<tools server="r_doc_mcp">\n- search_docs' in text, "each server's prompt in its own tag"
-    assert 'not catalog results), and do not guess.\n</tools>\nNever conclude' in text
+    assert ('not catalog results), and do not guess.\n</tools>\n<tools server="artie_mcp">\n- search_publications'
+            in text)
+    assert 'publication search is currently unavailable.\n</tools>\nNever conclude' in text
     for f in ("project.yaml", "prompts.yaml"):
         (tmp_path / f).write_text((bdc / f).read_text(encoding="utf-8"), encoding="utf-8")
     servers = yaml.safe_load((bdc / "mcp_servers.yaml").read_text(encoding="utf-8"))
@@ -99,3 +101,39 @@ def test_followups_count_comes_from_project_yaml():
     assert p.FOLLOWUPS == 3
     assert "exactly 3 short follow-up questions" in p.SUGGEST_FOLLOWUPS_HUMAN, "${followups} filled from project.yaml"
     assert _reload(ROOT / "examples" / "bdc").FOLLOWUPS == 3, "matches the verbatim BDC prompts"
+
+
+def test_bdc_publication_prompt_retries_argument_errors():
+    # a bad argument (limit 100, "heart") is the agent's to fix, not an outage to report
+    text = _reload(ROOT / "examples" / "bdc").agent_system()
+    assert "If it returns an error about its arguments, fix them and call again" in text
+
+
+def test_bdc_publication_prompt_lists_only_fitting_papers():
+    # the API matches any word anywhere, so some results are off-topic
+    text = _reload(ROOT / "examples" / "bdc").agent_system()
+    assert "List the returned papers that fit the question" in text
+
+
+def test_bdc_finds_related_papers():
+    p = _reload(ROOT / "examples" / "bdc")
+    assert p.RELATED_TOOL == "search_publications"
+    assert "- none" in p.RELATED_KEYWORDS_HUMAN.format(input="q", answer="a")
+    # every paper in the list used BDC: a "BioData Catalyst (BDC)" term matched all of them (live, 2026-10-30)
+    assert "Never list BDC or BioData Catalyst itself" in p.RELATED_KEYWORDS_HUMAN
+    # one search ORs every word: filler words and broad programs (TOPMed) swamped the topic (live, 2026-10-30)
+    assert "the question's main topic first" in p.RELATED_KEYWORDS_HUMAN
+
+
+def test_related_tool_needs_its_prompt(tmp_path):
+    # config/'s files fill every placeholder and prompt key, so the only fault is the missing prompt
+    project = (ROOT / "config" / "project.yaml").read_text(encoding="utf-8") + "\nrelated_tool: t\n"
+    (tmp_path / "project.yaml").write_text(project, encoding="utf-8")
+    (tmp_path / "prompts.yaml").write_text((ROOT / "config" / "prompts.yaml").read_text(encoding="utf-8"),
+                                           encoding="utf-8")
+    with pytest.raises(ValueError, match="related_keywords_human"):
+        _reload(tmp_path)
+
+
+def test_default_config_has_no_related_step():
+    assert _reload(ROOT / "config").RELATED_TOOL is None
