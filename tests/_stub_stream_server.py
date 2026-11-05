@@ -10,6 +10,7 @@ By default: a docs answer with a small knowledge graph and the covid disclaimer 
   canned     an "r" topic matches: its canned reply, agent skipped
   nosources  the agent answers without searching: no sources, no graph
   crash      the agent fails mid-answer: the stream ends with {"type": "error"}
+  get_help   a login-loop answer citing the BDC Get Help page (a form; for the client's form prefill demo), no graph
 Graph keywords are named after the Dug tool whose real result (tests/fixtures/) they replay, and
 combine: each adds its calls, so "concept_graph_2 concept_connections" draws asthma and COPD
 plus asthma's related concepts.
@@ -54,6 +55,9 @@ for _keyword in KEYWORDS:
                           for i, kg in enumerate(_saved["kg"])]
 
 
+GET_HELP_URL = "https://biodatacatalyst.nhlbi.nih.gov/help/get-help/"
+
+
 class SlowAgent:
     async def astream(self, payload, stream_mode=None):
         question = payload["messages"][0]["content"]
@@ -65,7 +69,12 @@ class SlowAgent:
             content="Let me look that up. ", id="m1",
             tool_call_chunks=[{"name": "search_docs", "args": "", "id": "t1", "index": 0}]), {})
         await asyncio.sleep(1.5)
-        words = ("This project's **documentation chatbot** answers questions about the configured docs. "
+        help_page = _has(question, "get_help")
+        words = ("Login loops are usually a cookie or account-linking problem. Clear cookies for the BDC and "
+                 "platform sites, or try a private window, and check that your eRA Commons account is linked in "
+                 "your platform profile. If it still loops, the [BDC help desk](" + GET_HELP_URL + ") can look at "
+                 "your account." if help_page else
+                 "This project's **documentation chatbot** answers questions about the configured docs. "
                  "See [getting started](https://example.org/docs/start).").split()
         for i, w in enumerate(words):
             await asyncio.sleep(0.12)
@@ -81,6 +90,14 @@ class SlowAgent:
             {"content": "Start here ... (again)", "score": 0.9, "metadata": {"page_url": "https://example.org/docs/start",
                                                                               "doc_type": "docs", "hierarchy": "Getting started"}},
         ]
+        if help_page:  # the BDC website page with the Get Help form, and a docs page
+            chunks = [
+                {"content": "Get Help ...", "score": 0.9, "metadata": {"page_url": GET_HELP_URL,
+                                                                       "doc_type": "page", "title": "Get Help"}},
+                {"content": "Logging in ...", "score": 0.8, "metadata": {
+                    "page_url": "https://bdcatalyst.gitbook.io/biodata-catalyst-documentation",
+                    "doc_type": "docs", "hierarchy": "Logging in to BDC"}},
+            ]
         # a knowledge graph as an interceptor attaches it (examples/bdc/interceptors.py), for kg_demo.html
         kg = {"tool": "get_concept_graph", "args": {"concept_id": "MONDO:0005068"}, "label": "myocardial infarction concept graph",
               "seeds": ["MONDO:0005068"],
@@ -96,7 +113,8 @@ class SlowAgent:
                        + [{"subject": "phv1", "object": "phs000007"}, {"subject": "phv2", "object": "phs000007"},
                           {"subject": "phv3", "object": "phs000280"}]}
         # structured content per graph call, as the interceptor attaches it
-        attached = [a for word, calls in GRAPHS.items() if _has(question, word) for a in calls] or [{"kg": kg}]
+        attached = [a for word, calls in GRAPHS.items() if _has(question, word) for a in calls] or (
+            [] if help_page else [{"kg": kg}])
         yield "values", {"messages": [
             AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": question}, "id": "t1"}]
                       + [{"name": a["kg"]["tool"], "args": a["kg"]["args"], "id": f"t{i + 2}"} for i, a in enumerate(attached)]),
