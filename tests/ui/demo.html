@@ -53,7 +53,7 @@ const NODE_LABELS = {
   input_guardrail: "screening the question…",
   contextualize: "reading the conversation…",
   classify: "checking known topics…",
-  agent: "thinking…",
+  main_agent: "thinking…",
   output_guardrail: "reviewing the answer…",
   append_disclaimer: "adding disclaimers…",
   suggest_followups: "suggesting follow-ups…",
@@ -121,12 +121,12 @@ form.onsubmit = async (e) => {
         if (!part.startsWith("data: ")) continue;
         const ev = JSON.parse(part.slice(6));
         if (ev.type === "node") {
-          if (ev.node !== "agent" && bot.text.textContent && !bot.text.classList.contains("md")) {
+          if (ev.node !== "main_agent" && bot.text.textContent && !bot.text.classList.contains("md")) {
             // agent finished streaming: render its text now, while the guardrail and
             // follow-up nodes still run; "done" re-renders with the authoritative answer
             renderMd(bot.text, bot.text.textContent);
           }
-          bot.status.textContent = NODE_LABELS[ev.node] || ev.node;
+          bot.status.textContent = ev.label || NODE_LABELS[ev.node] || ev.node;  // label: a config node's, in project.yaml
         } else if (ev.type === "status") {
           bot.status.textContent = ev.text;
         } else if (ev.type === "sources") {

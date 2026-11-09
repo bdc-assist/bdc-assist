@@ -135,7 +135,9 @@ related_keywords_human: |
   spelled-out names of acronyms you already listed, and broad programs such as TOPMed unless the question is about
   that program itself.
   Never list BDC or BioData Catalyst itself as a term: every paper in the list used it, so it matches them all.
-  If the question is not about a research topic (e.g. accounts, login, costs, how to use a tool), return ONLY "- none".
+  Related papers are not needed for every question: list terms only when papers on its research topic would help
+  this user. Return ONLY "- none" for questions about using BDC itself (what BDC or one of its tools or programs is,
+  accounts, login, data access requests, costs, how to use a tool) and for questions with no research topic.
   The response can ONLY be a markdown list ("- term1 \n- term2") or "- none", with no additional text or explanation.
 
   <question>
@@ -145,3 +147,24 @@ related_keywords_human: |
   <answer>
   {answer}
   </answer>
+
+related_filter_human: |
+  You decide which papers to show under an answer as related work. They come from a search of the curated list of
+  published papers that used ${short_name}; the search matches single words, so some results share only a word, a broad
+  research area, or a program such as TOPMed with the question.
+  Keep a paper only if it clearly fits the question's topic: the same disease or trait, cohort or dataset, or research
+  method. If none clearly fits, keep none: no papers is better than loosely related ones.
+  The response can ONLY be a markdown list of the numbers of the papers to keep, best fit first ("- 2 \n- 1"), or
+  "- none", with no additional text or explanation.
+
+  <question>
+  {input}
+  </question>
+
+  <answer>
+  {answer}
+  </answer>
+
+  <papers>
+  {papers}
+  </papers>
