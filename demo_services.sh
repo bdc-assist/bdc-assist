@@ -3,7 +3,9 @@
 #   1. r-doc-mcp MCP server (HTTP) from DOC_MCP_DIR (./.env, default ../bdc-doc-mcp) on MCP_PORT
 #      (that repo's .env, default 8001), health-checked at the r_doc_mcp url in
 #      <CONFIG_DIR>/mcp_servers.yaml — the URL r-assist actually connects to
-#   2. r-assist API on API_PORT (./.env, default 8010)
+#   2. artie-mcp MCP server (HTTP) from ARTIE_MCP_DIR (./.env, default ../artie-mcp), only when
+#      <CONFIG_DIR>/mcp_servers.yaml has an artie_mcp block (examples/bdc), health-checked at its url
+#   3. r-assist API on API_PORT (./.env, default 8010)
 # Embedding/LLM endpoints are whatever the two .env files point at; start those yourself.
 # Services already running are left alone; Ctrl-C stops only what this script started.
 # Each service gets START_TIMEOUT seconds (./.env, default 30) to answer.
@@ -20,19 +22,21 @@ env_get() {  # env_get <file> <key> <default> — shell env wins, then the .env,
 }
 
 DOC_MCP_DIR=$(env_get ./.env DOC_MCP_DIR ../bdc-doc-mcp)
+ARTIE_MCP_DIR=$(env_get ./.env ARTIE_MCP_DIR ../artie-mcp)
 START_TIMEOUT=$(env_get ./.env START_TIMEOUT 30)
 MCP_PORT=$(env_get "$DOC_MCP_DIR/.env" MCP_PORT 8001)
 API_PORT=$(env_get ./.env API_PORT 8010)
 CONFIG_DIR=$(env_get ./.env CONFIG_DIR config)
-mcp_url() {  # mcp_url <yaml> <server> <default> — shell DOC_RAG_MCP_URL wins (test hook), then the yaml block's url:, then default
-  local v="${DOC_RAG_MCP_URL:-}"
-  if [ -z "$v" ] && [ -f "$1" ]; then
+mcp_url() {  # mcp_url <yaml> <server> <default> — the yaml block's url:, then default
+  local v=""
+  if [ -f "$1" ]; then
     v=$(sed -n "/^$2:/,/^[^[:space:]#]/s/^[[:space:]]*url:[[:space:]]*//p" "$1" | head -1 | sed 's/\r$//;s/[[:space:]]*#.*//;s/^["'\'']//;s/["'\'']$//')
   fi
   echo "${v:-$3}"
 }
 
-DOC_RAG_MCP_URL=$(mcp_url "$CONFIG_DIR/mcp_servers.yaml" r_doc_mcp "http://127.0.0.1:8001/mcp")
+DOC_RAG_MCP_URL=${DOC_RAG_MCP_URL:-$(mcp_url "$CONFIG_DIR/mcp_servers.yaml" r_doc_mcp "http://127.0.0.1:8001/mcp")}  # shell wins: test hook
+ARTIE_MCP_URL=$(mcp_url "$CONFIG_DIR/mcp_servers.yaml" artie_mcp "")  # empty: this config doesn't use artie-mcp
 
 up() { curl -s -o /dev/null --max-time 2 "$1"; }  # any HTTP response counts, even 4xx
 
@@ -66,7 +70,20 @@ else
     "server binds MCP_PORT=$MCP_PORT; if that mismatches the url in $CONFIG_DIR/mcp_servers.yaml, fix it (see /tmp/r_doc_mcp.log)"
 fi
 
-# 2. r-assist API
+# 2. artie-mcp, if the config uses it
+if [ -z "$ARTIE_MCP_URL" ]; then
+  :
+elif up "$ARTIE_MCP_URL"; then
+  echo "artie-mcp: already running ($ARTIE_MCP_URL)"
+elif [ ! -d "$ARTIE_MCP_DIR" ]; then
+  echo "artie-mcp: no checkout at $ARTIE_MCP_DIR (set ARTIE_MCP_DIR in ./.env); publication search stays unavailable" >&2
+else
+  uv run --directory "$ARTIE_MCP_DIR" python -m artie_mcp.server --http >/tmp/r_artie_mcp.log 2>&1 &
+  pids+=($!)
+  wait_for artie-mcp "$ARTIE_MCP_URL" "$START_TIMEOUT"     "server binds its MCP_PORT (default 8002); if that mismatches the url in $CONFIG_DIR/mcp_servers.yaml, fix it (see /tmp/r_artie_mcp.log)"
+fi
+
+# 3. r-assist API
 if up "http://127.0.0.1:$API_PORT/health"; then
   echo "r-assist: already running"
 else

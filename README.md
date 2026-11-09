@@ -88,7 +88,8 @@ Start the model endpoints first; the scripts don't: the embedding endpoint in r-
 (default local Ollama: `ollama serve`) and the completion endpoint in this `.env` (nothing to start
 for hosted OpenAI). Neither is checked at startup — a missing one fails at the first chat.
 
-Everything at once (doc MCP server + r-assist; Ctrl-C stops what it started):
+Everything at once (doc MCP server, artie-mcp when `<CONFIG_DIR>/mcp_servers.yaml` lists `artie_mcp`, and
+r-assist; Ctrl-C stops what it started):
 
 ```bash
 ./demo_services.sh       # Linux / Git Bash
@@ -101,7 +102,10 @@ Or by hand:
 # 1. doc MCP server, port 8001
 cd ../bdc-doc-mcp && uv run python -m r_doc_mcp.mcp_server --http
 
-# 2. r-assist, port API_PORT (default 8010)
+# 2. artie-mcp, port 8002 (only for a config that lists artie_mcp, e.g. examples/bdc)
+cd ../artie-mcp && uv run python -m artie_mcp.server --http
+
+# 3. r-assist, port API_PORT (default 8010)
 uv run uvicorn r_assist.api:app --port "${API_PORT:-8010}"
 ```
 
@@ -174,8 +178,9 @@ edit each repo's `config/*.yaml` for your own project.
    ```bash
    cd r-assist && bash demo_services.sh        # PowerShell: .\demo_services.ps1
    ```
-   This starts r-doc-mcp's MCP server on `MCP_PORT` (8001) and the r-assist API on `API_PORT`
-   (8010), reuses either if already up, and stops what it started on Ctrl-C. The bot connects to
+   This starts r-doc-mcp's MCP server on `MCP_PORT` (8001), artie-mcp on 8002 (from
+   `ARTIE_MCP_DIR`, default `../artie-mcp`; only when the config lists `artie_mcp`, as
+   `examples/bdc` does) and the r-assist API on `API_PORT` (8010), reuses any already up, and stops what it started on Ctrl-C. The bot connects to
    every server listed in `<CONFIG_DIR>/mcp_servers.yaml` at startup; one that is unreachable is
    logged as a warning and skipped (its `stand_ins` take its place), then retried every
    `MCP_RETRY_SECONDS` until its tools load. One that goes down mid-session is dropped the same way:
@@ -193,7 +198,7 @@ it needs no server besides r-doc-mcp. Each example keeps its own data, named aft
 folder (`data/fastapi/` in r-doc-builder, the `fastapi` collection in r-doc-mcp), so switching back
 and forth never overwrites the other's; switch by editing the three `.env` files and restarting.
 
-If something is already listening on 8000, 8001 or 8010 (another stack, an old run), stop it
+If something is already listening on 8000, 8001, 8002 or 8010 (another stack, an old run), stop it
 first: `demo_services` would silently reuse it. Re-pushing content while the MCP server is up
 requires restarting the MCP server (rerun `demo_services`).
 

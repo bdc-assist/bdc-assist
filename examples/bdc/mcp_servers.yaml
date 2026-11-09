@@ -53,6 +53,7 @@ dug_mcp:
       not catalog results), and do not guess.
 
 # BDC publication search (artie-mcp over github.com/bdc-assist/artie-api; dev, RENCI VPN)
+# demo_services.sh/.ps1 start it from ARTIE_MCP_DIR and health-check the url below, so keep the key name.
 artie_mcp:
   transport: streamable_http
   url: http://127.0.0.1:8002/mcp
