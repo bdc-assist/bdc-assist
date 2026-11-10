@@ -10,11 +10,18 @@ Sibling repos: **r-doc-mcp** (the doc search MCP server) and **r-doc-builder** (
 
 ## Architecture
 
-![r-assist workflow](docs/workflow.png)
+![r-assist workflow](docs/workflow_general.png)
 
-The BDC config. [docs/workflow_detailed.png](docs/workflow_detailed.png) also draws inside
-`main_agent`: the agent's own `model ⇄ tools` loop and the MCP servers its tools call. Redraw both
-with `uv run python docs/draw_workflow.py` (rendered by mermaid.ink). Not drawn: deepagents'
+General purpose: each slot holds a placeholder for nodes of a config's own (`before_agent_nodes`,
+`after_agent_nodes`, `after_finish_nodes`; see "nodes of your own" below), and the optional steps are
+on. [docs/workflow_general_detailed.png](docs/workflow_general_detailed.png) also draws inside
+`main_agent`: the agent's own `model ⇄ tools` loop and the MCP servers its tools call (the template's
+`r_doc_mcp`, and a placeholder for more). The BDC config, with its own nodes and servers:
+[docs/workflow_bdc.png](docs/workflow_bdc.png) and
+[docs/workflow_bdc_detailed.png](docs/workflow_bdc_detailed.png). Green (not in workflow_bdc.png):
+what the config alone defines, its own nodes and MCP servers. Their mermaid source, renderable,
+is in [docs/workflow.md](docs/workflow.md). Redraw all five with `uv run python docs/draw_workflow.py`
+(the pictures are rendered by mermaid.ink). Not drawn: deepagents'
 middleware hooks, per-call tool wrappers (one retry, stand-ins for a server that is down), admission
 and the MCP re-check loop in `api.py`.
 
@@ -31,22 +38,59 @@ and the MCP re-check loop in `api.py`.
   publications)
 - `output_guardrail` self-checks the answer against the question; a hard block like the input
   guardrail (a "No" or a provider content filter → canned reject reply, `blocked: "output"`, no
-  disclaimers, follow-ups or related papers; drawn as `finish`'s "done or blocked" edge)
+  disclaimers, follow-ups or `after_finish` steps; drawn as `finish`'s "done or blocked" edge)
 - `suggest_followups` decides if follow-up questions would help and suggests as many as
   `followups` in `config/project.yaml` (default 3; list of strings in the `followups` response
-  field; skipped on refusals/canned answers, dropped on rejects)
-- `related_work` (only when `project.yaml` names a `related_tool` that loaded; BDC:
-  `search_publications`) asks the LLM for 1 to 3 search terms from the question and answer
-  (`related_keywords_human` in prompts.yaml; "- none" for non-research questions) and calls that
-  tool with `{"keywords": [...]}`; the sources its result attaches are related papers, asked for or
-  not, the top 3 kept. A failure or an 8 s timeout means no papers (logged as a warning); a server
-  down at startup (its stand-in loaded) means no `related_work` step until it is back, and a
-  `related_tool` not among the tools is logged as a warning.
-- `output_guardrail`, `suggest_followups` and `related_work` run side by side; `finish` joins them
-  and merges the related papers into `sources` (deduplicated on link; in the `done` event only, not
-  the earlier `sources` one)
+  field; skipped on refusals/canned answers, dropped on rejects). Optional: `followups: 0` leaves the step out
+- nodes of your own (optional): `project.yaml`'s `extra_nodes` maps a slot to its nodes, each a
+  factory in `<config dir>/nodes.py` with its settings under its name:
+
+  ```yaml
+  extra_nodes:
+    before_agent:
+      detect_language:                  # a function in nodes.py
+        label: Checking your language…  # what a web client shows while it runs
+        fields: [user_lang]             # state fields of its own
+        min_words: 3                    # anything else is the node's own
+  ```
+
+  A factory is `(llm, tools, settings) -> async node(state)` (returning a state update) or `None`
+  for no step; `settings` is its mapping above (`{}` if none). Slots: `before_agent` (in order, between `gate` and `main_agent`,
+  on a regular question only; e.g. rewrite `question`, which is what the agent gets; one that
+  returns an `answer` ends the chat with it, like a canned answer: no agent, output check,
+  follow-ups or disclaimers, and `sources` `{}` unless it returns its own),
+  `after_agent` (side by side with the two above; each returns only the `fields` it lists: any
+  other key could clash with a step beside it, so it is logged and dropped. Two `after_agent` nodes
+  listing one field, or one listing a field the workflow already has, fail at startup) and `after_finish` (in order, after `finish` on an answer that passed, before
+  `append_disclaimer`; e.g. reshape `answer`, or add to `sources` what an `after_agent` node
+  found). A node that raises
+  is logged and skipped, and so is one taking longer than its slot's `node_timeout` (a mapping of
+  slot to seconds, 30 for a slot not set); an unknown slot, a name missing from `nodes.py`, or
+  settings that aren't a mapping fail at startup. Several nodes in a slot all go under its one key
+  (`after_agent`'s then run side by side): a key written twice in a config YAML fails at startup,
+  rather than YAML's silent last-one-wins. `label` goes with the node's start event (a step
+  without one gets the client's own text, or its name); `builtin_nodes` labels the built-in steps
+  the same way, e.g. `builtin_nodes: {main_agent: {label: Thinking…}}`. A field in a node's `fields` (e.g.
+  `user_lang`, set by one node and read by a later one) is passed along to your later nodes and
+  returned with the answer (`null` if no node set it, and an `after_agent` node's on a rejected
+  answer); a state field the response leaves out, e.g.
+  `question`, can be listed too. A field a node returns that is neither in some node's `fields` nor
+  the workflow's own is logged and dropped
+- BDC's extra nodes (`examples/bdc/nodes.py`): `related_work` (`after_agent`; runs only when the tool its `tool`
+  setting names is loaded: `search_publications`) finds related papers, asked for or not, and decides twice. Search: the LLM
+  picks 1 to 3 search terms from the question and answer, or "- none" when papers wouldn't help
+  (BDC: questions about using BDC itself; `related_keywords_human` in prompts.yaml), and the tool
+  is called with `{"keywords": [...]}`. Show: the LLM sees the found titles, numbered, and keeps
+  those that clearly fit, best first, or none (`related_filter_human`); up to 3, none the answer
+  already cites, go in its field `related` (the attached sources of the tool's result). `done` and
+  `/chat` return it beside `sources`, not in it: the answer isn't based on them (`null` if none were
+  found, and on a rejected answer). A failure or an 8 s timeout means no papers
+  (logged as a warning); a server down at startup (its stand-in loaded) means no `related_work`
+  step until it is back, and a `tool` not among the tools is logged as a warning.
+- `output_guardrail`, `suggest_followups` and the `after_agent` nodes run side by side; `finish` joins them
 - `append_disclaimer` appends the flag-a disclaimers to an answer that passed (only when a flag-a
-  topic matched)
+  topic matched). Optional: `append_disclaimer: false` leaves the step out (the texts stay in the
+  state's `disclaimers` for an `after_finish` node of your own)
 
 All guardrail/classifier checks use the single completion LLM.
 
@@ -61,7 +105,8 @@ config/prompts.yaml              all prompt texts but the per-server tool guidan
 config/predefined_responses.yaml topic → {response, flag: r|a, link}
 config/mcp_servers.yaml          MCP servers the agent calls and how to use each one's tools (add a block per extra tool server)
 <config dir>/interceptors.py     optional: tool-call interceptors, named per server in mcp_servers.yaml
-examples/bdc/                    the four files as used for NHLBI BioData Catalyst, plus interceptors.py (Dug knowledge graphs),
+<config dir>/nodes.py            optional: extra workflow nodes, named in project.yaml's extra_nodes
+examples/bdc/                    the four files as used for NHLBI BioData Catalyst, plus interceptors.py (Dug knowledge graphs), nodes.py (related_work),
                                  sample_questions.yaml, sample_responses.md (what the API returned for them) and
                                  sample_mcp_responses.md (the raw MCP tool results behind those answers)
 examples/fastapi/                the four files for a FastAPI docs bot (the doc server only, no interceptors),
@@ -88,7 +133,8 @@ Start the model endpoints first; the scripts don't: the embedding endpoint in r-
 (default local Ollama: `ollama serve`) and the completion endpoint in this `.env` (nothing to start
 for hosted OpenAI). Neither is checked at startup — a missing one fails at the first chat.
 
-Everything at once (doc MCP server + r-assist; Ctrl-C stops what it started):
+Everything at once (doc MCP server, artie-mcp when `<CONFIG_DIR>/mcp_servers.yaml` lists `artie_mcp`, and
+r-assist; Ctrl-C stops what it started):
 
 ```bash
 ./demo_services.sh       # Linux / Git Bash
@@ -101,7 +147,10 @@ Or by hand:
 # 1. doc MCP server, port 8001
 cd ../bdc-doc-mcp && uv run python -m r_doc_mcp.mcp_server --http
 
-# 2. r-assist, port API_PORT (default 8010)
+# 2. artie-mcp, port 8002 (only for a config that lists artie_mcp, e.g. examples/bdc)
+cd ../artie-mcp && uv run python -m artie_mcp.server --http
+
+# 3. r-assist, port API_PORT (default 8010)
 uv run uvicorn r_assist.api:app --port "${API_PORT:-8010}"
 ```
 
@@ -114,7 +163,9 @@ tool call, coloured by category (hover a node for its details), with the same MC
 
 1. `config/project.yaml`: set `name`, `short_name`, `assistant_name`, and `followups` (how many follow-up questions to suggest);
    `doc_search_tool`/`sources_key` only if your doc server's tool or your client's sources key differ;
-   `related_tool` (optional) for the `related_work` step, with `related_keywords_human` in prompts.yaml.
+   `append_disclaimer: false` and `followups: 0` turn those steps off; `extra_nodes` (optional) adds
+   steps of your own, in `nodes.py`, each with its settings (see examples/bdc: `related_work`, with
+   its `label` and `tool` here and `related_keywords_human`/`related_filter_human` in prompts.yaml).
 2. `config/prompts.yaml`: read through once; the policy checklist and the agent's house rules
    are where projects differ most. Keep the `{input}`/`{answer}`/`{topics}`/`{date}`/`{tools}` slots.
    `agent_system`'s `{tools}` gets each server's `prompt:` from `mcp_servers.yaml` (step 4); with none,
@@ -174,8 +225,9 @@ edit each repo's `config/*.yaml` for your own project.
    ```bash
    cd r-assist && bash demo_services.sh        # PowerShell: .\demo_services.ps1
    ```
-   This starts r-doc-mcp's MCP server on `MCP_PORT` (8001) and the r-assist API on `API_PORT`
-   (8010), reuses either if already up, and stops what it started on Ctrl-C. The bot connects to
+   This starts r-doc-mcp's MCP server on `MCP_PORT` (8001), artie-mcp on 8002 (from
+   `ARTIE_MCP_DIR`, default `../artie-mcp`; only when the config lists `artie_mcp`, as
+   `examples/bdc` does) and the r-assist API on `API_PORT` (8010), reuses any already up, and stops what it started on Ctrl-C. The bot connects to
    every server listed in `<CONFIG_DIR>/mcp_servers.yaml` at startup; one that is unreachable is
    logged as a warning and skipped (its `stand_ins` take its place), then retried every
    `MCP_RETRY_SECONDS` until its tools load. One that goes down mid-session is dropped the same way:
@@ -193,19 +245,20 @@ it needs no server besides r-doc-mcp. Each example keeps its own data, named aft
 folder (`data/fastapi/` in r-doc-builder, the `fastapi` collection in r-doc-mcp), so switching back
 and forth never overwrites the other's; switch by editing the three `.env` files and restarting.
 
-If something is already listening on 8000, 8001 or 8010 (another stack, an old run), stop it
+If something is already listening on 8000, 8001, 8002 or 8010 (another stack, an old run), stop it
 first: `demo_services` would silently reuse it. Re-pushing content while the MCP server is up
 requires restarting the MCP server (rerun `demo_services`).
 
 ## API
 
 `POST /chat` with `{"input": "...", "chat_history": [{"role": "user|assistant", "content": "..."}]}`
-returns `{"answer", "blocked", "topics", "followups", "sources", "sources_md", "kg", "mcp_errors"}`. The server is stateless —
+returns `{"answer", "blocked", "topics", "followups", "sources", "sources_md", "kg", "mcp_errors"}`, plus the
+`fields` your nodes list in `project.yaml`, if any. The server is stateless —
 the client keeps history. `sources` is the distinct documents behind the agent's `search_docs` chunks,
 `{"r-doc": [{title, link, type}]}`, deduplicated on link and in relevance order (empty for canned,
 blocked replies), plus any sources an interceptor attaches to tool results (structured content
 `"sources"`, `{key: [{title, link, type}]}`; BDC: the studies Dug cites, under `"dug"`, and papers
-from artie-mcp, under `"artie"`, whether the agent or `related_work` searched), listed under
+from artie-mcp, under `"artie"`, when the agent searched them; `related_work`'s are in `related`), listed under
 their key and deduplicated on link, plus the predefined responses shown (canned answer or disclaimers)
 under `"predefined"` (`type: "predefined"`, `title` and `link` from predefined_responses.yaml; title
 defaults to the topic, link may be empty; none for blocked replies); `sources_md` is all of them as one
@@ -224,15 +277,16 @@ of `get_concept_graph` / `get_concept_connections`, the search words of `find_co
 
 `POST /chat/stream` takes the same body and answers as SSE, one JSON object per event:
 
-- `{"type": "node", "node"}` — a workflow node started (progress); `input_guardrail` and `classify`
-  run side by side and start together, in either order
+- `{"type": "node", "node", "label"?}` — a workflow node started (progress); `input_guardrail` and `classify`
+  run side by side and start together, in either order. `label`: that node's `label` in
+  `project.yaml`, when set
 - `{"type": "status", "text"}` — what the agent is doing (tool calls)
 - `{"type": "token", "text"}` — one token of the agent's provisional answer
 - `{"type": "reset"}` — new model turn: discard the tokens streamed so far
 - `{"type": "sources", sources, sources_md, kg}` — the agent finished; its documentation sources and graphs
   (sent early so a UI can show them while the guardrail and follow-up steps still run; `done`
-  has the final values: cleared if the answer is blocked, plus any papers `related_work` found)
-- `{"type": "done", answer, blocked, topics, followups, sources, sources_md, kg, mcp_errors}` — final state; the done answer is
+  has the final values: cleared if the answer is blocked, plus anything an `after_finish` node adds)
+- `{"type": "done", answer, blocked, topics, followups, sources, sources_md, kg, mcp_errors, <your nodes' fields>}` — final state; the done answer is
   authoritative (an output-guardrail block, disclaimers, canned replies may replace the streamed text;
   `blocked` says which guardrail stopped it: `"input"` (the question was refused) or `"output"` (the
   streamed answer was rejected and replaced), else `null`)
@@ -278,7 +332,12 @@ uv run pytest                      # graph routes, streaming, prompt template �
 ```
 
 `demo.ipynb` runs every route (regular, follow-up, predefined, disclaimer, blocked) over HTTP
-against the running services; its questions target `examples/bdc`.
+against the running services; its questions target `examples/bdc`. The same routes as checks, plus
+BDC's own steps (`related_work`, Dug), PASS/FAIL each (exit 1 if any failed; ~10 chats' worth of LLM tokens):
+
+```bash
+uv run python tests/e2e_routes.py  # API started with CONFIG_DIR=examples/bdc; --api-url for another
+```
 
 Load test, against the running services with the real models (questions from `sample_questions.yaml`):
 

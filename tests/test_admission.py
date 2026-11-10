@@ -118,3 +118,13 @@ def test_a_burst_cannot_overfill_the_line(monkeypatch):
             answered += 1
     assert (answered, refused) == (2, 3), (answered, refused)
     assert api.admission.busy == 0 and not api.admission.line
+
+
+def test_plain_chat_is_refused_when_every_slot_and_place_is_taken(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    full = Admission(running=1, waiting=0)
+    full.busy = 1  # its one slot taken, no place in line
+    monkeypatch.setattr(api, "admission", full)
+    res = TestClient(api.app).post("/chat", json={"input": "q", "chat_history": []})
+    assert res.status_code == 503 and res.headers.get("retry-after"), res.text

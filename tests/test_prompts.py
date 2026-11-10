@@ -117,23 +117,36 @@ def test_bdc_publication_prompt_lists_only_fitting_papers():
 
 def test_bdc_finds_related_papers():
     p = _reload(ROOT / "examples" / "bdc")
-    assert p.RELATED_TOOL == "search_publications"
-    assert "- none" in p.RELATED_KEYWORDS_HUMAN.format(input="q", answer="a")
+    assert p.PROJECT["extra_nodes"] == {
+        "after_agent": {"related_work": {"label": "Finding related papers…", "tool": "search_publications",
+                                         "fields": ["related"]}}}
+    keywords, fit = p.PROMPTS["related_keywords_human"], p.PROMPTS["related_filter_human"]
+    assert "- none" in keywords.format(input="q", answer="a")
     # every paper in the list used BDC: a "BioData Catalyst (BDC)" term matched all of them (live, 2026-10-30)
-    assert "Never list BDC or BioData Catalyst itself" in p.RELATED_KEYWORDS_HUMAN
+    assert "Never list BDC or BioData Catalyst itself" in keywords
     # one search ORs every word: filler words and broad programs (TOPMed) swamped the topic (live, 2026-10-30)
-    assert "the question's main topic first" in p.RELATED_KEYWORDS_HUMAN
+    assert "the question's main topic first" in keywords
+    # papers aren't needed all the time: no search for questions about using BDC itself
+    assert "about using BDC itself" in keywords
+    # and of what the search finds, only papers that fit are shown
+    assert "- none" in fit.format(input="q", answer="a", papers="1. T")
 
 
-def test_related_tool_needs_its_prompt(tmp_path):
-    # config/'s files fill every placeholder and prompt key, so the only fault is the missing prompt
-    project = (ROOT / "config" / "project.yaml").read_text(encoding="utf-8") + "\nrelated_tool: t\n"
-    (tmp_path / "project.yaml").write_text(project, encoding="utf-8")
-    (tmp_path / "prompts.yaml").write_text((ROOT / "config" / "prompts.yaml").read_text(encoding="utf-8"),
+def test_a_key_written_twice_fails(tmp_path, monkeypatch):
+    # e.g. a second after_agent: under extra_nodes, which plain YAML would keep instead of the first
+    (tmp_path / "project.yaml").write_text("extra_nodes:\n  after_agent:\n    a:\n  after_agent:\n    b:\n",
                                            encoding="utf-8")
-    with pytest.raises(ValueError, match="related_keywords_human"):
-        _reload(tmp_path)
+    monkeypatch.setattr(prompts, "DATA_DIR", tmp_path)
+    with pytest.raises(yaml.constructor.ConstructorError, match="'after_agent' written twice"):
+        prompts._load_yaml("project.yaml")
 
 
-def test_default_config_has_no_related_step():
-    assert _reload(ROOT / "config").RELATED_TOOL is None
+def test_default_config_has_no_extra_nodes():
+    assert "extra_nodes" not in _reload(ROOT / "config").PROJECT
+
+
+def test_agent_prompt_needs_a_tools_slot_for_the_servers_prompts(monkeypatch):
+    p = _reload(ROOT / "examples" / "bdc")  # its servers have prompt: texts
+    monkeypatch.setitem(p.PROMPTS, "agent_system", "You help. Today is {date}.")
+    with pytest.raises(ValueError, match=r"no \{tools\} slot"):
+        p.agent_system()

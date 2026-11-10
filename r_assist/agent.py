@@ -7,7 +7,6 @@ from contextlib import suppress
 from pathlib import Path
 
 import httpx
-import yaml
 from deepagents import create_deep_agent
 from langchain_core.tools import StructuredTool, ToolException
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -146,7 +145,7 @@ def close_sessions():
 
 def _servers_yaml(data_dir: Path | None) -> dict:
     with open((data_dir or prompts.DATA_DIR) / "mcp_servers.yaml", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        return prompts.load_yaml(f)
 
 
 def load_mcp_servers(data_dir: Path | None = None) -> dict:
@@ -177,7 +176,7 @@ def _stand_in(name: str, server: str):
     async def unavailable(**kwargs):
         return (f"Error: the {server} service is unavailable right now. Tell the user; do not fill in "
                 "its part of the answer from other tools.")
-    # metadata: graph.build_graph adds no related_work step for a stand-in
+    # metadata: an extra node skips a stand-in (examples/bdc/nodes.py's related_work)
     return StructuredTool.from_function(coroutine=unavailable, name=name, description=f"{name} ({server})",
                                         args_schema={"type": "object", "properties": {}, "additionalProperties": True},
                                         metadata={"stand_in": True})
@@ -216,7 +215,7 @@ def load_interceptors(data_dir: Path | None = None) -> list:
 
 
 async def build_agent(llm):
-    """-> (agent, tools, errors); build_graph gets the tools too (related_work). Each server's tools
+    """-> (agent, tools, errors); build_graph gets the tools too (for its extra nodes). Each server's tools
     load on their own: an unreachable server (e.g. dug_mcp off the RENCI VPN: 403) is logged and
     skipped, one "name: error" line in errors, instead of failing startup; its `stand_ins:` take its
     tools' place. api.retry_mcp rebuilds once it is back. A `keep_session: true` server (a stateless
