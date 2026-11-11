@@ -209,3 +209,19 @@ def test_unknown_interceptor_fails_at_startup(tmp_path):
         assert "mcp_servers.yaml [s]: no function nope" in str(e)
     else:
         raise AssertionError("a misspelt interceptor name must not be silently skipped")
+
+
+def test_dug_errors_and_odd_replies_go_on_untouched():
+    # dug's backend down (an error result), or JSON that isn't an object: the agent gets it as is
+    spec = importlib.util.spec_from_file_location("bdc_interceptors", "examples/bdc/interceptors.py")
+    bdc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bdc)
+
+    class Request:
+        name, args = "search_concepts", {"search_term": "asthma"}
+
+    for result in (CallToolResult(content=[TextContent(type="text", text="dug backend unreachable")], isError=True),
+                   CallToolResult(content=[TextContent(type="text", text="[1, 2]")])):
+        async def handler(request, result=result):
+            return result
+        assert asyncio.run(bdc.dug_kg(Request(), handler)) is result

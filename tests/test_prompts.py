@@ -81,7 +81,9 @@ def test_agent_system_takes_server_prompts_from_mcp_servers_yaml(tmp_path):
     assert "search_docs searches" in text and "search_concepts" in text and "{tools}" not in text
     assert text.index("search_docs searches") < text.index("search_concepts"), "mcp_servers.yaml order"
     assert 'answering. \n<tools server="r_doc_mcp">\n- search_docs' in text, "each server's prompt in its own tag"
-    assert 'not catalog results), and do not guess.\n</tools>\nNever conclude' in text
+    assert ('not catalog results), and do not guess.\n</tools>\n<tools server="artie_mcp">\n- search_publications'
+            in text)
+    assert 'publication search is currently unavailable.\n</tools>\nNever conclude' in text
     for f in ("project.yaml", "prompts.yaml"):
         (tmp_path / f).write_text((bdc / f).read_text(encoding="utf-8"), encoding="utf-8")
     servers = yaml.safe_load((bdc / "mcp_servers.yaml").read_text(encoding="utf-8"))
@@ -99,3 +101,52 @@ def test_followups_count_comes_from_project_yaml():
     assert p.FOLLOWUPS == 3
     assert "exactly 3 short follow-up questions" in p.SUGGEST_FOLLOWUPS_HUMAN, "${followups} filled from project.yaml"
     assert _reload(ROOT / "examples" / "bdc").FOLLOWUPS == 3, "matches the verbatim BDC prompts"
+
+
+def test_bdc_publication_prompt_retries_argument_errors():
+    # a bad argument (limit 100, "heart") is the agent's to fix, not an outage to report
+    text = _reload(ROOT / "examples" / "bdc").agent_system()
+    assert "If it returns an error about its arguments, fix them and call again" in text
+
+
+def test_bdc_publication_prompt_lists_only_fitting_papers():
+    # the API matches any word anywhere, so some results are off-topic
+    text = _reload(ROOT / "examples" / "bdc").agent_system()
+    assert "List the returned papers that fit the question" in text
+
+
+def test_bdc_finds_related_papers():
+    p = _reload(ROOT / "examples" / "bdc")
+    assert p.PROJECT["extra_nodes"] == {
+        "after_agent": {"related_work": {"label": "Finding related papers…", "tool": "search_publications",
+                                         "fields": ["related"]}}}
+    keywords, fit = p.PROMPTS["related_keywords_human"], p.PROMPTS["related_filter_human"]
+    assert "- none" in keywords.format(input="q", answer="a")
+    # every paper in the list used BDC: a "BioData Catalyst (BDC)" term matched all of them (live, 2026-10-30)
+    assert "Never list BDC or BioData Catalyst itself" in keywords
+    # one search ORs every word: filler words and broad programs (TOPMed) swamped the topic (live, 2026-10-30)
+    assert "the question's main topic first" in keywords
+    # papers aren't needed all the time: no search for questions about using BDC itself
+    assert "about using BDC itself" in keywords
+    # and of what the search finds, only papers that fit are shown
+    assert "- none" in fit.format(input="q", answer="a", papers="1. T")
+
+
+def test_a_key_written_twice_fails(tmp_path, monkeypatch):
+    # e.g. a second after_agent: under extra_nodes, which plain YAML would keep instead of the first
+    (tmp_path / "project.yaml").write_text("extra_nodes:\n  after_agent:\n    a:\n  after_agent:\n    b:\n",
+                                           encoding="utf-8")
+    monkeypatch.setattr(prompts, "DATA_DIR", tmp_path)
+    with pytest.raises(yaml.constructor.ConstructorError, match="'after_agent' written twice"):
+        prompts._load_yaml("project.yaml")
+
+
+def test_default_config_has_no_extra_nodes():
+    assert "extra_nodes" not in _reload(ROOT / "config").PROJECT
+
+
+def test_agent_prompt_needs_a_tools_slot_for_the_servers_prompts(monkeypatch):
+    p = _reload(ROOT / "examples" / "bdc")  # its servers have prompt: texts
+    monkeypatch.setitem(p.PROMPTS, "agent_system", "You help. Today is {date}.")
+    with pytest.raises(ValueError, match=r"no \{tools\} slot"):
+        p.agent_system()

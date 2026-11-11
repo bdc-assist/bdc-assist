@@ -3,7 +3,9 @@
 #   1. r-doc-mcp MCP server (HTTP) from DOC_MCP_DIR (.\.env, default ..\bdc-doc-mcp) on MCP_PORT
 #      (that repo's .env, default 8001), health-checked at the r_doc_mcp url in
 #      <CONFIG_DIR>\mcp_servers.yaml - the URL r-assist actually connects to
-#   2. r-assist API on API_PORT (.\.env, default 8010)
+#   2. artie-mcp MCP server (HTTP) from ARTIE_MCP_DIR (.\.env, default ..\artie-mcp), only when
+#      <CONFIG_DIR>\mcp_servers.yaml has an artie_mcp block (examples\bdc), health-checked at its url
+#   3. r-assist API on API_PORT (.\.env, default 8010)
 # Embedding/LLM endpoints are whatever the two .env files point at; start those yourself.
 # Services already running are left alone; Ctrl-C stops only what this script started.
 # Each service gets START_TIMEOUT seconds (.\.env, default 30) to answer.
@@ -24,15 +26,16 @@ function Get-DotEnv([string]$file, [string]$key, [string]$default) {
 }
 
 $DOC_MCP_DIR     = Get-DotEnv '.\.env' 'DOC_MCP_DIR' '..\bdc-doc-mcp'
+$ARTIE_MCP_DIR   = Get-DotEnv '.\.env' 'ARTIE_MCP_DIR' '..\artie-mcp'
 $START_TIMEOUT   = Get-DotEnv '.\.env' 'START_TIMEOUT' '30'
 $MCP_PORT        = Get-DotEnv (Join-Path $DOC_MCP_DIR '.env') 'MCP_PORT' '8001'
 $API_PORT        = Get-DotEnv '.\.env' 'API_PORT' '8010'
 $CONFIG_DIR      = Get-DotEnv '.\.env' 'CONFIG_DIR' 'config'
 
 function Get-McpUrl([string]$file, [string]$server, [string]$default) {
-  # shell DOC_RAG_MCP_URL wins (test hook), then the yaml block's url:, then default - twin of mcp_url in the .sh
-  $v = [Environment]::GetEnvironmentVariable('DOC_RAG_MCP_URL')
-  if (-not $v -and (Test-Path $file)) {
+  # the yaml block's url:, then default - twin of mcp_url in the .sh
+  $v = $null
+  if (Test-Path $file) {
     $in = $false
     foreach ($line in Get-Content $file) {
       if ($line -match ('^' + $server + ':')) { $in = $true; continue }
@@ -42,7 +45,9 @@ function Get-McpUrl([string]$file, [string]$server, [string]$default) {
   }
   if ($v) { $v } else { $default }
 }
-$DOC_RAG_MCP_URL = Get-McpUrl (Join-Path $CONFIG_DIR 'mcp_servers.yaml') 'r_doc_mcp' 'http://127.0.0.1:8001/mcp'
+$DOC_RAG_MCP_URL = [Environment]::GetEnvironmentVariable('DOC_RAG_MCP_URL')  # shell wins: test hook
+if (-not $DOC_RAG_MCP_URL) { $DOC_RAG_MCP_URL = Get-McpUrl (Join-Path $CONFIG_DIR 'mcp_servers.yaml') 'r_doc_mcp' 'http://127.0.0.1:8001/mcp' }
+$ARTIE_MCP_URL   = Get-McpUrl (Join-Path $CONFIG_DIR 'mcp_servers.yaml') 'artie_mcp' ''  # empty: this config doesn't use artie-mcp
 
 function Test-Http([string]$url) {  # any HTTP response counts, even 4xx
   try {
@@ -81,7 +86,19 @@ try {
       "server binds MCP_PORT=$MCP_PORT; if that mismatches the url in $CONFIG_DIR\mcp_servers.yaml, fix it (see $env:TEMP\r_doc_mcp.log)"
   }
 
-  # 2. r-assist API
+  # 2. artie-mcp, if the config uses it
+  if (-not $ARTIE_MCP_URL) {
+  } elseif (Test-Http $ARTIE_MCP_URL) {
+    Write-Host "artie-mcp: already running ($ARTIE_MCP_URL)"
+  } elseif (-not (Test-Path $ARTIE_MCP_DIR)) {
+    Write-Host "artie-mcp: no checkout at $ARTIE_MCP_DIR (set ARTIE_MCP_DIR in .\.env); publication search stays unavailable"
+  } else {
+    Start-Bg "uv run --directory `"$ARTIE_MCP_DIR`" python -m artie_mcp.server --http" "$env:TEMP\r_artie_mcp.log"
+    Wait-Http 'artie-mcp' $ARTIE_MCP_URL $START_TIMEOUT `
+      "server binds its MCP_PORT (default 8002); if that mismatches the url in $CONFIG_DIR\mcp_servers.yaml, fix it (see $env:TEMP\r_artie_mcp.log)"
+  }
+
+  # 3. r-assist API
   if (Test-Http "http://127.0.0.1:$API_PORT/health") {
     Write-Host 'r-assist: already running'
   } else {

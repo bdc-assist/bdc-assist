@@ -1,10 +1,12 @@
-# The BDC bot's servers: the doc search server plus the Dug knowledge-graph tools.
+# The BDC bot's servers: the doc search server plus the Dug knowledge-graph tools and the Artie
+# publication search.
 # Loaded instead of config/mcp_servers.yaml when CONFIG_DIR=examples/bdc.
 
 r_doc_mcp:
   transport: streamable_http
   url: http://127.0.0.1:8001/mcp
   stand_ins: [search_docs]  # while doc-mcp is down, say so instead of answering without the docs
+  keep_session: true  # r-doc-mcp is stateless: one session kept open, not one per call
   prompt: |
     - search_docs searches the BDC documentation (guides, website pages, FAQs, videos, news,
       events). Use it for what BDC is, how to use it, policies, tools, and events, and cite
@@ -49,3 +51,24 @@ dug_mcp:
       search service is currently unavailable and suggest trying again later. Do not list
       studies or variables from search_docs instead (studies the documentation mentions are
       not catalog results), and do not guess.
+
+# BDC publication search (artie-mcp over github.com/bdc-assist/artie-api; dev, RENCI VPN)
+# demo_services.sh/.ps1 start it from ARTIE_MCP_DIR and health-check the url below, so keep the key name.
+artie_mcp:
+  transport: streamable_http
+  url: http://127.0.0.1:8002/mcp
+  keep_session: true  # artie-mcp is stateless
+  stand_ins: [search_publications]  # while it's down, say so instead of naming papers from memory
+  prompt: |
+    - search_publications searches a small, curated set of published papers that used BDC
+      (title, link, year, journal, research area, cohort/dataset, how BDC was used, and the
+      passages where the paper mentions BDC). Use it when a question asks about papers or
+      publications, or about research on a disease, trait, dataset, or method (e.g. "has anyone
+      used BDC to study asthma?"). Pass 1-4 key terms as keywords, never the whole question:
+      keywords=["asthma", "microbiome"]. Add research_areas only for a broad Heart, Lung, Blood,
+      Sleep, or Genomics question.
+      List the returned papers that fit the question, with their title and link (it matches any
+      keyword anywhere, so skip off-topic ones). If none fit, say no papers in BDC's curated
+      publication list matched; do not name papers from memory or from search_docs.
+      If it returns an error about its arguments, fix them and call again; for any other
+      error, say publication search is currently unavailable.

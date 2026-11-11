@@ -10,12 +10,12 @@ from contextlib import aclosing, asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from . import prompts
-from .agent import build_agent, recheck
+from .agent import build_agent, close_sessions, recheck
 from .config import CORS_ORIGINS, LOG_LEVEL, MAX_RUNNING_CHATS, MAX_WAITING_CHATS, MCP_RETRY_SECONDS, get_llm
-from .graph import build_graph
+from .graph import build_graph, load_nodes, node_fields
 from .prompts import load_predefined_responses
 
 
@@ -30,6 +30,7 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
+    model_config = ConfigDict(extra="allow")  # and the config nodes' fields, see final()
     answer: str
     blocked: str | None = None     # "input" (question refused) or "output" (answer rejected)
     topics: list[str] = []
@@ -131,10 +132,11 @@ async def in_turn(events):
 
 graph = None
 mcp_errors: list[str] = []  # from build_agent: startup, then each re-check
+extra_fields: list[str] = []  # the config nodes' fields (project.yaml extra_nodes), returned with the answer
 admission = Admission(MAX_RUNNING_CHATS, MAX_WAITING_CHATS)
 
 
-async def retry_mcp(llm, predefined):
+async def retry_mcp(llm, predefined, nodes):
     """Rebuild the agent from whichever MCP servers answer, every MCP_RETRY_SECONDS or as soon as
     a tool call fails twice (recheck): a server that was down gets its tools back, one that went
     down mid-session is dropped and listed in mcp_errors, all without a restart. Each rebuild is
@@ -147,7 +149,7 @@ async def retry_mcp(llm, predefined):
             pass
         recheck.clear()
         try:
-            agent, errors = await build_agent(llm)
+            agent, tools, errors = await build_agent(llm)
         except Exception:  # e.g. mcp_servers.yaml edited into a broken state: keep what runs
             log.exception("MCP reload failed, keeping the current tools")
             continue
@@ -155,18 +157,20 @@ async def retry_mcp(llm, predefined):
         if back:
             # warning, not info: the default LOG_LEVEL must show the "unavailable" lines end
             log.warning("MCP server back, its tools loaded: %s", ", ".join(sorted(back)))
-        graph, mcp_errors = build_graph(llm, agent, predefined), errors
+        graph, mcp_errors = build_graph(llm, agent, predefined, tools, nodes), errors
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global graph, mcp_errors
-    llm, predefined = get_llm(), load_predefined_responses()
-    agent, mcp_errors = await build_agent(llm)
-    graph = build_graph(llm, agent, predefined)
-    retry = asyncio.create_task(retry_mcp(llm, predefined))
+    global graph, mcp_errors, extra_fields
+    llm, predefined, nodes = get_llm(), load_predefined_responses(), load_nodes()  # once: a rebuild can't fail on them
+    extra_fields = check_extra_fields(node_fields(nodes))
+    agent, tools, mcp_errors = await build_agent(llm)
+    graph = build_graph(llm, agent, predefined, tools, nodes)
+    retry = asyncio.create_task(retry_mcp(llm, predefined, nodes))
     yield
     retry.cancel()
+    close_sessions()
 
 
 # app loggers (e.g. MCP tool failures in agent.py) print alongside uvicorn's own lines
@@ -181,15 +185,33 @@ async def health():
     return {"status": "ok", "mcp_errors": mcp_errors}
 
 
+def check_extra_fields(names: list[str]) -> list[str]:
+    """The config nodes' fields, if none is already in the response; startup fails otherwise."""
+    if clash := sorted(set(names) & (set(ChatResponse.model_fields) | {"type"})):
+        raise ValueError(f"project.yaml [extra_nodes]: fields {', '.join(clash)} are the response's own")
+    return names
+
+
+def final(state) -> dict:
+    """What both chat endpoints return of the final state: ChatResponse's fields, then the config
+    nodes' fields (None when no node set one)."""
+    return {"answer": state.get("answer", ""), "blocked": state.get("blocked"),
+            "topics": state.get("topics", []), "followups": state.get("followups", []),
+            "sources": state.get("sources", {}), "sources_md": state.get("sources_md", ""),
+            "kg": state.get("kg", []), "mcp_errors": mcp_errors,
+            **{f: state.get(f) for f in extra_fields}}
+
+
 async def stream_chat(graph, input: str, chat_history: list):
     """SSE events, one JSON object each:
-      {"type": "node", "node"}    a graph node started (progress)
+      {"type": "node", "node", "label"?}  a graph node started (progress); label: a config node's
+                                  "label" in project.yaml, if any
       {"type": "status", "text"}  what the agent is doing (tool calls); before the run, if it waits
                                   for a slot (see Admission), its place in line
       {"type": "token", "text"}   one token of the agent's provisional answer
       {"type": "reset"}           new model turn — discard tokens so far
       {"type": "sources", sources, sources_md, kg}  the agent finished; its doc sources and graphs
-      {"type": "done", answer, blocked, topics, followups, sources, sources_md, kg, mcp_errors}
+      {"type": "done", answer, blocked, topics, followups, sources, sources_md, kg, mcp_errors, <the config nodes' fields>}
         final state — the done answer is authoritative (blocks, disclaimers, canned replies).
       {"type": "error"}           the run failed (details in the server log); last event, no done.
                                   "busy": true: never ran, the line was full (see in_turn)
@@ -211,12 +233,7 @@ async def stream_chat(graph, input: str, chat_history: list):
         log.exception("chat run failed")
         yield f"data: {json.dumps({'type': 'error'})}\n\n"
         return
-    done = {"type": "done", "answer": state.get("answer", ""),
-            "blocked": state.get("blocked"),
-            "topics": state.get("topics", []), "followups": state.get("followups", []),
-            "sources": state.get("sources", {}), "sources_md": state.get("sources_md", ""),
-            "kg": state.get("kg", []), "mcp_errors": mcp_errors}
-    yield f"data: {json.dumps(done)}\n\n"
+    yield f"data: {json.dumps({'type': 'done', **final(state)})}\n\n"
 
 
 @app.post("/chat/stream")
@@ -244,7 +261,4 @@ async def chat(req: ChatRequest) -> ChatResponse:
         })
     finally:
         admission.release(time.monotonic() - start)
-    return ChatResponse(answer=state["answer"], blocked=state.get("blocked"),
-                        topics=state.get("topics", []), followups=state.get("followups", []),
-                        sources=state.get("sources", {}), sources_md=state.get("sources_md", ""),
-                        kg=state.get("kg", []), mcp_errors=mcp_errors)
+    return ChatResponse(**final(state))
