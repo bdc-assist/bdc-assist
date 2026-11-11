@@ -3,14 +3,18 @@ without real services: serves the real api app on :8011 with a fake slow agent. 
 uv run python tests/_stub_stream_server.py, then open tests/ui/demo.html?api=http://127.0.0.1:8011
 (or kg_demo.html?api=...), or VITE_API_URL=http://127.0.0.1:8011 npm run dev in bdc-assist-client.
 
-By default: a docs answer with a small knowledge graph and the covid disclaimer appended. A keyword
+By default: a docs answer, no graph, with the covid disclaimer appended. A keyword
 (a whole word) anywhere in the question picks another path:
   block      input guardrail refuses: canned REFUSAL, blocked
   reject     output guardrail rejects the streamed draft: canned REJECT, blocked
   canned     an "r" topic matches: its canned reply, agent skipped
   nosources  the agent answers without searching: no sources, no graph
   crash      the agent fails mid-answer: the stream ends with {"type": "error"}
-  get_help   a login-loop answer citing the BDC Get Help page (a form; for the client's form prefill demo), no graph
+  get_help   a login-loop answer citing the BDC Get Help page (a form; for the client's form prefill demo)
+Paper keywords (combine with the others): a stand-in related_work step (label "Finding related papers…",
+about 3 s, beside the guardrail) puts papers in done's "related", as examples/bdc/nodes.py does.
+  publications         3 related papers, none cited: the usual case
+  cited_publications   the agent searched papers too: 2 in sources.artie, plus 2 related
 Graph keywords are named after the Dug tool whose real result (tests/fixtures/) they replay, and
 combine: each adds its calls, so "concept_graph_2 concept_connections" draws asthma and COPD
 plus asthma's related concepts.
@@ -37,7 +41,7 @@ from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 
 import r_assist.api as api
 from r_assist import prompts
-from r_assist.graph import build_graph
+from r_assist.graph import build_graph, node_fields
 from tests.make_kg_fixtures import KEYWORDS, OUT
 
 
@@ -56,6 +60,33 @@ for _keyword in KEYWORDS:
 
 
 GET_HELP_URL = "https://biodatacatalyst.nhlbi.nih.gov/help/get-help/"
+
+
+def _paper(n: int, title: str) -> dict:
+    return {"title": f"Stub paper {n}: {title}", "link": f"https://example.org/papers/{n}", "type": "publication"}
+
+
+# what artie-mcp's interceptor attaches to a search_publications result: the agent's papers (cited_publications)
+CITED_PAPERS = {"sources": {"artie": [_paper(1, "Spirometry decline across pooled COPD cohorts"),
+                                      _paper(2, "Harmonizing lung-function variables from TOPMed studies")]}}
+RELATED_PAPERS = [_paper(3, "Airflow obstruction and smoking history in a multi-ethnic cohort"),
+                  _paper(4, "Genome-wide association of FEV1/FVC in TOPMed"),
+                  _paper(5, "Emphysema on CT and lung-function trajectories")]
+
+
+def related_work(llm, tools, settings):
+    """Stands in for examples/bdc/nodes.py's related_work: no LLM or tool, papers by keyword."""
+    async def node(state):
+        question = state["input"]
+        if not (_has(question, "publications") or _has(question, "cited_publications")):
+            return {"related": None}
+        await asyncio.sleep(3)  # slower than the guardrail (2 s): "done" waits on it, as on the real server
+        return {"related": {"artie": RELATED_PAPERS[:2] if _has(question, "cited_publications") else RELATED_PAPERS}}
+    return node
+
+
+NODES = {"after_agent": [("related_work", related_work,
+                          {"label": "Finding related papers…", "fields": ["related"]})]}
 
 
 class SlowAgent:
@@ -98,26 +129,14 @@ class SlowAgent:
                     "page_url": "https://bdcatalyst.gitbook.io/biodata-catalyst-documentation",
                     "doc_type": "docs", "hierarchy": "Logging in to BDC"}},
             ]
-        # a knowledge graph as an interceptor attaches it (examples/bdc/interceptors.py), for kg_demo.html
-        kg = {"tool": "get_concept_graph", "args": {"concept_id": "MONDO:0005068"}, "label": "myocardial infarction concept graph",
-              "seeds": ["MONDO:0005068"],
-              "nodes": [{"id": "MONDO:0005068", "name": "myocardial infarction", "type": "concept",
-                         "category": "biolink:Disease"},
-                        {"id": "phv1", "name": "MI_EVER", "type": "variable",
-                         "description": "Ever told by a doctor you had a heart attack?"},
-                        {"id": "phv2", "name": "MI_AGE", "type": "variable"},
-                        {"id": "phv3", "name": "ECG_MI", "type": "variable"},
-                        {"id": "phs000007", "name": "Framingham Cohort", "type": "study"},
-                        {"id": "phs000280", "name": "Atherosclerosis Risk in Communities (ARIC) Cohort", "type": "study"}],
-              "edges": [{"subject": v, "object": "MONDO:0005068", "predicate": "related_to"} for v in ("phv1", "phv2", "phv3")]
-                       + [{"subject": "phv1", "object": "phs000007"}, {"subject": "phv2", "object": "phs000007"},
-                          {"subject": "phv3", "object": "phs000280"}]}
-        # structured content per graph call, as the interceptor attaches it
-        attached = [a for word, calls in GRAPHS.items() if _has(question, word) for a in calls] or (
-            [] if help_page else [{"kg": kg}])
+        # structured content per graph call, as the interceptor attaches it: graphs only when asked for
+        attached = [a for word, calls in GRAPHS.items() if _has(question, word) for a in calls]
+        if _has(question, "cited_publications"):
+            attached.append(CITED_PAPERS)
+        call = lambda a: (a["kg"]["tool"], a["kg"]["args"]) if "kg" in a else ("search_publications", {"keywords": ["COPD"]})
         yield "values", {"messages": [
             AIMessage(content="", tool_calls=[{"name": "search_docs", "args": {"query": question}, "id": "t1"}]
-                      + [{"name": a["kg"]["tool"], "args": a["kg"]["args"], "id": f"t{i + 2}"} for i, a in enumerate(attached)]),
+                      + [{"name": call(a)[0], "args": call(a)[1], "id": f"t{i + 2}"} for i, a in enumerate(attached)]),
             ToolMessage(content=[{"type": "text", "text": json.dumps(c)} for c in chunks], tool_call_id="t1"),
             *[ToolMessage(content="{}", artifact={"structured_content": a}, tool_call_id=f"t{i + 2}")
               for i, a in enumerate(attached)],
@@ -170,7 +189,8 @@ class ScriptedLLM:
         return AIMessage(content=reply)
 
 
-api.graph = build_graph(ScriptedLLM(), SlowAgent(), TOPICS)
+api.graph = build_graph(ScriptedLLM(), SlowAgent(), TOPICS, nodes=NODES)
+api.extra_fields = node_fields(NODES)  # the real lifespan sets these; the stub skips it
 
 if __name__ == "__main__":
     import logging
