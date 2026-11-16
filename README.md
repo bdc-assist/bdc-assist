@@ -127,6 +127,17 @@ gpt-6-luna; above `none` the temperature is not sent and calls go through the Re
 gpt-6-luna calls tools while reasoning), LOG_LEVEL (default WARNING), MCP_RETRY_SECONDS (default 300: how often
 unavailable MCP servers are retried and live ones re-checked), and — for the demo scripts — DOC_MCP_DIR (default ../bdc-doc-mcp) and START_TIMEOUT (default 30 seconds per service).
 
+Optional, Microsoft Decision-1: `USE_DECISION_MODEL=true` has it make the yes/no and pick-one decisions in
+place of the chat model: `input_guardrail` (one yes/no per rule in `prompts.yaml`'s
+`decision_input_guardrail`, any yes blocks), `classify` (one pick among the topics and "other", so a
+question gets at most one topic), `output_guardrail` (`decision_output_guardrail`, a no rejects), and the
+BDC example's `related_work` (whether to search, and a yes/no per paper found; the chat model still writes
+the search terms). A yes is a probability above 0.5. The chat model still rewrites follow-ups, answers and
+suggests follow-ups. Default `false`: the chat model decides everything, as before. `DECISION_MODEL` is the
+Azure deployment (default `Decision-1`), `DECISION_URL` the resource (default: the host of `COMPLETION_URL`
+or `OPENAI_BASE_URL`); its key is the Azure one. A `decision_*` question missing from `prompts.yaml` fails
+startup; the input rules exist twice (for the chat model and for Decision-1), so keep them in step.
+
 ## Run
 
 Start the model endpoints first; the scripts don't: the embedding endpoint in r-doc-mcp's `.env`

@@ -150,3 +150,21 @@ def test_agent_prompt_needs_a_tools_slot_for_the_servers_prompts(monkeypatch):
     monkeypatch.setitem(p.PROMPTS, "agent_system", "You help. Today is {date}.")
     with pytest.raises(ValueError, match=r"no \{tools\} slot"):
         p.agent_system()
+
+
+def test_each_config_starts_with_the_decision_model_on(monkeypatch):
+    """USE_DECISION_MODEL=true: each shipped config has the decision_* questions (a missing one fails
+    startup), the input rules a list of yes-means-block questions about `message`."""
+    from langchain_core.output_parsers import MarkdownListOutputParser
+
+    from r_assist.graph import build_graph, load_nodes
+
+    for folder in (ROOT / "config", ROOT / "examples" / "bdc", ROOT / "examples" / "fastapi"):
+        p = _reload(folder)
+        monkeypatch.setattr(config, "get_decider", lambda: object())  # on; nothing is asked while building
+        build_graph(object(), object(), p.load_predefined_responses(), nodes=load_nodes())
+        assert p.PROMPTS.get("decision_classify"), folder.name  # config/ has no topics, so build didn't need it
+        rules = MarkdownListOutputParser().parse(p.PROMPTS["decision_input_guardrail"])
+        assert len(rules) >= 10 and all("`message`" in r for r in rules), (folder.name, rules)
+        if folder.name == "bdc":
+            assert "`papers[2]`" in p.PROMPTS["related_filter_decision"].format(n=2)
