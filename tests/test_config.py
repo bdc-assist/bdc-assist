@@ -91,3 +91,54 @@ def test_reasoning_effort_settings(monkeypatch):
     finally:
         monkeypatch.undo()
         importlib.reload(config)
+
+
+def test_decision_model_settings(monkeypatch):
+    """USE_DECISION_MODEL: off unless "true"; on, Decision-1's System One endpoint on the host of
+    DECISION_URL, else of COMPLETION_URL / OPENAI_BASE_URL, with the deployment DECISION_MODEL."""
+    import asyncio
+
+    import httpx
+    import openai
+
+    from r_assist import config
+
+    seen = {}
+
+    class FakeClient:  # stands in for AsyncOpenAI: the request it would send, no network
+        def __init__(self, **kwargs):
+            seen["client"] = kwargs
+
+        async def post(self, path, body, cast_to):
+            seen["post"] = (path, body)
+            return httpx.Response(200, json={"answers": {"x": {"type": "noul", "noul": 0.9}}})
+
+    for var in ("USE_DECISION_MODEL", "DECISION_URL", "DECISION_MODEL", "COMPLETION_URL", "OPENAI_BASE_URL"):
+        monkeypatch.setenv(var, "")  # empty, not deleted: reload's load_dotenv would refill it from .env
+    monkeypatch.setenv("OPENAI_API_KEY", "key")
+    monkeypatch.setattr(openai, "AsyncOpenAI", FakeClient)
+    try:
+        importlib.reload(config)
+        assert config.get_decider() is None, "off by default: the chat model decides, as before"
+        monkeypatch.setenv("USE_DECISION_MODEL", "True  # on")
+        importlib.reload(config)
+        try:
+            config.get_decider()
+            raise AssertionError("no URL to find the Azure resource by must fail")
+        except ValueError as e:
+            assert "DECISION_URL" in str(e)
+        for env, host in [({"OPENAI_BASE_URL": "https://res.services.ai.azure.com/openai/v1"}, "https://res.services.ai.azure.com"),
+                          ({"COMPLETION_URL": "https://a.services.ai.azure.com/openai/v1",
+                            "DECISION_URL": "https://b.services.ai.azure.com"}, "https://b.services.ai.azure.com")]:
+            with monkeypatch.context() as m:
+                for k, v in env.items():
+                    m.setenv(k, v)
+                config.get_decider.cache_clear()
+                answers = asyncio.run(config.get_decider()("state", {"x": {"type": "noul", "instructions": "?"}}))
+            assert seen["client"] == {"base_url": f"{host}/providers/microsoft/v1", "api_key": "key"}, env
+            assert seen["post"] == ("/systemone", {"model": "Decision-1", "state": "state",
+                                                   "questions": {"x": {"type": "noul", "instructions": "?"}}})
+            assert answers == {"x": {"type": "noul", "noul": 0.9}}
+    finally:
+        monkeypatch.undo()
+        importlib.reload(config)

@@ -6,8 +6,15 @@ from pathlib import Path
 import pytest
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 
-from r_assist import prompts
+from r_assist import config, prompts
 from r_assist.graph import REJECT, REFUSAL, build_graph, load_nodes, node_fields
+
+
+@pytest.fixture(autouse=True)
+def chat_model_decides(monkeypatch):
+    """The chat model makes every decision, whatever USE_DECISION_MODEL in .env says; the decide
+    fixture turns Decision-1 on."""
+    monkeypatch.setattr(config, "get_decider", lambda: None)
 
 PREDEFINED = {
     "fisma": {"response": "FISMA canned answer.", "flag": "r"},
@@ -309,6 +316,15 @@ def test_no_disclaimer_no_append_step():
     events = asyncio.run(collect())
     assert "append_disclaimer" not in [e.get("node") for e in events]
     assert events[-1]["answer"] == "Agent answer about BDC."
+
+
+def test_no_topics_no_classify_call():
+    # no predefined responses: nothing to match, so the classifier never asks the LLM
+    llm = StepLLM(["No", "- fisma", "Yes"])  # guardrail, classifier (must stay unasked), output check
+    result = asyncio.run(build_graph(llm, FakeAgent(), {}).ainvoke({"input": "q", "chat_history": []}))
+    assert "classify" not in llm.seen
+    assert result["answer"] == "Agent answer about BDC."
+    assert result["topics"] == [] and result["sources"] == SOURCES
 
 
 def test_stream_blocked_answer_replaced_in_done():
@@ -1246,3 +1262,124 @@ def test_after_agent_nodes_cannot_list_one_field(tmp_path, monkeypatch):
     monkeypatch.setitem(prompts.PROJECT, "extra_nodes", {"after_agent": {"a": {"fields": ["x"]}},
                                                          "after_finish": {"b": {"fields": ["x"]}}})
     assert [n for n, _, _ in load_nodes()["after_finish"]] == ["b"]
+
+
+# USE_DECISION_MODEL=true: Microsoft Decision-1 (config.get_decider) makes the yes/no and pick-one
+# decisions instead of the chat model
+class FakeDecider:
+    """Fake Decision-1: each question answered by its id from answers (a float: a Noul's yes
+    probability; a str: a Choice's pick), else 0.0 / "other". calls: (state, questions) of each request."""
+
+    def __init__(self):
+        self.answers, self.calls = {}, []
+
+    async def __call__(self, state, questions):
+        self.calls.append((state, questions))
+        return {qid: {"type": "noul", "noul": self.answers.get(qid, 0.0)} if q["type"] == "noul"
+                else {"type": "choice", "choice": self.answers.get(qid, "other")} for qid, q in questions.items()}
+
+    def asked(self, qid):
+        """(state, question) of the request that asked qid."""
+        return next((state, questions[qid]) for state, questions in self.calls if qid in questions)
+
+
+@pytest.fixture
+def decide(monkeypatch):
+    """Decision-1 on, with stand-in questions (two input rules); set its answers on the fake returned."""
+    fake = FakeDecider()
+    monkeypatch.setattr(config, "get_decider", lambda: fake)
+    monkeypatch.setitem(prompts.PROMPTS, "decision_input_guardrail", "- Is `message` off topic?\n- Is `message` abusive?")
+    monkeypatch.setitem(prompts.PROMPTS, "decision_classify", "Which topic is `question` about?")
+    monkeypatch.setitem(prompts.PROMPTS, "decision_output_guardrail", "Does `answer` help with `question`?")
+    return fake
+
+
+def decision_chat(text="q"):
+    """One chat through the graph: (final state, the fake LLM, the fake agent)."""
+    llm, agent = StepLLM([]), FakeAgent()
+    state = asyncio.run(build_graph(llm, agent, PREDEFINED).ainvoke({"input": text, "chat_history": []}))
+    return state, llm, agent
+
+
+def test_decision_model_blocks_input_when_any_rule_says_yes(decide):
+    decide.answers["rule_1"] = 0.9
+    state, llm, agent = decision_chat("you idiot")
+    assert state["blocked"] == "input" and state["answer"] == REFUSAL and not agent.called
+    assert decide.asked("rule_1") == ({"message": "you idiot"}, {"type": "noul", "instructions": "Is `message` abusive?"})
+    assert "guardrail" not in llm.seen, "the chat model was asked too"
+
+
+def test_decision_model_picks_one_topic(decide):
+    decide.answers["topic"] = "fisma"
+    state, llm, agent = decision_chat()
+    assert state["answer"] == "FISMA canned answer." and state["topics"] == ["fisma"] and not agent.called
+    assert decide.asked("topic") == ({"question": "q"}, {
+        "type": "choice", "instructions": "Which topic is `question` about?",
+        "criteria": {"fisma": None, "covid": None, "other": None}})
+    assert "classify" not in llm.seen
+
+
+def test_decision_model_other_topic_goes_to_the_agent_and_checks_its_answer(decide):
+    decide.answers["helpful"] = 0.9
+    state, llm, agent = decision_chat()
+    assert agent.called and state["topics"] == [] and state["blocked"] is None
+    assert state["answer"] == "Agent answer about BDC."
+    assert decide.asked("helpful") == ({"question": "q", "answer": "Agent answer about BDC."},
+                                       {"type": "noul", "instructions": "Does `answer` help with `question`?"})
+    assert "output" not in llm.seen
+
+
+def test_decision_model_rejects_an_unhelpful_answer(decide):
+    decide.answers["helpful"] = 0.3
+    state, _, agent = decision_chat()
+    assert agent.called and state["blocked"] == "output" and state["answer"] == REJECT
+
+
+def test_decision_model_content_filter_counts_as_block(decide, monkeypatch):
+    async def filtered(state, questions):
+        raise ValueError("Error code: 400 - {'code': 'content_filter', ...}")
+
+    monkeypatch.setattr(config, "get_decider", lambda: filtered)
+    state, _, agent = decision_chat("jailbreak attempt")
+    assert state["blocked"] == "input" and state["answer"] == REFUSAL and not agent.called
+
+
+def test_decision_model_needs_its_prompts(decide, monkeypatch):
+    for key in ("decision_input_guardrail", "decision_classify", "decision_output_guardrail"):
+        with monkeypatch.context() as m:
+            m.delitem(prompts.PROMPTS, key)
+            with pytest.raises(ValueError, match=key):
+                build_graph(StepLLM([]), FakeAgent(), PREDEFINED)
+
+
+def test_decision_model_keeps_other_for_no_topic(decide):
+    with pytest.raises(ValueError, match="other"):
+        build_graph(StepLLM([]), FakeAgent(), {**PREDEFINED, "other": {"response": "x", "flag": "a"}})
+
+
+def test_decision_model_decides_whether_to_search_and_which_papers_fit(related, decide, monkeypatch):
+    monkeypatch.setitem(prompts.PROMPTS, "related_search_decision", "Would papers on `question` help?")
+    monkeypatch.setitem(prompts.PROMPTS, "related_filter_decision", "Does `papers[{n}]` fit `question`?")
+    decide.answers.update(helpful=0.9, search=0.2)
+    state, llm, calls = run_related([], [P1, P2, P3], related)
+    assert not calls and "related" not in llm.seen and state.get("related") is None  # a no: no terms, no search
+    assert decide.asked("search") == ({"question": "q", "answer": "Agent answer about BDC."},
+                                      {"type": "noul", "instructions": "Would papers on `question` help?"})
+    # a yes: the chat model writes the terms; Decision-1 checks each paper, the fitting ones best first
+    decide.answers.update(search=0.9, paper_0=0.8, paper_1=0.1, paper_2=0.95)
+    state, llm, calls = run_related(["", "", "", "", "- asthma"], [P1, P2, P3], related)
+    assert calls == [{"keywords": ["asthma"]}] and state["related"]["artie"] == [P3, P1]
+    assert "filter" not in llm.seen
+    assert decide.asked("paper_2") == (
+        {"question": "q", "answer": "Agent answer about BDC.", "papers": ["Asthma paper", "Sleep paper", "COPD paper"]},
+        {"type": "noul", "instructions": "Does `papers[2]` fit `question`?"})
+
+
+def test_related_work_needs_its_decision_prompts(related, decide, monkeypatch):
+    monkeypatch.setitem(prompts.PROMPTS, "related_search_decision", "s")
+    monkeypatch.setitem(prompts.PROMPTS, "related_filter_decision", "f {n}")
+    for key in ("related_search_decision", "related_filter_decision"):
+        with monkeypatch.context() as m:
+            m.delitem(prompts.PROMPTS, key)
+            with pytest.raises(ValueError, match=key):
+                build_graph(StepLLM([]), FakeAgent(), PREDEFINED, nodes=related)

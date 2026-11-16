@@ -50,7 +50,7 @@ from langchain_core.output_parsers import MarkdownListOutputParser
 from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, StateGraph
 
-from . import prompts
+from . import config, prompts
 from .prompts import REJECT, REFUSAL  # canned answers live in config/prompts.yaml
 
 log = logging.getLogger(__name__)
@@ -224,7 +224,10 @@ def node_fields(nodes) -> list[str]:
 def build_graph(llm, agent, predefined: dict, tools=(), nodes=None):
     """Compile the workflow.
 
-    llm: any chat model — runs the guardrail/contextualize/classify prompts.
+    llm: any chat model — runs the guardrail/contextualize/classify prompts. With USE_DECISION_MODEL
+        (config.get_decider), Decision-1 makes the guardrails' and classify's decisions instead, asked
+        prompts.yaml's decision_* questions: one yes/no per input rule (any yes blocks), one pick among
+        the topics and "other", one yes/no on the answer (a no rejects it).
     agent: has astream({'messages': [...]}, stream_mode=["messages", "values"]) —
         produces the real answer, token-streamable.
     predefined: lowercased topic → {response, flag, link?, title?}, from config/predefined_responses.yaml.
@@ -242,8 +245,21 @@ def build_graph(llm, agent, predefined: dict, tools=(), nodes=None):
         config node's "label" setting, or a built-in step's (builtin_labels), when set.
     prompts.FOLLOWUPS 0 leaves out suggest_followups, prompts.APPEND_DISCLAIMER False append_disclaimer
         ("a"-topic texts then wait in "disclaimers" for an after_finish node of the config's own).
+        No predefined topics: classify answers without calling the LLM.
     """
     topic_names = list(predefined)
+    decide = config.get_decider()
+    if decide:
+        need = ["decision_input_guardrail", "decision_output_guardrail"] + (["decision_classify"] if topic_names else [])
+        if missing := [k for k in need if not prompts.PROMPTS.get(k)]:
+            raise ValueError(f"USE_DECISION_MODEL: add {', '.join(missing)} to {prompts.DATA_DIR / 'prompts.yaml'}")
+        if "other" in predefined:
+            raise ValueError('USE_DECISION_MODEL: no predefined topic may be named "other", what Decision-1 '
+                             "picks for a question about none of them")
+        rules = {f"rule_{i}": {"type": "noul", "instructions": rule.strip()} for i, rule
+                 in enumerate(MarkdownListOutputParser().parse(prompts.PROMPTS["decision_input_guardrail"]))}
+        if not rules:
+            raise ValueError("prompts.yaml [decision_input_guardrail]: one '- ' question per line, yes = block")
     own = [f for f in node_fields(nodes) if f not in BotState.__annotations__]
     State = TypedDict("State", {**BotState.__annotations__, **{f: Any for f in own}}, total=False)
     # each with the fields it may write side by side (after_agent): its own, none of BotState's
@@ -259,11 +275,15 @@ def build_graph(llm, agent, predefined: dict, tools=(), nodes=None):
         Yes/no LLM screen of the raw input; "yes" → refuse and end the run.
         """
         try:
-            resp = await llm.ainvoke([
-                ("system", prompts.INPUT_GUARDRAIL_SYSTEM),
-                ("human", prompts.INPUT_GUARDRAIL_HUMAN.format(input=state["input"])),
-            ])
-            blocked = resp.text.strip().lower().startswith("yes")
+            if decide:
+                answers = await decide({"message": state["input"]}, rules)
+                blocked = any(a["noul"] > config.DECISION_YES for a in answers.values())
+            else:
+                resp = await llm.ainvoke([
+                    ("system", prompts.INPUT_GUARDRAIL_SYSTEM),
+                    ("human", prompts.INPUT_GUARDRAIL_HUMAN.format(input=state["input"])),
+                ])
+                blocked = resp.text.strip().lower().startswith("yes")
         except Exception as e:
             # provider-side content filter (e.g. Azure jailbreak detection) rejects the
             # check request itself — that upstream verdict IS a block
@@ -300,18 +320,25 @@ def build_graph(llm, agent, predefined: dict, tools=(), nodes=None):
         list of names). Any "r" match → canned answer, run ends; "a" matches
         queue their responses as disclaimers and the agent runs normally.
         """
+        if not topic_names:  # no predefined responses: nothing could match, so no LLM call
+            return {"topics": [], "disclaimers": [], "sources": {}, "sources_md": ""}
         try:
-            resp = await llm.ainvoke([
-                ("system", prompts.topic_classifier_system(topic_names)),
-                ("human", state["question"]),
-            ])
-            text = resp.text
+            if decide:  # one pick: "other" (no topic) or a single topic, never two
+                answers = await decide({"question": state["question"]}, {"topic": {
+                    "type": "choice", "instructions": prompts.PROMPTS["decision_classify"],
+                    "criteria": {**dict.fromkeys(topic_names), "other": None}}})
+                parsed = [answers["topic"]["choice"]]
+            else:
+                resp = await llm.ainvoke([
+                    ("system", prompts.topic_classifier_system(topic_names)),
+                    ("human", state["question"]),
+                ])
+                parsed = [t.strip().lower() for t in MarkdownListOutputParser().parse(resp.text)]
         except Exception as e:
             # alongside the input guardrail: a filtered question is its block to report, not a crash
             if "content_filter" not in repr(e):
                 raise
-            text = ""
-        parsed = [t.strip().lower() for t in MarkdownListOutputParser().parse(text)]
+            parsed = []
         matched = [t for t in parsed if t in predefined]
         update: BotState = {"topics": matched}
         if any(predefined[t]["flag"] == "r" for t in matched):
@@ -381,10 +408,15 @@ def build_graph(llm, agent, predefined: dict, tools=(), nodes=None):
         """
         # no deterministic name-normalising pass — the agent prompt already enforces the short name
         try:
-            resp = await llm.ainvoke([
-                ("human", prompts.OUTPUT_GUARDRAIL_HUMAN.format(input=state["question"], answer=state["answer"])),
-            ])
-            blocked = not resp.text.strip().lower().startswith("yes")
+            if decide:
+                answers = await decide({"question": state["question"], "answer": state["answer"]}, {"helpful": {
+                    "type": "noul", "instructions": prompts.PROMPTS["decision_output_guardrail"]}})
+                blocked = answers["helpful"]["noul"] <= config.DECISION_YES
+            else:
+                resp = await llm.ainvoke([
+                    ("human", prompts.OUTPUT_GUARDRAIL_HUMAN.format(input=state["question"], answer=state["answer"])),
+                ])
+                blocked = not resp.text.strip().lower().startswith("yes")
         except Exception as e:
             # provider-side content filter rejects the check request (i.e. the answer) — a block
             if "content_filter" not in repr(e):

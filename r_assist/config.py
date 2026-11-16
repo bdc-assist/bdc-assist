@@ -3,7 +3,9 @@
 import os
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlparse
 
+import httpx
 from dotenv import load_dotenv
 
 load_dotenv()  # real env vars win over .env
@@ -15,6 +17,12 @@ COMPLETION_TEMPERATURE = float(os.getenv("COMPLETION_TEMPERATURE", "0"))  # ever
 # unset for non-reasoning models (gpt-4o, gpt-4o-mini); none|low|medium|high for reasoning ones
 # (gpt-6-luna). See _openai_kwargs. openai/azure/vllm only.
 COMPLETION_REASONING_EFFORT = os.getenv("COMPLETION_REASONING_EFFORT") or None
+# true: Microsoft Decision-1 (get_decider) makes the yes/no and pick-one decisions the chat model makes
+# otherwise: the guardrails, the topic match and a config node's own (examples/bdc related_work)
+USE_DECISION_MODEL = os.getenv("USE_DECISION_MODEL", "").split("#")[0].strip().lower() == "true"
+# shortcut: a Decision-1 yes is a probability above 0.5, like the chat model's yes/no; tune per step
+# on sample_questions.yaml when its answers block or reject too much or too little
+DECISION_YES = 0.5
 LOG_LEVEL = os.getenv("LOG_LEVEL", "WARNING")  # api.py's root log level: DEBUG|INFO|WARNING|ERROR
 # seconds between MCP server re-checks (api.retry_mcp): a down server's tools come back, one gone
 # down mid-session drops out. A tool call that fails twice re-checks at once.
@@ -85,3 +93,27 @@ def get_llm():
         from langchain_ollama import ChatOllama
         return ChatOllama(base_url=url, model=model, temperature=COMPLETION_TEMPERATURE)
     raise ValueError(f"Unsupported COMPLETION_MODEL_PROVIDER: {provider}")
+
+
+@lru_cache
+def get_decider():
+    """Decision-1 as async ask(state, questions) -> {question id: answer} (Azure's System One API), or
+    None when USE_DECISION_MODEL is off. state: what is judged; questions: {id: {type: noul|choice,
+    instructions, criteria?}}. The resource is DECISION_URL's host, else COMPLETION_URL's or
+    OPENAI_BASE_URL's; DECISION_MODEL is the deployment name."""
+    if not USE_DECISION_MODEL:
+        return None
+    url = urlparse(os.getenv("DECISION_URL") or os.getenv("COMPLETION_URL") or os.getenv("OPENAI_BASE_URL") or "")
+    if not url.netloc:
+        raise ValueError("USE_DECISION_MODEL=true needs DECISION_URL: the Azure resource, "
+                         "e.g. https://<name>.services.ai.azure.com")
+    import openai  # its client retries rate limits and server errors, as the chat model's does
+    client = openai.AsyncOpenAI(base_url=f"{url.scheme}://{url.netloc}/providers/microsoft/v1",
+                                api_key=os.getenv("AZURE_OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY"))
+    model = os.getenv("DECISION_MODEL") or "Decision-1"
+
+    async def ask(state, questions):
+        resp = await client.post("/systemone", body={"model": model, "state": state, "questions": questions},
+                                 cast_to=httpx.Response)
+        return resp.json()["answers"]
+    return ask

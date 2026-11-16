@@ -12,7 +12,9 @@ and dropped; no two after_agent nodes may list one). A node that raises, or take
 related_work (after_agent): papers on the question's topic from its "tool" (artie-mcp's
 search_publications), asked for or not, into its field "related": returned with the answer beside
 its sources, not among them (the answer isn't based on them); a rejected answer drops them. Two LLM calls (related_keywords_human and
-related_filter_human in prompts.yaml) decide whether to search at all and which found papers fit.
+related_filter_human in prompts.yaml) decide whether to search at all and which found papers fit. With
+USE_DECISION_MODEL, Decision-1 makes both decisions (related_search_decision, related_filter_decision) and
+the LLM only writes the search terms.
 """
 
 import asyncio
@@ -20,7 +22,7 @@ import logging
 
 from langchain_core.output_parsers import MarkdownListOutputParser
 
-from r_assist import prompts
+from r_assist import config, prompts
 from r_assist.graph import _attached_sources
 
 log = logging.getLogger(__name__)
@@ -32,7 +34,10 @@ RELATED_PAPERS = 3  # related papers kept per sources key: results come ranked b
 def related_work(llm, tools, settings):
     """The tool its settings name ("tool") is called with {"keywords": [...]}; its results' attached sources
     are the related papers. No step when it isn't loaded, or is a stand-in (its server is down)."""
-    missing = [k for k in ("related_keywords_human", "related_filter_human") if not prompts.PROMPTS.get(k)]
+    decide = config.get_decider()
+    need = ("related_keywords_human", "related_filter_human") + (
+        ("related_search_decision", "related_filter_decision") if decide else ())
+    missing = [k for k in need if not prompts.PROMPTS.get(k)]
     if missing:
         raise ValueError(f"related_work: add {', '.join(missing)} to {prompts.DATA_DIR / 'prompts.yaml'}")
     keywords_human, filter_human = prompts.PROMPTS["related_keywords_human"], prompts.PROMPTS["related_filter_human"]
@@ -54,6 +59,12 @@ def related_work(llm, tools, settings):
         or "- none". Up to RELATED_PAPERS of them go in "related" ({sources key: [{title, link,
         type}]}); a paper the answer already cites is a source, so it is left out.
         """
+        about = {"question": state["question"], "answer": state["answer"]}
+        if decide:
+            answers = await decide(about, {"search": {"type": "noul",
+                                                      "instructions": prompts.PROMPTS["related_search_decision"]}})
+            if answers["search"]["noul"] <= config.DECISION_YES:
+                return {}
         resp = await llm.ainvoke([("human", keywords_human.format(input=state["question"], answer=state["answer"]))])
         terms = [t.strip(" \"'.") for t in MarkdownListOutputParser().parse(resp.text)]  # '- "asthma"', '- none.'
         terms = [t for t in terms if t and t.lower() != "none"][:3]  # the prompt asks for 1 to 3
@@ -68,14 +79,23 @@ def related_work(llm, tools, settings):
         if not found:
             return {}
         # the search ORs every word, so some results share only a word or a program with the question
-        papers = "\n".join(f"{n}. {s['title']}" for n, (_, s) in enumerate(found, 1))
-        resp = await llm.ainvoke([("human", filter_human.format(input=state["question"], answer=state["answer"],
-                                                                papers=papers))])
-        picked = [t.strip(" #.") for t in MarkdownListOutputParser().parse(resp.text)]
-        keep = []  # best first, each once; numbers it wasn't given are ignored
-        for t in picked:
-            if t.isdigit() and 1 <= int(t) <= len(found) and found[int(t) - 1] not in keep:
-                keep.append(found[int(t) - 1])
+        if decide:  # a yes/no per paper; the fitting ones best first
+            fit = prompts.PROMPTS["related_filter_decision"]
+            answers = await decide(about | {"papers": [s["title"] for _, s in found]},
+                                   {f"paper_{n}": {"type": "noul", "instructions": fit.format(n=n)}
+                                    for n in range(len(found))})
+            yes = sorted(((answers[f"paper_{n}"]["noul"], n) for n in range(len(found))
+                          if answers[f"paper_{n}"]["noul"] > config.DECISION_YES), reverse=True)
+            keep = [found[n] for _, n in yes]
+        else:
+            papers = "\n".join(f"{n}. {s['title']}" for n, (_, s) in enumerate(found, 1))
+            resp = await llm.ainvoke([("human", filter_human.format(input=state["question"], answer=state["answer"],
+                                                                    papers=papers))])
+            picked = [t.strip(" #.") for t in MarkdownListOutputParser().parse(resp.text)]
+            keep = []  # best first, each once; numbers it wasn't given are ignored
+            for t in picked:
+                if t.isdigit() and 1 <= int(t) <= len(found) and found[int(t) - 1] not in keep:
+                    keep.append(found[int(t) - 1])
         related_papers: dict[str, list] = {}
         for key, s in keep[:RELATED_PAPERS]:
             related_papers.setdefault(key, []).append(s)
