@@ -217,14 +217,17 @@ edit each repo's `config/*.yaml` for your own project.
    `localhost:11434`. The builder and the doc service must use the same embedding model.
 2. **Configure.** In each repo `cp .env.example .env`, then fill:
    - `r-doc-builder/.env`: `COMPLETION_*` (the chunk contextualizer), `EMBEDDING_URL`/`EMBEDDING_MODEL`,
-     `DOC_MCP_URL=http://127.0.0.1:8000`, `INGEST_TOKEN`, `CONFIG_DIR=examples/bdc`.
+     `DOC_MCP_URL=http://127.0.0.1:8001` (r-doc-mcp's `MCP_PORT`), `INGEST_TOKEN`, `CONFIG_DIR=examples/bdc`.
    - `r-doc-mcp/.env`: `EMBEDDING_URL`/`EMBEDDING_MODEL` (same as the builder), the same `INGEST_TOKEN`,
      `CONFIG_DIR=examples/bdc`.
    - `r-assist/.env`: `COMPLETION_*` (the bot), `CONFIG_DIR=examples/bdc`.
-3. **Start the doc service** (ingest API + HTTP search, port 8000):
+3. **Start the doc service.** One process on `MCP_PORT` (8001) serves both sides: `/mcp` for the
+   bot, and `/ingest/*` plus `/search` for the builder.
    ```bash
-   cd r-doc-mcp && uv run uvicorn r_doc_mcp.api:app --port 8000
+   cd r-doc-mcp && uv run python -m r_doc_mcp.mcp_server --http
    ```
+   Keep it to this one process. Chroma isn't process-safe, so the standalone API
+   (`uvicorn r_doc_mcp.api:app`, port 8000) must not write the same database while this runs.
 4. **Build and push the content** (progress bars per source, file, document and chunk):
    ```bash
    cd r-doc-builder && uv run python -m r_doc_builder.ingest --build --reset
@@ -232,11 +235,12 @@ edit each repo's `config/*.yaml` for your own project.
    With contextualizing this takes about 30 minutes for the BDC sources; `--no-contextualize`
    finishes in about a minute. The build writes `data/bdc/<doc_type>.pkl` (named after `CONFIG_DIR`); to push again without
    rebuilding: `uv run python -m r_doc_builder.ingest data/bdc/ --reset`.
-5. **Start the bot.** After the push, so the MCP server opens the finished database:
+5. **Start the bot.**
    ```bash
    cd r-assist && bash demo_services.sh        # PowerShell: .\demo_services.ps1
    ```
-   This starts r-doc-mcp's MCP server on `MCP_PORT` (8001), artie-mcp on 8002 (from
+   This reuses the doc service from step 3 on `MCP_PORT` (8001), or starts it if it isn't up. It
+   also starts artie-mcp on 8002 (from
    `ARTIE_MCP_DIR`, default `../artie-mcp`; only when the config lists `artie_mcp`, as
    `examples/bdc` does) and the r-assist API on `API_PORT` (8010), reuses any already up, and stops what it started on Ctrl-C. The bot connects to
    every server listed in `<CONFIG_DIR>/mcp_servers.yaml` at startup; one that is unreachable is
@@ -256,9 +260,9 @@ it needs no server besides r-doc-mcp. Each example keeps its own data, named aft
 folder (`data/fastapi/` in r-doc-builder, the `fastapi` collection in r-doc-mcp), so switching back
 and forth never overwrites the other's; switch by editing the three `.env` files and restarting.
 
-If something is already listening on 8000, 8001, 8002 or 8010 (another stack, an old run), stop it
-first: `demo_services` would silently reuse it. Re-pushing content while the MCP server is up
-requires restarting the MCP server (rerun `demo_services`).
+If something is already listening on 8001, 8002 or 8010 (another stack, an old run), stop it
+first: `demo_services` would silently reuse it. Content re-pushed while the doc service runs is
+served at once: the push goes through that same process, so no restart is needed.
 
 ## API
 
