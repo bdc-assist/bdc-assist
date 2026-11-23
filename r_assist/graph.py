@@ -87,6 +87,12 @@ def _parse_tool_content(content):
     return parsed[0] if len(parsed) == 1 else parsed
 
 
+def _content_filtered(e: Exception) -> bool:
+    """The provider's content filter refused the call (Azure): a block, not a crash. Its error code says so; newer
+    langchain-openai (1.8.x) no longer puts it in the error's repr."""
+    return getattr(e, "code", None) == "content_filter" or "content_filter" in repr(e)
+
+
 def _doc_title(m: dict, link: str) -> str:
     """title (front matter, page/video/faq titles) → the document's top heading (first
     entry of the chunk's hierarchy) → last URL segment."""
@@ -288,7 +294,7 @@ def build_graph(llm, agent, predefined: dict, tools=(), nodes=None):
         except Exception as e:
             # provider-side content filter (e.g. Azure jailbreak detection) rejects the
             # check request itself — that upstream verdict IS a block
-            if "content_filter" not in repr(e):
+            if not _content_filtered(e):
                 raise
             blocked = True
         # just the verdict: classify may set a canned answer in this same step, so gate writes the refusal
@@ -310,7 +316,7 @@ def build_graph(llm, agent, predefined: dict, tools=(), nodes=None):
         except Exception as e:
             # runs before the input guardrail: a provider content filter rejecting the conversation is
             # the guardrail's block to report (its own check is filtered too), not a crash
-            if "content_filter" not in repr(e):
+            if not _content_filtered(e):
                 raise
             return {"question": state["input"]}
         return {"question": resp.text.strip()}
@@ -337,7 +343,7 @@ def build_graph(llm, agent, predefined: dict, tools=(), nodes=None):
                 parsed = [t.strip().lower() for t in MarkdownListOutputParser().parse(resp.text)]
         except Exception as e:
             # alongside the input guardrail: a filtered question is its block to report, not a crash
-            if "content_filter" not in repr(e):
+            if not _content_filtered(e):
                 raise
             parsed = []
         matched = [t for t in parsed if t in predefined]
@@ -420,7 +426,7 @@ def build_graph(llm, agent, predefined: dict, tools=(), nodes=None):
                 blocked = not resp.text.strip().lower().startswith("yes")
         except Exception as e:
             # provider-side content filter rejects the check request (i.e. the answer) — a block
-            if "content_filter" not in repr(e):
+            if not _content_filtered(e):
                 raise
             blocked = True
         if blocked:

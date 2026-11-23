@@ -304,6 +304,40 @@ def test_output_content_filter_counts_as_block():
     assert state["answer"] == REJECT
 
 
+def test_a_content_filter_error_with_the_code_only_still_counts_as_block():
+    # newer langchain-openai (1.8.x, seen in bdc-side-panel) keeps Azure's code on the error but no longer in its
+    # repr: every check must read the code too, or a filtered call crashes the run
+    import httpx
+    import openai
+
+    def filtered():
+        e = openai.BadRequestError("The response was filtered due to the prompt triggering Azure OpenAI's content "
+                                   "management policy.", response=httpx.Response(400, request=httpx.Request("POST", "http://x")),
+                                   body={"code": "content_filter", "message": "filtered"})
+        assert "content_filter" not in repr(e)
+        return e
+
+    class FilteredLLM:
+        async def ainvoke(self, messages):
+            raise filtered()
+
+    for history in ([], [("user", "hi"), ("assistant", "hello")]):  # with history, contextualize is filtered too
+        state = asyncio.run(build_graph(FilteredLLM(), FakeAgent(), PREDEFINED).ainvoke(
+            {"input": "jailbreak attempt", "chat_history": history}))
+        assert state["blocked"] == "input" and state["answer"] == REFUSAL
+
+    class FilteredOutputLLM:
+        replies = iter(["No", "- other"])  # input guardrail, classifier; then the output check is filtered
+
+        async def ainvoke(self, messages):
+            if (reply := next(self.replies, None)) is None:
+                raise filtered()
+            return AIMessage(content=reply)
+
+    state = asyncio.run(build_graph(FilteredOutputLLM(), FakeAgent(), PREDEFINED).ainvoke({"input": "q", "chat_history": []}))
+    assert state["blocked"] == "output" and state["answer"] == REJECT
+
+
 def test_no_disclaimer_no_append_step():
     from r_assist.api import stream_chat
 
