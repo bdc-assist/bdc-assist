@@ -273,8 +273,9 @@ served at once: the push goes through that same process, so no restart is needed
 
 ## API
 
-`POST /chat` with `{"input": "...", "chat_history": [{"role": "user|assistant", "content": "..."}]}`
-returns `{"answer", "blocked", "topics", "followups", "sources", "sources_md", "kg", "mcp_errors"}`, plus the
+`POST /chat` with `{"input": "...", "chat_history": [{"role": "user|assistant", "content": "..."}]}`, and
+optionally `"client_state": {...}`, what the client sends back about itself for your nodes (state
+`client_state`; the BDC web client: the forms it was offered), returns `{"answer", "blocked", "topics", "followups", "sources", "sources_md", "kg", "mcp_errors"}`, plus the
 `fields` your nodes list in `project.yaml`, if any. The server is stateless —
 the client keeps history. `sources` is the distinct documents behind the agent's `search_docs` chunks,
 `{"r-doc": [{title, link, type}]}`, deduplicated on link and in relevance order (empty for canned,

@@ -27,6 +27,9 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     input: str
     chat_history: list[Message] = []
+    # what the client sends back about itself, for config nodes (the web client: the forms it was offered); the
+    # server is stateless, so this is the only memory they get beyond the chat history
+    client_state: dict = {}
 
 
 class ChatResponse(BaseModel):
@@ -202,7 +205,7 @@ def final(state) -> dict:
             **{f: state.get(f) for f in extra_fields}}
 
 
-async def stream_chat(graph, input: str, chat_history: list):
+async def stream_chat(graph, input: str, chat_history: list, client_state: dict | None = None):
     """SSE events, one JSON object each:
       {"type": "node", "node", "label"?}  a graph node started (progress); label: a config node's
                                   "label" in project.yaml, if any
@@ -220,7 +223,7 @@ async def stream_chat(graph, input: str, chat_history: list):
     state = {}
     try:
         async for mode, chunk in graph.astream(
-            {"input": input, "chat_history": chat_history},
+            {"input": input, "chat_history": chat_history, "client_state": client_state or {}},
             stream_mode=["custom", "values"],
         ):
             if mode == "values":
@@ -241,7 +244,7 @@ async def chat_stream(req: ChatRequest):
     if admission.full():
         raise _busy()
     history = [(m.role, m.content) for m in req.chat_history]
-    return StreamingResponse(in_turn(stream_chat(graph, req.input, history)),
+    return StreamingResponse(in_turn(stream_chat(graph, req.input, history, req.client_state)),
                              media_type="text/event-stream")
 
 
@@ -258,6 +261,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
         state = await graph.ainvoke({
             "input": req.input,
             "chat_history": [(m.role, m.content) for m in req.chat_history],
+            "client_state": req.client_state,
         })
     finally:
         admission.release(time.monotonic() - start)

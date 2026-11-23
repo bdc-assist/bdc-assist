@@ -59,6 +59,7 @@ log = logging.getLogger(__name__)
 class BotState(TypedDict, total=False):
     input: str              # raw user message
     chat_history: list      # (role, content) tuples or BaseMessages
+    client_state: dict      # what the client sent back about itself, for config nodes (the request's client_state)
     question: str           # input rewritten as a standalone question
     topics: list[str]       # predefined topics matched by classify
     disclaimers: list[str]  # "a"-topic texts to append after the agent answer
