@@ -89,9 +89,10 @@ and the MCP re-check loop in `api.py`.
   step until it is back, and a `tool` not among the tools is logged as a warning.
   `form_offer` (`after_agent`) offers a BDC site form for the web client to prefill in its side panel
   (bdc-side-panel, a service of its own): the forms are bdc-side-panel's `GET /tools`, at its
-  `side_panel_url` setting (or `SIDE_PANEL_URL`). One form at most: a form whose page the answer links or
-  cites is offered with no LLM call; when it cites several (a search about one form brings back all of
-  them), one LLM call (`form_offer_pick_human`) picks the one the question is about; when it cites none, one
+  `side_panel_url` setting (or `SIDE_PANEL_URL`). One form at most: a form whose page the answer links in its
+  text is offered with no LLM call; when it links or cites several (a search about one form brings back all
+  of them), one LLM call (`form_offer_pick_human`) picks the one the question is about; when it cites none, or
+  one only among its sources (retrieved, not linked: a login problem can bring back Contact BDC's page), one
   LLM call (`form_offer_human`) names the form the user explicitly needs, usually none. A form offered
   before in the conversation (the web client sends them back as `client_state.offered_forms`,
   `[{id, question}]`) is offered again only when one more LLM call (`form_offer_again_human`) says the user

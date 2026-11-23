@@ -149,6 +149,9 @@ def test_bdc_offers_forms():
                                                       input="q", answer="a")
     assert '"Get Help"' in text and "- Who fixes my login loop?" in text and '"new" or "same"' in text
     assert "${" not in text and "`offered_for`" in p.PROMPTS["form_offer_again_decision"]
+    # from titles alone, "Contact BDC" reads like the place for a support problem (seen live, Decision-1 and LLM)
+    for k in ("form_offer_human", "form_offer_decision", "form_offer_pick_human", "form_offer_pick_decision"):
+        assert "Get Help is for support" in p.PROMPTS[k] and "not support" in p.PROMPTS[k], k
 
 
 def test_a_key_written_twice_fails(tmp_path, monkeypatch):

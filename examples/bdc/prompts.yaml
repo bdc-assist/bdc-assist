@@ -211,6 +211,8 @@ form_offer_human: |
   Given the user question and the answer below, decide whether the user explicitly asks for one of these forms, or
   clearly needs to submit one of them now: e.g. to report a problem to the help desk, contact BDC, request cloud
   credits, submit a publication, or sign up for the newsletter. Most questions need none.
+  Get Help is for support: errors, data access, accounts and logins, platform problems, usage costs. Contact
+  BDC is for general inquiries (partnerships, collaborations, outreach), not support.
   The response can ONLY be the number of that form, or "none", with no additional text or explanation.
 
   <forms>
@@ -227,7 +229,7 @@ form_offer_human: |
 
 # Decision-1's version (USE_DECISION_MODEL=true): `question`, `answer` as above; `forms` = the forms' titles.
 form_offer_decision: |
-  Which form in `forms` does `question` explicitly ask for, or clearly need to submit now (e.g. reporting a problem to the help desk, contacting BDC, requesting cloud credits, submitting a publication, signing up for the newsletter)? Choose none when it needs no form, which is most questions.
+  Which form in `forms` does `question` explicitly ask for, or clearly need to submit now (e.g. reporting a problem to the help desk, contacting BDC, requesting cloud credits, submitting a publication, signing up for the newsletter)? Choose none when it needs no form, which is most questions. Get Help is for support: errors, data access, accounts and logins, platform problems, usage costs. Contact BDC is for general inquiries (partnerships, collaborations, outreach), not support.
 
 # form_offer, when the answer cites several of the forms (a search about one form brings back all of them): the one
 # form the question is about; only one is offered. {forms} = the cited forms, numbered.
@@ -235,6 +237,8 @@ form_offer_pick_human: |
   The web client can help users fill in one of ${short_name}'s website forms in a side panel, one form at a time.
   The answer below cites several of these forms. Given the user question and the answer, pick the one form the
   question is about or the user needs to submit. Answer "none" only when none of them fits the question.
+  Get Help is for support: errors, data access, accounts and logins, platform problems, usage costs. Contact
+  BDC is for general inquiries (partnerships, collaborations, outreach), not support.
   The response can ONLY be the number of that form, or "none", with no additional text or explanation.
 
   <forms>
@@ -251,7 +255,7 @@ form_offer_pick_human: |
 
 # Decision-1's version: `forms` = the cited forms' titles.
 form_offer_pick_decision: |
-  The answer cites several of the website's forms in `forms`; only one can be offered. Which one is `question` about, or does the user need to submit? Choose none only when none of them fits `question`.
+  The answer cites several of the website's forms in `forms`; only one can be offered. Which one is `question` about, or does the user need to submit? Choose none only when none of them fits `question`. Get Help is for support: errors, data access, accounts and logins, platform problems, usage costs. Contact BDC is for general inquiries (partnerships, collaborations, outreach), not support.
 
 # form_offer, when the form to offer was offered earlier in the conversation (the web client sends back the forms
 # it was offered, each with its question): "new" offers it again, for a new draft; "same" offers nothing, its card

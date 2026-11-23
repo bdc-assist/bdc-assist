@@ -19,9 +19,10 @@ the LLM only writes the search terms.
 form_offer (after_agent): a BDC site form for the web client to offer to prefill in its side panel, into its
 field "form_offer" ({question, forms: [{id, title, url}]}; question: the contextualized question, which the side
 panel drafts from). The forms are bdc-side-panel's (GET /tools at "side_panel_url", SIDE_PANEL_URL overrides
-it). One form at most: the one the answer links or cites, with no LLM call; when it cites several, one LLM call
-(form_offer_pick_human) picks the one the question is about; when none, one LLM call (form_offer_human) names
-the one the user explicitly needs, usually none. A form offered before in the conversation (the request's
+it). One form at most: the one the answer links in its text, with no LLM call; when it links or cites several,
+one LLM call (form_offer_pick_human) picks the one the question is about; when it cites none, or one only among
+its sources (retrieved, not linked: weak evidence), one LLM call (form_offer_human) names the one the user
+explicitly needs, usually none. A form offered before in the conversation (the request's
 client_state.offered_forms, [{id, question}], from the web client) is offered again only when one more LLM call
 (form_offer_again_human) says the user needs it for a new request. With USE_DECISION_MODEL, Decision-1's
 *_decision versions.
@@ -123,7 +124,8 @@ _LINK = re.compile(r"https?://[^\s)\]>\"'<]+")
 
 
 def _same(url):
-    return url.rstrip(".,;:").rstrip("/")  # a link at a sentence's end, or without its trailing slash
+    # the same page: at a sentence's end, in **bold**, with an #anchor or ?query, or without its trailing slash
+    return re.split(r"[?#]", url, maxsplit=1)[0].rstrip(".,;:*_").rstrip("/")
 
 
 async def _side_panel_forms(url):
@@ -164,7 +166,7 @@ def form_offer(llm, tools, settings):
         numbered = "\n".join(f"{n}. {t}" for n, t in enumerate(titles, 1))
         resp = await llm.ainvoke([("human", prompts.PROMPTS[f"{kind}_human"].format(
             input=state["question"], answer=state["answer"], forms=numbered))])
-        n = int(m.group()) if (m := re.search(r"\d+", resp.text)) else 0  # "2", "- 2"; "none" has none
+        n = int(m[1]) if (m := re.match(r"\W*(\d+)", resp.text)) else 0  # "2", "- 2"; not "None of these 3"
         return [forms[n - 1]] if 1 <= n <= len(forms) else []
 
     async def again(state, form, earlier):
@@ -181,16 +183,19 @@ def form_offer(llm, tools, settings):
 
     async def node(state):
         """
-        One form at most: the one the answer links (its sources, or a link in its text), with no LLM call; of
-        several, the one the LLM picks; of none, the one the user explicitly needs, usually none. One offered
-        before: only for a new request.
+        One form at most: the one the answer links in its text, with no LLM call; of several (linked or among
+        its sources), the one the LLM picks; of none, or one only among its sources, the one the user explicitly
+        needs, usually none. One offered before: only for a new request.
         """
         forms = await _side_panel_forms(url)
         if not forms:
             return {}
-        links = {_same(s["link"]) for items in (state.get("sources") or {}).values() for s in items if s.get("link")}
-        links |= {_same(u) for u in _LINK.findall(state.get("answer") or "")}
+        linked = {_same(u) for u in _LINK.findall(state.get("answer") or "")}  # in the answer's text
+        links = linked | {_same(s["link"]) for items in (state.get("sources") or {}).values() for s in items
+                          if s.get("link")}
         offered = [f for f in forms if _same(f["url"]) in links]
+        if len(offered) == 1 and _same(offered[0]["url"]) not in linked:
+            offered = []  # only retrieved, not linked: as good as none cited (a login problem can bring back Contact BDC)
         if len(offered) != 1:  # a search about one form brings back all of them: the LLM picks one
             offered = await pick(state, offered or forms, "form_offer_pick" if offered else "form_offer")
         if not offered:

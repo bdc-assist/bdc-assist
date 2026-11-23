@@ -56,12 +56,24 @@ def run(node, **state):
     return asyncio.run(node({**STATE, **state}))
 
 
-def test_a_cited_form_page_is_offered_without_llm(offer):
+def test_a_cited_form_the_answer_links_is_offered_without_llm(offer):
     make, _, asked = offer
     llm = FakeLLM("2")
     sources = {"bdc-doc": [{"title": "Get Help", "link": "https://bdc/help/get-help", "type": "page"}]}
-    assert run(make(llm), sources=sources) == {"form_offer": {"question": STATE["question"], "forms": [OFFER_GH]}}
+    out = run(make(llm), sources=sources, answer="Use the [Get Help form](https://bdc/help/get-help/).")
+    assert out == {"form_offer": {"question": STATE["question"], "forms": [OFFER_GH]}}
     assert llm.seen == [] and asked == ["http://sp"]
+
+
+def test_a_form_only_among_the_sources_is_left_to_the_llm(offer):
+    # retrieved, not linked in the answer: weak evidence (a search about a login problem can bring back Contact
+    # BDC's page alone), so the LLM names the form the user needs, from all of them, as with none cited
+    make, _, _ = offer
+    sources = {"bdc-doc": [{"title": "Contact BDC", "link": "https://bdc/help/contact-bdc/", "type": "page"}]}
+    llm = FakeLLM("1")
+    assert run(make(llm), sources=sources) == {"form_offer": {"question": STATE["question"], "forms": [OFFER_GH]}}
+    assert llm.seen[0].startswith("Forms for") and "1. Get Help\n2. Contact BDC\n3. Stay Connected" in llm.seen[0]
+    assert run(make(FakeLLM("none")), sources=sources) == {}
 
 
 def test_a_link_in_the_answer_text_counts(offer):
@@ -101,14 +113,14 @@ def test_several_cited_forms_the_decider_picks_one_of_them(offer, monkeypatch):
 
 # the web client sends back the forms it was offered earlier in the conversation, each with its question
 EARLIER = {"client_state": {"offered_forms": [{"id": "get-help", "question": "Who fixes my login loop?"}]}}
-CITES_GH = {"bdc-doc": [{"title": "Get Help", "link": "https://bdc/help/get-help/", "type": "form"}]}
+LINKS_GH = "Use the [Get Help form](https://bdc/help/get-help/)."  # an answer that links Get Help
 
 
 def test_a_form_offered_before_is_offered_again_only_for_a_new_request(offer):
     # a long conversation: the same form for another problem gets a new card (a new draft); a question about the
     # one already offered ("what should I put in it?") gets none, its card and draft are already there
     make, _, _ = offer
-    new = {"question": "My dbGaP access was approved but I can't see the data. Who can help?", "sources": CITES_GH}
+    new = {"question": "My dbGaP access was approved but I can't see the data. Who can help?", "answer": LINKS_GH}
     llm = FakeLLM("new")
     assert run(make(llm), **new, **EARLIER) == {"form_offer": {"question": new["question"], "forms": [OFFER_GH]}}
     assert len(llm.seen) == 1 and "Who fixes my login loop?" in llm.seen[0] and "dbGaP" in llm.seen[0]
@@ -120,10 +132,10 @@ def test_a_form_offered_before_is_offered_again_only_for_a_new_request(offer):
 def test_a_form_not_offered_before_needs_no_extra_call(offer):
     make, _, _ = offer
     llm = FakeLLM("same")
-    cites_cb = {"bdc-doc": [{"title": "Contact BDC", "link": "https://bdc/help/contact-bdc/", "type": "form"}]}
-    assert [f["id"] for f in run(make(llm), sources=cites_cb, **EARLIER)["form_offer"]["forms"]] == ["contact-bdc"]
+    links_cb = "Use [Contact BDC](https://bdc/help/contact-bdc/)."
+    assert [f["id"] for f in run(make(llm), answer=links_cb, **EARLIER)["form_offer"]["forms"]] == ["contact-bdc"]
     assert llm.seen == []
-    assert run(make(llm), sources=CITES_GH, client_state={})["form_offer"]["forms"] == [OFFER_GH]  # none sent yet
+    assert run(make(llm), answer=LINKS_GH, client_state={})["form_offer"]["forms"] == [OFFER_GH]  # none sent yet
     assert llm.seen == []
 
 
@@ -140,7 +152,7 @@ def test_the_decider_says_whether_a_form_offered_before_is_needed_again(offer, m
             return {"again": {"noul": noul}}
 
         monkeypatch.setattr(config, "get_decider", lambda: decide)
-        assert run(make(FakeLLM()), sources=CITES_GH, **EARLIER) == expected
+        assert run(make(FakeLLM()), answer=LINKS_GH, **EARLIER) == expected
         assert asked[0][1] == {"again": {"type": "noul", "instructions": "Needed again, for a new request?"}}
         assert asked[0][0]["form"] == "Get Help" and asked[0][0]["offered_for"] == ["Who fixes my login loop?"]
 
@@ -150,6 +162,21 @@ def test_llm_picks_an_explicitly_needed_form(offer):
     llm = FakeLLM("2")
     assert [f["id"] for f in run(make(llm))["form_offer"]["forms"]] == ["contact-bdc"]
     assert "1. Get Help" in llm.seen[0] and "2. Contact BDC" in llm.seen[0] and STATE["question"] in llm.seen[0]
+
+
+def test_only_a_number_at_the_start_of_the_reply_counts(offer):
+    # "None of these 3 fit" isn't form 3
+    make, _, _ = offer
+    assert run(make(FakeLLM("None of these 3 fit."))) == {}
+    assert [f["id"] for f in run(make(FakeLLM("- 2")))["form_offer"]["forms"]] == ["contact-bdc"]
+
+
+def test_a_form_link_with_an_anchor_a_query_or_in_bold_still_counts(offer):
+    make, _, _ = offer
+    for answer in ("See https://bdc/help/contact-bdc/#form.", "See https://bdc/help/contact-bdc?ref=chat",
+                   "See **https://bdc/help/contact-bdc/**"):
+        out = run(make(FakeLLM()), answer=answer)
+        assert [f["id"] for f in out["form_offer"]["forms"]] == ["contact-bdc"], answer
 
 
 def test_llm_none_means_no_offer(offer):
