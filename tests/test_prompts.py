@@ -140,6 +140,15 @@ def test_bdc_offers_forms():
     text = p.PROMPTS["form_offer_human"].format(input="q", answer="a", forms="1. Get Help")
     assert "1. Get Help" in text and '"none"' in text and "Most questions need none" in text
     assert "`forms`" in p.PROMPTS["form_offer_decision"]
+    # several cited forms: the one the question is about, "none" only when none fits
+    text = p.PROMPTS["form_offer_pick_human"].format(input="q", answer="a", forms="1. Get Help\n2. Contact BDC")
+    assert "2. Contact BDC" in text and "one form at a time" in text and "${" not in text
+    assert "`forms`" in p.PROMPTS["form_offer_pick_decision"]
+    # a form offered before: again only for a new request
+    text = p.PROMPTS["form_offer_again_human"].format(form="Get Help", earlier="- Who fixes my login loop?",
+                                                      input="q", answer="a")
+    assert '"Get Help"' in text and "- Who fixes my login loop?" in text and '"new" or "same"' in text
+    assert "${" not in text and "`offered_for`" in p.PROMPTS["form_offer_again_decision"]
 
 
 def test_a_key_written_twice_fails(tmp_path, monkeypatch):

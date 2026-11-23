@@ -228,3 +228,51 @@ form_offer_human: |
 # Decision-1's version (USE_DECISION_MODEL=true): `question`, `answer` as above; `forms` = the forms' titles.
 form_offer_decision: |
   Which form in `forms` does `question` explicitly ask for, or clearly need to submit now (e.g. reporting a problem to the help desk, contacting BDC, requesting cloud credits, submitting a publication, signing up for the newsletter)? Choose none when it needs no form, which is most questions.
+
+# form_offer, when the answer cites several of the forms (a search about one form brings back all of them): the one
+# form the question is about; only one is offered. {forms} = the cited forms, numbered.
+form_offer_pick_human: |
+  The web client can help users fill in one of ${short_name}'s website forms in a side panel, one form at a time.
+  The answer below cites several of these forms. Given the user question and the answer, pick the one form the
+  question is about or the user needs to submit. Answer "none" only when none of them fits the question.
+  The response can ONLY be the number of that form, or "none", with no additional text or explanation.
+
+  <forms>
+  {forms}
+  </forms>
+
+  <question>
+  {input}
+  </question>
+
+  <answer>
+  {answer}
+  </answer>
+
+# Decision-1's version: `forms` = the cited forms' titles.
+form_offer_pick_decision: |
+  The answer cites several of the website's forms in `forms`; only one can be offered. Which one is `question` about, or does the user need to submit? Choose none only when none of them fits `question`.
+
+# form_offer, when the form to offer was offered earlier in the conversation (the web client sends back the forms
+# it was offered, each with its question): "new" offers it again, for a new draft; "same" offers nothing, its card
+# and draft are already there. {earlier} = the questions it was offered for, one per line.
+form_offer_again_human: |
+  The web client already offered the user ${short_name}'s "{form}" form earlier in this conversation, for:
+  {earlier}
+
+  Given the user's latest question and its answer below, does the user need to submit "{form}" again for a new,
+  different request (another problem or need)? Or is the question about a request it was already offered for,
+  such as what to put in it?
+  The response can ONLY be "new" or "same", with no additional text or explanation.
+
+  <question>
+  {input}
+  </question>
+
+  <answer>
+  {answer}
+  </answer>
+
+# Decision-1's version: `form` = the form's title; `offered_for` = the questions it was offered for.
+form_offer_again_decision: |
+  `offered_for` lists the requests the web client already offered the form `form` for, earlier in this conversation. Does `question` need `form` again for a new, different request (another problem or need), not one in `offered_for` and not a question about what to put in it?

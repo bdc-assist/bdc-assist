@@ -19,8 +19,12 @@ the LLM only writes the search terms.
 form_offer (after_agent): a BDC site form for the web client to offer to prefill in its side panel, into its
 field "form_offer" ({question, forms: [{id, title, url}]}; question: the contextualized question, which the side
 panel drafts from). The forms are bdc-side-panel's (GET /tools at "side_panel_url", SIDE_PANEL_URL overrides
-it): one the answer links or cites is offered with no LLM call; otherwise one LLM call (form_offer_human; with
-USE_DECISION_MODEL, Decision-1's form_offer_decision) names the one the user explicitly needs, usually none.
+it). One form at most: the one the answer links or cites, with no LLM call; when it cites several, one LLM call
+(form_offer_pick_human) picks the one the question is about; when none, one LLM call (form_offer_human) names
+the one the user explicitly needs, usually none. A form offered before in the conversation (the request's
+client_state.offered_forms, [{id, question}], from the web client) is offered again only when one more LLM call
+(form_offer_again_human) says the user needs it for a new request. With USE_DECISION_MODEL, Decision-1's
+*_decision versions.
 bdc-side-panel down: no offer, as its panel couldn't draft one either. A rejected answer drops it.
 """
 
@@ -138,7 +142,9 @@ async def _side_panel_forms(url):
 def form_offer(llm, tools, settings):
     """bdc-side-panel's address is its settings' "side_panel_url", or SIDE_PANEL_URL; no step without one."""
     decide = config.get_decider()
-    need = ("form_offer_human",) + (("form_offer_decision",) if decide else ())
+    # the prompts: a form the user needs; which of the cited forms; whether one offered before is needed again
+    kinds = ("form_offer", "form_offer_pick", "form_offer_again")
+    need = [f"{k}_human" for k in kinds] + [f"{k}_decision" for k in kinds if decide]
     missing = [k for k in need if not prompts.PROMPTS.get(k)]
     if missing:
         raise ValueError(f"form_offer: add {', '.join(missing)} to {prompts.DATA_DIR / 'prompts.yaml'}")
@@ -146,12 +152,38 @@ def form_offer(llm, tools, settings):
     if not url:
         log.warning("form_offer has no side_panel_url in project.yaml, nor SIDE_PANEL_URL: no form_offer step")
         return None
-    human = prompts.PROMPTS["form_offer_human"]
+
+    async def pick(state, forms, kind):
+        """One of forms, or none, by one LLM call (kind: its prompts') or Decision-1's choice of their titles."""
+        titles = [f["title"] for f in forms]
+        if decide:
+            answers = await decide({"question": state["question"], "answer": state["answer"], "forms": titles},
+                                   {"form": {"type": "choice", "instructions": prompts.PROMPTS[f"{kind}_decision"],
+                                             "criteria": {**dict.fromkeys(titles), "none": None}}})
+            return [f for f in forms if f["title"] == answers["form"]["choice"]][:1]
+        numbered = "\n".join(f"{n}. {t}" for n, t in enumerate(titles, 1))
+        resp = await llm.ainvoke([("human", prompts.PROMPTS[f"{kind}_human"].format(
+            input=state["question"], answer=state["answer"], forms=numbered))])
+        n = int(m.group()) if (m := re.search(r"\d+", resp.text)) else 0  # "2", "- 2"; "none" has none
+        return [forms[n - 1]] if 1 <= n <= len(forms) else []
+
+    async def again(state, form, earlier):
+        """Whether the user needs form again, for a new request: not one of earlier, the questions it was offered for."""
+        if decide:
+            answers = await decide({"question": state["question"], "answer": state["answer"], "form": form["title"],
+                                    "offered_for": earlier},
+                                   {"again": {"type": "noul", "instructions": prompts.PROMPTS["form_offer_again_decision"]}})
+            return answers["again"]["noul"] > config.DECISION_YES
+        resp = await llm.ainvoke([("human", prompts.PROMPTS["form_offer_again_human"].format(
+            form=form["title"], earlier="\n".join(f"- {q}" for q in earlier), input=state["question"],
+            answer=state["answer"]))])
+        return resp.text.strip(" \"'.-").lower().startswith("new")  # unsure: no second card
 
     async def node(state):
         """
-        The forms the answer links (its sources, or a link in its text), with no LLM call; otherwise the one the
-        LLM picks from the numbered titles, or none (Decision-1: a choice of titles or "none").
+        One form at most: the one the answer links (its sources, or a link in its text), with no LLM call; of
+        several, the one the LLM picks; of none, the one the user explicitly needs, usually none. One offered
+        before: only for a new request.
         """
         forms = await _side_panel_forms(url)
         if not forms:
@@ -159,20 +191,15 @@ def form_offer(llm, tools, settings):
         links = {_same(s["link"]) for items in (state.get("sources") or {}).values() for s in items if s.get("link")}
         links |= {_same(u) for u in _LINK.findall(state.get("answer") or "")}
         offered = [f for f in forms if _same(f["url"]) in links]
+        if len(offered) != 1:  # a search about one form brings back all of them: the LLM picks one
+            offered = await pick(state, offered or forms, "form_offer_pick" if offered else "form_offer")
         if not offered:
-            titles = [f["title"] for f in forms]
-            if decide:
-                answers = await decide({"question": state["question"], "answer": state["answer"], "forms": titles},
-                                       {"form": {"type": "choice", "instructions": prompts.PROMPTS["form_offer_decision"],
-                                                 "criteria": {**dict.fromkeys(titles), "none": None}}})
-                offered = [f for f in forms if f["title"] == answers["form"]["choice"]][:1]
-            else:
-                numbered = "\n".join(f"{n}. {t}" for n, t in enumerate(titles, 1))
-                resp = await llm.ainvoke([("human", human.format(input=state["question"], answer=state["answer"],
-                                                                 forms=numbered))])
-                n = int(m.group()) if (m := re.search(r"\d+", resp.text)) else 0  # "2", "- 2"; "none" has none
-                offered = [forms[n - 1]] if 1 <= n <= len(forms) else []
-        if not offered:
+            return {}
+        # offered before in this conversation (the web client sends them back): again only for a new request, else
+        # its card and draft are already there
+        sent = (state.get("client_state") or {}).get("offered_forms") or []
+        earlier = [o.get("question") or "(unknown)" for o in sent if isinstance(o, dict) and o.get("id") == offered[0]["id"]]
+        if earlier and not await again(state, offered[0], earlier):
             return {}
         return {"form_offer": {"question": state["question"],
                                "forms": [{k: f[k] for k in ("id", "title", "url")} for f in offered]}}
