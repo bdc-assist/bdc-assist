@@ -20,6 +20,7 @@ graph TD;
 	output_guardrail(output_guardrail)
 	suggest_followups(suggest_followups)
 	related_work(related_work)
+	form_offer(form_offer)
 	append_disclaimer(append_disclaimer)
 	gate(gate)
 	finish(finish)
@@ -30,9 +31,11 @@ graph TD;
 	contextualize --> input_guardrail;
 	finish -. &nbsp;done or blocked&nbsp; .-> __end__;
 	finish -. &nbsp;disclaimer&nbsp; .-> append_disclaimer;
+	form_offer --> finish;
 	gate -. &nbsp;blocked or canned&nbsp; .-> __end__;
 	gate -. &nbsp;regular&nbsp; .-> main_agent;
 	input_guardrail --> gate;
+	main_agent --> form_offer;
 	main_agent --> output_guardrail;
 	main_agent --> related_work;
 	main_agent --> suggest_followups;
@@ -63,6 +66,7 @@ graph TD;
 	output_guardrail(output_guardrail)
 	suggest_followups(suggest_followups)
 	related_work(related_work)
+	form_offer(form_offer)
 	append_disclaimer(append_disclaimer)
 	gate(gate)
 	finish(finish)
@@ -73,9 +77,11 @@ graph TD;
 	contextualize --> input_guardrail;
 	finish -. &nbsp;done or blocked&nbsp; .-> __end__;
 	finish -. &nbsp;disclaimer&nbsp; .-> append_disclaimer;
+	form_offer --> finish;
 	gate -. &nbsp;blocked or canned&nbsp; .-> __end__;
 	gate -. &nbsp;regular&nbsp; .-> main_agent;
 	input_guardrail --> gate;
+	main_agent --> form_offer;
 	main_agent --> output_guardrail;
 	main_agent --> related_work;
 	main_agent --> suggest_followups;
@@ -84,8 +90,8 @@ graph TD;
 	suggest_followups --> finish;
 	append_disclaimer --> __end__;
 	subgraph main_agent
-	main_agent\3atools(tools)
 	main_agent\3amodel(model)
+	main_agent\3atools(tools)
 	main_agent\3ar_doc_mcp(r_doc_mcp)
 	main_agent\3adug_mcp(dug_mcp + dug_kg)
 	main_agent\3aartie_mcp(artie_mcp)
@@ -101,7 +107,7 @@ graph TD;
 	classDef agent fill:#fecaca,stroke:#f87171
 	class main_agent agent
 	classDef own fill:#bbf7d0,stroke:#4ade80
-	class related_work,main_agent\3ar_doc_mcp,main_agent\3adug_mcp,main_agent\3aartie_mcp own
+	class related_work,form_offer,main_agent\3ar_doc_mcp,main_agent\3adug_mcp,main_agent\3aartie_mcp own
 ```
 
 ## General purpose, every slot with a placeholder (workflow_general.png)
@@ -199,8 +205,8 @@ graph TD;
 	suggest_followups --> finish;
 	append_disclaimer --> __end__;
 	subgraph main_agent
-	main_agent\3atools(tools)
 	main_agent\3amodel(model)
+	main_agent\3atools(tools)
 	main_agent\3ar_doc_mcp(r_doc_mcp)
 	main_agent\3amore_mcp_servers(more_mcp_servers + their_interceptors)
 	main_agent\3amodel -.-> main_agent\3atools;

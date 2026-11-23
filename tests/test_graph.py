@@ -838,6 +838,8 @@ def test_drawing_shows_the_agent_inside():
     # inside: model and tools calling each other, and the servers the tools call
     assert r"main_agent\3amodel -.-> main_agent\3atools;" in m and r"main_agent\3atools -.-> main_agent\3amodel;" in m
     assert r"main_agent\3atools -.-> main_agent\3ar_doc_mcp;" in m and "(dug_mcp + dug_kg)" in m
+    # model listed before tools, every run: mermaid lays the box out from the first, so model sits above tools
+    assert m.index(r"main_agent\3amodel(model)") < m.index(r"main_agent\3atools(tools)")
     # deepagents' middleware hooks and the model's self-loop are internals, left out
     assert "Middleware" not in m and r"main_agent\3amodel -.-> main_agent\3amodel;" not in m
     assert "__end__([<p>__end__</p>]):::last" in m  # still styled as the end

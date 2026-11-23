@@ -566,11 +566,13 @@ def drawing(graph, agent, servers: dict) -> str:
 
     outer, inner = graph.get_graph(), agent.get_graph()
     nodes = {k: n for k, n in outer.nodes.items() if k != "main_agent"}  # main_agent becomes the box
-    keep = {k for k in inner.nodes if k not in (START, END) and "." not in k}  # model, tools
+    # model, tools, in that order (not a set's, which changes per run): mermaid lays the box out from the first
+    # one listed, so model sits above tools
+    keep = sorted((k for k in inner.nodes if k not in (START, END) and "." not in k), key=lambda k: k != "model")
     nodes |= {f"main_agent:{k}": inner.nodes[k]._replace(id=f"main_agent:{k}", name=k) for k in keep}
     edges = list(outer.edges)
     edges += [e._replace(source=f"main_agent:{e.source}", target=f"main_agent:{e.target}") for e in inner.edges
-              if {e.source, e.target} <= keep and e.source != e.target]
+              if {e.source, e.target} <= set(keep) and e.source != e.target]
     for name, conn in servers.items():
         label = " + ".join([name, *(conn.get("interceptors") or [])])
         nodes[f"main_agent:{name}"] = Node(id=f"main_agent:{name}", name=label, data=None, metadata=None)
