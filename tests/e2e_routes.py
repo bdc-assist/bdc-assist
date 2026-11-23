@@ -1,9 +1,10 @@
 """End-to-end route checks against the running services (demo_services.sh) with the real models:
 every route demo.ipynb shows, plus BDC's own steps (related_work, Dug), each checked by its outcome
-and the steps it ran. The questions target examples/bdc: start the API with CONFIG_DIR=examples/bdc.
-Prints PASS/FAIL per route; exits 1 if any failed. About 10 chats' worth of LLM tokens.
+and the steps it ran, and which form form_offer offers (bdc-side-panel up too). The questions target
+examples/bdc: start the API with CONFIG_DIR=examples/bdc. Prints PASS/FAIL per route; exits 1 if any failed.
+About 20 chats' worth of LLM tokens; --only form runs just form_offer's 9.
 
-    uv run python tests/e2e_routes.py [--api-url http://127.0.0.1:8010]
+    uv run python tests/e2e_routes.py [--api-url http://127.0.0.1:8010] [--only form]
 """
 
 import argparse
@@ -26,11 +27,11 @@ RELATED = prompts.PROJECT["extra_nodes"]["after_agent"]["related_work"]  # its s
 DUG_TOOLS = set(yaml.safe_load((prompts.DATA_DIR / "mcp_servers.yaml").read_text(encoding="utf-8"))["dug_mcp"]["stand_ins"])
 
 
-def run(url, text, history):
+def run(url, text, history, client_state=None):
     """-> (every event before done, the done event)."""
     events, done = [], None
-    with httpx.stream("POST", f"{url}/chat/stream", json={"input": text, "chat_history": history},
-                      timeout=300) as r:
+    body = {"input": text, "chat_history": history, "client_state": client_state or {}}
+    with httpx.stream("POST", f"{url}/chat/stream", json=body, timeout=300) as r:
         r.raise_for_status()
         for line in r.iter_lines():
             if line.startswith("data: "):
@@ -49,6 +50,17 @@ def answered(n, d, e):
 
 def called(e, tools):
     return any(x["type"] == "status" and x["text"].removeprefix("calling ") in tools for x in e)
+
+
+def offered(d):
+    """The titles of the forms an answer offers (form_offer), [] for none."""
+    return [f["title"] for f in (d.get("form_offer") or {}).get("forms", [])]
+
+
+def offers(*titles):
+    """form_offer's checks: it ran on an answer, and offered exactly these forms (none: no card)."""
+    return lambda n, d, e: [("not blocked", d["blocked"] is None), ("form_offer ran", "form_offer" in n),
+                            (f"offered {list(titles) or 'no form'}", offered(d) == list(titles))]
 
 
 CASES = [  # name, question, checks(step names, done, events), history (or the answer of an earlier case to follow)
@@ -80,16 +92,32 @@ CASES = [  # name, question, checks(step names, done, events), history (or the a
                       ("no follow-ups", not d["followups"])], None),
     ("off-topic", "Order me a pizza",
      lambda n, d, e: [("blocked input", d["blocked"] == "input"), ("agent skipped", "main_agent" not in n)], None),
+    # form_offer (bdc-side-panel must be up): one card at most. A follow-up sends back the form its earlier answer
+    # offered (client_state), as the web client does: offered again only for a new request
+    ("form: none needed", "What is PIC-SURE used for?", offers(), None),
+    ("form: one cited", "How do I request cloud credits for my project?", offers("Usage Costs"), None),
+    ("form: several cited", "What does the cloud credit request form ask for?", offers("Usage Costs"), None),
+    ("form: explicitly needed", "I'd like to sign up for the BDC newsletter.", offers("Stay Connected"), None),
+    ("form: login loop", "I'm stuck in a login loop, who do I contact?", offers("Get Help"), None),
+    ("form: same request again", "What information should I include in the Get Help form?", offers(), "form: login loop"),
+    ("form: new request, same form", "Separately, my dbGaP data access request was approved last week, but I still "
+     "can't see the TOPMed data in BDC. Who can help with that?", offers("Get Help"), "form: login loop"),
+    ("form: another form", "Also, how do I submit a paper I published using BDC data?",
+     offers("Submit BDC-Enabled Research"), "form: login loop"),
+    ("form: unrelated follow-up", "What is TOPMed?", offers(), "form: login loop"),
 ]
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--api-url", default="http://127.0.0.1:8010")
-    url = ap.parse_args().api_url
+    ap.add_argument("--only", help="run only the cases whose name contains this, e.g. form")
+    args = ap.parse_args()
+    url = args.api_url
+    cases = [c for c in CASES if not args.only or args.only in c[0]]
     asked, failures = {}, 0  # name -> (question, done), for a follow-up
-    for name, text, checks, after in CASES:
-        history = []
+    for name, text, checks, after in cases:
+        history, client_state = [], {}
         if after:
             if after not in asked:
                 failures += 1
@@ -97,9 +125,13 @@ def main():
                 continue
             q, d = asked[after]
             history = [{"role": "user", "content": q}, {"role": "assistant", "content": d["answer"]}]
+            # as the web client: the forms the earlier answer offered, each with its question
+            offer = d.get("form_offer") or {}
+            client_state = {"offered_forms": [{"id": f["id"], "question": offer.get("question")}
+                                              for f in offer.get("forms", [])]}
         start = time.monotonic()
         try:
-            events, done = run(url, text, history)
+            events, done = run(url, text, history, client_state)
         except Exception as e:
             failures += 1
             print(f"FAIL  {name}: request failed: {type(e).__name__}: {e}")
@@ -114,8 +146,9 @@ def main():
         failures += bool(failed)
         print(f"{'FAIL' if failed else 'PASS'}  {name}: {time.monotonic() - start:.0f}s | blocked={done['blocked']} "
               f"topics={done['topics']} sources={ {k: len(v) for k, v in done['sources'].items()} } "
-              f"followups={len(done['followups'])} | steps={nodes}" + (f"\n      failed: {failed}" if failed else ""))
-    print(f"\n{len(CASES) - failures}/{len(CASES)} passed")
+              f"followups={len(done['followups'])} forms={offered(done)} | steps={nodes}"
+              + (f"\n      failed: {failed}" if failed else ""))
+    print(f"\n{len(cases) - failures}/{len(cases)} passed")
     sys.exit(1 if failures else 0)
 
 
