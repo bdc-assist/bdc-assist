@@ -15,11 +15,21 @@ its sources, not among them (the answer isn't based on them); a rejected answer 
 related_filter_human in prompts.yaml) decide whether to search at all and which found papers fit. With
 USE_DECISION_MODEL, Decision-1 makes both decisions (related_search_decision, related_filter_decision) and
 the LLM only writes the search terms.
+
+form_offer (after_agent): a BDC site form for the web client to offer to prefill in its side panel, into its
+field "form_offer" ({question, forms: [{id, title, url}]}; question: the contextualized question, which the side
+panel drafts from). The forms are bdc-side-panel's (GET /tools at "side_panel_url", SIDE_PANEL_URL overrides
+it): one the answer links or cites is offered with no LLM call; otherwise one LLM call (form_offer_human; with
+USE_DECISION_MODEL, Decision-1's form_offer_decision) names the one the user explicitly needs, usually none.
+bdc-side-panel down: no offer, as its panel couldn't draft one either. A rejected answer drops it.
 """
 
 import asyncio
 import logging
+import os
+import re
 
+import httpx
 from langchain_core.output_parsers import MarkdownListOutputParser
 
 from r_assist import config, prompts
@@ -100,5 +110,71 @@ def related_work(llm, tools, settings):
         for key, s in keep[:RELATED_PAPERS]:
             related_papers.setdefault(key, []).append(s)
         return {"related": related_papers} if related_papers else {}
+
+    return node
+
+
+FORM_OFFER_TIMEOUT = 3  # seconds form_offer waits on bdc-side-panel's form list: finish (and "done") waits on it
+_LINK = re.compile(r"https?://[^\s)\]>\"'<]+")
+
+
+def _same(url):
+    return url.rstrip(".,;:").rstrip("/")  # a link at a sentence's end, or without its trailing slash
+
+
+async def _side_panel_forms(url):
+    """bdc-side-panel's forms ({id, title, url, fields}), or [] when it doesn't answer."""
+    try:
+        async with httpx.AsyncClient(timeout=FORM_OFFER_TIMEOUT) as client:
+            resp = await client.get(f"{url.rstrip('/')}/tools")
+            resp.raise_for_status()
+            return resp.json()["form"]
+    except Exception as e:
+        log.warning("form_offer: bdc-side-panel at %s listed no forms (%s: %s): no form offered", url,
+                    type(e).__name__, e)
+        return []
+
+
+def form_offer(llm, tools, settings):
+    """bdc-side-panel's address is its settings' "side_panel_url", or SIDE_PANEL_URL; no step without one."""
+    decide = config.get_decider()
+    need = ("form_offer_human",) + (("form_offer_decision",) if decide else ())
+    missing = [k for k in need if not prompts.PROMPTS.get(k)]
+    if missing:
+        raise ValueError(f"form_offer: add {', '.join(missing)} to {prompts.DATA_DIR / 'prompts.yaml'}")
+    url = os.getenv("SIDE_PANEL_URL") or settings.get("side_panel_url")
+    if not url:
+        log.warning("form_offer has no side_panel_url in project.yaml, nor SIDE_PANEL_URL: no form_offer step")
+        return None
+    human = prompts.PROMPTS["form_offer_human"]
+
+    async def node(state):
+        """
+        The forms the answer links (its sources, or a link in its text), with no LLM call; otherwise the one the
+        LLM picks from the numbered titles, or none (Decision-1: a choice of titles or "none").
+        """
+        forms = await _side_panel_forms(url)
+        if not forms:
+            return {}
+        links = {_same(s["link"]) for items in (state.get("sources") or {}).values() for s in items if s.get("link")}
+        links |= {_same(u) for u in _LINK.findall(state.get("answer") or "")}
+        offered = [f for f in forms if _same(f["url"]) in links]
+        if not offered:
+            titles = [f["title"] for f in forms]
+            if decide:
+                answers = await decide({"question": state["question"], "answer": state["answer"], "forms": titles},
+                                       {"form": {"type": "choice", "instructions": prompts.PROMPTS["form_offer_decision"],
+                                                 "criteria": {**dict.fromkeys(titles), "none": None}}})
+                offered = [f for f in forms if f["title"] == answers["form"]["choice"]][:1]
+            else:
+                numbered = "\n".join(f"{n}. {t}" for n, t in enumerate(titles, 1))
+                resp = await llm.ainvoke([("human", human.format(input=state["question"], answer=state["answer"],
+                                                                 forms=numbered))])
+                n = int(m.group()) if (m := re.search(r"\d+", resp.text)) else 0  # "2", "- 2"; "none" has none
+                offered = [forms[n - 1]] if 1 <= n <= len(forms) else []
+        if not offered:
+            return {}
+        return {"form_offer": {"question": state["question"],
+                               "forms": [{k: f[k] for k in ("id", "title", "url")} for f in offered]}}
 
     return node

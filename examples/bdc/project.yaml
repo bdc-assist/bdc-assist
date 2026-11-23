@@ -11,3 +11,8 @@ extra_nodes:  # per slot, functions in nodes.py, each with its settings
       tool: search_publications  # the tool it searches (artie-mcp)
       fields: [related]  # the papers it found, {sources key: [{title, link, type}]}: returned with the
                          # answer beside its sources, not among them (the answer isn't based on them)
+    form_offer:  # a BDC site form the answer links, or the user needs: the web client offers to prefill it
+      label: Checking for a form…
+      side_panel_url: http://127.0.0.1:8012  # bdc-side-panel, which lists the forms; SIDE_PANEL_URL overrides it
+      fields: [form_offer]  # {question, forms: [{id, title, url}]}: the question (contextualized) the side panel
+                            # drafts from, and the forms offered; none when bdc-side-panel doesn't answer

@@ -87,6 +87,13 @@ and the MCP re-check loop in `api.py`.
   found, and on a rejected answer). A failure or an 8 s timeout means no papers
   (logged as a warning); a server down at startup (its stand-in loaded) means no `related_work`
   step until it is back, and a `tool` not among the tools is logged as a warning.
+  `form_offer` (`after_agent`) offers a BDC site form for the web client to prefill in its side panel
+  (bdc-side-panel, a service of its own): the forms are bdc-side-panel's `GET /tools`, at its
+  `side_panel_url` setting (or `SIDE_PANEL_URL`). A form whose page the answer links or cites is offered
+  with no LLM call; otherwise one LLM call (`form_offer_human`) names the form the user explicitly needs,
+  usually none. Its field `form_offer` is `{question, forms: [{id, title, url}]}`, the question being the
+  contextualized one the side panel drafts from (`null` with no offer, on a rejected answer, and while
+  bdc-side-panel is down: a 3 s timeout, logged as a warning).
 - `output_guardrail`, `suggest_followups` and the `after_agent` nodes run side by side; `finish` joins them
 - `append_disclaimer` appends the flag-a disclaimers to an answer that passed (only when a flag-a
   topic matched). Optional: `append_disclaimer: false` leaves the step out (the texts stay in the
@@ -106,7 +113,7 @@ config/predefined_responses.yaml topic → {response, flag: r|a, link}
 config/mcp_servers.yaml          MCP servers the agent calls and how to use each one's tools (add a block per extra tool server)
 <config dir>/interceptors.py     optional: tool-call interceptors, named per server in mcp_servers.yaml
 <config dir>/nodes.py            optional: extra workflow nodes, named in project.yaml's extra_nodes
-examples/bdc/                    the four files as used for NHLBI BioData Catalyst, plus interceptors.py (Dug knowledge graphs), nodes.py (related_work),
+examples/bdc/                    the four files as used for NHLBI BioData Catalyst, plus interceptors.py (Dug knowledge graphs), nodes.py (related_work, form_offer),
                                  sample_questions.yaml, sample_responses.md (what the API returned for them) and
                                  sample_mcp_responses.md (the raw MCP tool results behind those answers)
 examples/fastapi/                the four files for a FastAPI docs bot (the doc server only, no interceptors),
@@ -273,7 +280,8 @@ the client keeps history. `sources` is the distinct documents behind the agent's
 `{"r-doc": [{title, link, type}]}`, deduplicated on link and in relevance order (empty for canned,
 blocked replies), plus any sources an interceptor attaches to tool results (structured content
 `"sources"`, `{key: [{title, link, type}]}`; BDC: the studies Dug cites, under `"dug"`, and papers
-from artie-mcp, under `"artie"`, when the agent searched them; `related_work`'s are in `related`), listed under
+from artie-mcp, under `"artie"`, when the agent searched them; `related_work`'s are in `related`, and
+`form_offer`'s offered forms in `form_offer`), listed under
 their key and deduplicated on link, plus the predefined responses shown (canned answer or disclaimers)
 under `"predefined"` (`type: "predefined"`, `title` and `link` from predefined_responses.yaml; title
 defaults to the topic, link may be empty; none for blocked replies); `sources_md` is all of them as one

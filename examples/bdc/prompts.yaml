@@ -203,3 +203,28 @@ related_search_decision: |
   Does `question` have a research topic: a disease or trait, a cohort or dataset, or a research method? Questions about using BDC itself (what BDC or one of its tools or programs is, accounts, login, data access requests, costs, how to use a tool) have none.
 related_filter_decision: |
   Does the paper titled `papers[{n}]` clearly fit the topic of `question`: the same disease or trait, cohort or dataset, or research method? A paper that shares only a word, a broad research area, or a program such as TOPMed with the question does not fit.
+
+# form_offer (nodes.py): when the answer links none of the BDC site's forms, which one, if any, the user explicitly
+# needs; the web client then offers to prefill it in its side panel (bdc-side-panel). {forms} = the forms, numbered.
+form_offer_human: |
+  The web client can help users fill in one of ${short_name}'s website forms in a side panel.
+  Given the user question and the answer below, decide whether the user explicitly asks for one of these forms, or
+  clearly needs to submit one of them now: e.g. to report a problem to the help desk, contact BDC, request cloud
+  credits, submit a publication, or sign up for the newsletter. Most questions need none.
+  The response can ONLY be the number of that form, or "none", with no additional text or explanation.
+
+  <forms>
+  {forms}
+  </forms>
+
+  <question>
+  {input}
+  </question>
+
+  <answer>
+  {answer}
+  </answer>
+
+# Decision-1's version (USE_DECISION_MODEL=true): `question`, `answer` as above; `forms` = the forms' titles.
+form_offer_decision: |
+  Which form in `forms` does `question` explicitly ask for, or clearly need to submit now (e.g. reporting a problem to the help desk, contacting BDC, requesting cloud credits, submitting a publication, signing up for the newsletter)? Choose none when it needs no form, which is most questions.

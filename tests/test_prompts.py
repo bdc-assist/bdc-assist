@@ -119,7 +119,9 @@ def test_bdc_finds_related_papers():
     p = _reload(ROOT / "examples" / "bdc")
     assert p.PROJECT["extra_nodes"] == {
         "after_agent": {"related_work": {"label": "Finding related papers…", "tool": "search_publications",
-                                         "fields": ["related"]}}}
+                                         "fields": ["related"]},
+                        "form_offer": {"label": "Checking for a form…", "side_panel_url": "http://127.0.0.1:8012",
+                                       "fields": ["form_offer"]}}}
     keywords, fit = p.PROMPTS["related_keywords_human"], p.PROMPTS["related_filter_human"]
     assert "- none" in keywords.format(input="q", answer="a")
     # every paper in the list used BDC: a "BioData Catalyst (BDC)" term matched all of them (live, 2026-10-30)
@@ -130,6 +132,14 @@ def test_bdc_finds_related_papers():
     assert "about using BDC itself" in keywords
     # and of what the search finds, only papers that fit are shown
     assert "- none" in fit.format(input="q", answer="a", papers="1. T")
+
+
+def test_bdc_offers_forms():
+    # form_offer: the LLM names the form the user needs by its number, or none (the usual case)
+    p = _reload(ROOT / "examples" / "bdc")
+    text = p.PROMPTS["form_offer_human"].format(input="q", answer="a", forms="1. Get Help")
+    assert "1. Get Help" in text and '"none"' in text and "Most questions need none" in text
+    assert "`forms`" in p.PROMPTS["form_offer_decision"]
 
 
 def test_a_key_written_twice_fails(tmp_path, monkeypatch):
