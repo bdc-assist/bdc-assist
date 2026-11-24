@@ -5,8 +5,10 @@
 #      <CONFIG_DIR>/mcp_servers.yaml — the URL r-assist actually connects to
 #   2. artie-mcp MCP server (HTTP) from ARTIE_MCP_DIR (./.env, default ../artie-mcp), only when
 #      <CONFIG_DIR>/mcp_servers.yaml has an artie_mcp block (examples/bdc), health-checked at its url
-#   3. r-assist API on API_PORT (./.env, default 8010)
-# Embedding/LLM endpoints are whatever the two .env files point at; start those yourself.
+#   3. bdc-side-panel (the web client's form side panel) from SIDE_PANEL_DIR (./.env, default
+#      ../bdc-side-panel) on SIDE_PANEL_PORT (that repo's .env, default 8012), skipped when there is no checkout
+#   4. r-assist API on API_PORT (./.env, default 8010)
+# Embedding/LLM endpoints are whatever the .env files point at; start those yourself.
 # Services already running are left alone; Ctrl-C stops only what this script started.
 # Each service gets START_TIMEOUT seconds (./.env, default 30) to answer.
 # Logs: /tmp/r_*.log
@@ -23,8 +25,10 @@ env_get() {  # env_get <file> <key> <default> — shell env wins, then the .env,
 
 DOC_MCP_DIR=$(env_get ./.env DOC_MCP_DIR ../bdc-doc-mcp)
 ARTIE_MCP_DIR=$(env_get ./.env ARTIE_MCP_DIR ../artie-mcp)
+SIDE_PANEL_DIR=$(env_get ./.env SIDE_PANEL_DIR ../bdc-side-panel)
 START_TIMEOUT=$(env_get ./.env START_TIMEOUT 30)
 MCP_PORT=$(env_get "$DOC_MCP_DIR/.env" MCP_PORT 8001)
+SIDE_PANEL_PORT=$(env_get "$SIDE_PANEL_DIR/.env" SIDE_PANEL_PORT 8012)
 API_PORT=$(env_get ./.env API_PORT 8010)
 CONFIG_DIR=$(env_get ./.env CONFIG_DIR config)
 mcp_url() {  # mcp_url <yaml> <server> <default> — the yaml block's url:, then default
@@ -83,7 +87,23 @@ else
   wait_for artie-mcp "$ARTIE_MCP_URL" "$START_TIMEOUT"     "server binds its MCP_PORT (default 8002); if that mismatches the url in $CONFIG_DIR/mcp_servers.yaml, fix it (see /tmp/r_artie_mcp.log)"
 fi
 
-# 3. r-assist API
+# 3. bdc-side-panel, if checked out
+SIDE_PANEL_URL="http://127.0.0.1:$SIDE_PANEL_PORT"
+side_panel=""
+if up "$SIDE_PANEL_URL/health"; then
+  echo "bdc-side-panel: already running ($SIDE_PANEL_URL)"
+  side_panel=1
+elif [ ! -d "$SIDE_PANEL_DIR" ]; then
+  echo "bdc-side-panel: no checkout at $SIDE_PANEL_DIR (set SIDE_PANEL_DIR in ./.env); the client's form side panel stays off"
+else
+  uv run --directory "$SIDE_PANEL_DIR" python -m side_panel.api >/tmp/r_side_panel.log 2>&1 &
+  pids+=($!)
+  wait_for bdc-side-panel "$SIDE_PANEL_URL/health" "$START_TIMEOUT" \
+    "server binds its SIDE_PANEL_PORT (default 8012); if that mismatches $SIDE_PANEL_PORT, fix its .env (see /tmp/r_side_panel.log)"
+  side_panel=1
+fi
+
+# 4. r-assist API
 if up "http://127.0.0.1:$API_PORT/health"; then
   echo "r-assist: already running"
 else
@@ -94,6 +114,10 @@ fi
 
 echo
 echo "all services up; Ctrl-C here to stop them"
-echo "  web client: npm run dev in bdc-assist-client, then open http://localhost:5173"
+if [ -n "$side_panel" ]; then
+  echo "  web client: VITE_SIDE_PANEL_URL=$SIDE_PANEL_URL npm run dev in bdc-assist-client, then open http://localhost:5173"
+else
+  echo "  web client: npm run dev in bdc-assist-client, then open http://localhost:5173"
+fi
 echo "  or run demo.ipynb"
 wait

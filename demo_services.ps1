@@ -5,8 +5,10 @@
 #      <CONFIG_DIR>\mcp_servers.yaml - the URL r-assist actually connects to
 #   2. artie-mcp MCP server (HTTP) from ARTIE_MCP_DIR (.\.env, default ..\artie-mcp), only when
 #      <CONFIG_DIR>\mcp_servers.yaml has an artie_mcp block (examples\bdc), health-checked at its url
-#   3. r-assist API on API_PORT (.\.env, default 8010)
-# Embedding/LLM endpoints are whatever the two .env files point at; start those yourself.
+#   3. bdc-side-panel (the web client's form side panel) from SIDE_PANEL_DIR (.\.env, default
+#      ..\bdc-side-panel) on SIDE_PANEL_PORT (that repo's .env, default 8012), skipped when there is no checkout
+#   4. r-assist API on API_PORT (.\.env, default 8010)
+# Embedding/LLM endpoints are whatever the .env files point at; start those yourself.
 # Services already running are left alone; Ctrl-C stops only what this script started.
 # Each service gets START_TIMEOUT seconds (.\.env, default 30) to answer.
 # Logs: %TEMP%\r_*.log
@@ -27,8 +29,10 @@ function Get-DotEnv([string]$file, [string]$key, [string]$default) {
 
 $DOC_MCP_DIR     = Get-DotEnv '.\.env' 'DOC_MCP_DIR' '..\bdc-doc-mcp'
 $ARTIE_MCP_DIR   = Get-DotEnv '.\.env' 'ARTIE_MCP_DIR' '..\artie-mcp'
+$SIDE_PANEL_DIR  = Get-DotEnv '.\.env' 'SIDE_PANEL_DIR' '..\bdc-side-panel'
 $START_TIMEOUT   = Get-DotEnv '.\.env' 'START_TIMEOUT' '30'
 $MCP_PORT        = Get-DotEnv (Join-Path $DOC_MCP_DIR '.env') 'MCP_PORT' '8001'
+$SIDE_PANEL_PORT = Get-DotEnv (Join-Path $SIDE_PANEL_DIR '.env') 'SIDE_PANEL_PORT' '8012'
 $API_PORT        = Get-DotEnv '.\.env' 'API_PORT' '8010'
 $CONFIG_DIR      = Get-DotEnv '.\.env' 'CONFIG_DIR' 'config'
 
@@ -98,7 +102,22 @@ try {
       "server binds its MCP_PORT (default 8002); if that mismatches the url in $CONFIG_DIR\mcp_servers.yaml, fix it (see $env:TEMP\r_artie_mcp.log)"
   }
 
-  # 3. r-assist API
+  # 3. bdc-side-panel, if checked out
+  $SIDE_PANEL_URL = "http://127.0.0.1:$SIDE_PANEL_PORT"
+  $sidePanel = $false
+  if (Test-Http "$SIDE_PANEL_URL/health") {
+    Write-Host "bdc-side-panel: already running ($SIDE_PANEL_URL)"
+    $sidePanel = $true
+  } elseif (-not (Test-Path $SIDE_PANEL_DIR)) {
+    Write-Host "bdc-side-panel: no checkout at $SIDE_PANEL_DIR (set SIDE_PANEL_DIR in .\.env); the client's form side panel stays off"
+  } else {
+    Start-Bg "uv run --directory `"$SIDE_PANEL_DIR`" python -m side_panel.api" "$env:TEMP\r_side_panel.log"
+    Wait-Http 'bdc-side-panel' "$SIDE_PANEL_URL/health" $START_TIMEOUT `
+      "server binds its SIDE_PANEL_PORT (default 8012); if that mismatches $SIDE_PANEL_PORT, fix its .env (see $env:TEMP\r_side_panel.log)"
+    $sidePanel = $true
+  }
+
+  # 4. r-assist API
   if (Test-Http "http://127.0.0.1:$API_PORT/health") {
     Write-Host 'r-assist: already running'
   } else {
@@ -112,7 +131,11 @@ try {
   } else {
     Write-Host 'all services up; Ctrl-C here to stop them'
   }
-  Write-Host '  web client: npm run dev in bdc-assist-client, then open http://localhost:5173'
+  if ($sidePanel) {
+    Write-Host "  web client: `$env:VITE_SIDE_PANEL_URL='$SIDE_PANEL_URL'; npm run dev in bdc-assist-client, then open http://localhost:5173"
+  } else {
+    Write-Host '  web client: npm run dev in bdc-assist-client, then open http://localhost:5173'
+  }
   Write-Host '  or run demo.ipynb'
   if ($procs.Count -gt 0) {
     Wait-Process -Id ($procs | ForEach-Object Id)

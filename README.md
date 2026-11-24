@@ -137,7 +137,8 @@ Also optional: COMPLETION_TEMPERATURE (default 0), COMPLETION_REASONING_EFFORT (
 non-reasoning models like gpt-4o-mini, which reject it; `none`/`low`/`medium`/`high` for reasoning models like
 gpt-6-luna; above `none` the temperature is not sent and calls go through the Responses API, the only one where
 gpt-6-luna calls tools while reasoning), LOG_LEVEL (default WARNING), MCP_RETRY_SECONDS (default 300: how often
-unavailable MCP servers are retried and live ones re-checked), and — for the demo scripts — DOC_MCP_DIR (default ../bdc-doc-mcp) and START_TIMEOUT (default 30 seconds per service).
+unavailable MCP servers are retried and live ones re-checked), and — for the demo scripts — DOC_MCP_DIR (default ../bdc-doc-mcp), SIDE_PANEL_DIR (default
+../bdc-side-panel) and START_TIMEOUT (default 30 seconds per service).
 
 Optional, Microsoft Decision-1: `USE_DECISION_MODEL=true` has it make the yes/no and pick-one decisions in
 place of the chat model: `input_guardrail` (one yes/no per rule in `prompts.yaml`'s
@@ -156,8 +157,8 @@ Start the model endpoints first; the scripts don't: the embedding endpoint in r-
 (default local Ollama: `ollama serve`) and the completion endpoint in this `.env` (nothing to start
 for hosted OpenAI). Neither is checked at startup — a missing one fails at the first chat.
 
-Everything at once (doc MCP server, artie-mcp when `<CONFIG_DIR>/mcp_servers.yaml` lists `artie_mcp`, and
-r-assist; Ctrl-C stops what it started):
+Everything at once (doc MCP server, artie-mcp when `<CONFIG_DIR>/mcp_servers.yaml` lists `artie_mcp`,
+bdc-side-panel when `SIDE_PANEL_DIR` is checked out, and r-assist; Ctrl-C stops what it started):
 
 ```bash
 ./demo_services.sh       # Linux / Git Bash
@@ -254,7 +255,9 @@ edit each repo's `config/*.yaml` for your own project.
    This reuses the doc service from step 3 on `MCP_PORT` (8001), or starts it if it isn't up. It
    also starts artie-mcp on 8002 (from
    `ARTIE_MCP_DIR`, default `../artie-mcp`; only when the config lists `artie_mcp`, as
-   `examples/bdc` does) and the r-assist API on `API_PORT` (8010), reuses any already up, and stops what it started on Ctrl-C. The bot connects to
+   `examples/bdc` does), bdc-side-panel on its `SIDE_PANEL_PORT` (8012; from `SIDE_PANEL_DIR`, default
+   `../bdc-side-panel`, skipped without a checkout: it backs the web client's form side panel, run the client with
+   `VITE_SIDE_PANEL_URL=http://127.0.0.1:8012`) and the r-assist API on `API_PORT` (8010), reuses any already up, and stops what it started on Ctrl-C. The bot connects to
    every server listed in `<CONFIG_DIR>/mcp_servers.yaml` at startup; one that is unreachable is
    logged as a warning and skipped (its `stand_ins` take its place), then retried every
    `MCP_RETRY_SECONDS` until its tools load. One that goes down mid-session is dropped the same way:
@@ -272,7 +275,7 @@ it needs no server besides r-doc-mcp. Each example keeps its own data, named aft
 folder (`data/fastapi/` in r-doc-builder, the `fastapi` collection in r-doc-mcp), so switching back
 and forth never overwrites the other's; switch by editing the three `.env` files and restarting.
 
-If something is already listening on 8001, 8002 or 8010 (another stack, an old run), stop it
+If something is already listening on 8001, 8002, 8012 or 8010 (another stack, an old run), stop it
 first: `demo_services` would silently reuse it. Content re-pushed while the doc service runs is
 served at once: the push goes through that same process, so no restart is needed.
 
