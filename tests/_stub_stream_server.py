@@ -10,7 +10,9 @@ By default: a docs answer, no graph, with the covid disclaimer appended. A keywo
   canned     an "r" topic matches: its canned reply, agent skipped
   nosources  the agent answers without searching: no sources, no graph
   crash      the agent fails mid-answer: the stream ends with {"type": "error"}
-  get_help   a login-loop answer citing the BDC Get Help page (a form; for the client's form prefill demo)
+  get_help   a login-loop answer citing the BDC Get Help page, offering its form (done's "form_offer"), as
+             examples/bdc/nodes.py's form_offer does; the client's side panel drafts it with bdc-side-panel's
+             stub (its tests/_stub_server.py, :8013, VITE_SIDE_PANEL_URL=http://127.0.0.1:8013)
 Paper keywords (combine with the others): a stand-in related_work step (label "Finding related papers…",
 about 3 s, beside the guardrail) puts papers in done's "related", as examples/bdc/nodes.py does.
   publications         3 related papers, none cited: the usual case
@@ -85,8 +87,20 @@ def related_work(llm, tools, settings):
     return node
 
 
+def form_offer(llm, tools, settings):
+    """Stands in for examples/bdc/nodes.py's form_offer: no bdc-side-panel or LLM; the Get Help form on get_help,
+    every time (client_state.offered_forms isn't read)."""
+    async def node(state):
+        if not _has(state["input"], "get_help"):
+            return {}
+        return {"form_offer": {"question": state["question"],
+                               "forms": [{"id": "get-help", "title": "Get Help", "url": GET_HELP_URL}]}}
+    return node
+
+
 NODES = {"after_agent": [("related_work", related_work,
-                          {"label": "Finding related papers…", "fields": ["related"]})]}
+                          {"label": "Finding related papers…", "fields": ["related"]}),
+                         ("form_offer", form_offer, {"label": "Checking for a form…", "fields": ["form_offer"]})]}
 
 
 class SlowAgent:
