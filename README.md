@@ -256,8 +256,8 @@ edit each repo's `config/*.yaml` for your own project.
    also starts artie-mcp on 8002 (from
    `ARTIE_MCP_DIR`, default `../artie-mcp`; only when the config lists `artie_mcp`, as
    `examples/bdc` does), bdc-side-panel on its `SIDE_PANEL_PORT` (8012; from `SIDE_PANEL_DIR`, default
-   `../bdc-side-panel`, skipped without a checkout: it backs the web client's form side panel, run the client with
-   `VITE_SIDE_PANEL_URL=http://127.0.0.1:8012`) and the r-assist API on `API_PORT` (8010), reuses any already up, and stops what it started on Ctrl-C. The bot connects to
+   `../bdc-side-panel`, skipped without a checkout: it backs the web client's form side panel, which looks
+   for it on 8012; on another port, run the client with `VITE_SIDE_PANEL_URL`) and the r-assist API on `API_PORT` (8010), reuses any already up, and stops what it started on Ctrl-C. The bot connects to
    every server listed in `<CONFIG_DIR>/mcp_servers.yaml` at startup; one that is unreachable is
    logged as a warning and skipped (its `stand_ins` take its place), then retried every
    `MCP_RETRY_SECONDS` until its tools load. One that goes down mid-session is dropped the same way:

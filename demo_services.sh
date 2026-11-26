@@ -114,7 +114,8 @@ fi
 
 echo
 echo "all services up; Ctrl-C here to stop them"
-if [ -n "$side_panel" ]; then
+# the client looks for bdc-side-panel on 8012 by default: tell it only about another port
+if [ -n "$side_panel" ] && [ "$SIDE_PANEL_PORT" != 8012 ]; then
   echo "  web client: VITE_SIDE_PANEL_URL=$SIDE_PANEL_URL npm run dev in bdc-assist-client, then open http://localhost:5173"
 else
   echo "  web client: npm run dev in bdc-assist-client, then open http://localhost:5173"

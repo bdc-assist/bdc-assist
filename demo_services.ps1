@@ -131,7 +131,8 @@ try {
   } else {
     Write-Host 'all services up; Ctrl-C here to stop them'
   }
-  if ($sidePanel) {
+  # the client looks for bdc-side-panel on 8012 by default: tell it only about another port
+  if ($sidePanel -and "$SIDE_PANEL_PORT" -ne '8012') {
     Write-Host "  web client: `$env:VITE_SIDE_PANEL_URL='$SIDE_PANEL_URL'; npm run dev in bdc-assist-client, then open http://localhost:5173"
   } else {
     Write-Host '  web client: npm run dev in bdc-assist-client, then open http://localhost:5173'
